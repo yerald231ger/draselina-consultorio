@@ -1,6 +1,23 @@
 <Project>
   <!-- Solo paquetes de la tabla Stack de la arquitectura. La gestión central se activa en Directory.Build.props. -->
   <ItemGroup>
+    <!-- Aspire 13.6.0. El SDK del AppHost fija su propia versión en el .csproj (Aspire.AppHost.Sdk/13.6.0). -->
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.6.0" />
+    <!-- Paquetes de la plantilla ServiceDefaults de Aspire 13.6.0, con las versiones que trae la plantilla. -->
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.10.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
+    <!-- EF Core 10.0.12 y Npgsql 10.0.3, hasta que salga la 11.0 definitiva. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <!-- WolverineFx 6.45.x. -->
+    <PackageVersion Include="WolverineFx" Version="6.45.0" />
+    <PackageVersion Include="WolverineFx.Postgresql" Version="6.45.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
   </ItemGroup>
 </Project>

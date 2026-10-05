@@ -1,5 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- OpenTelemetry y salud. Cascarón: la telemetría es la entrada 3. -->
+  <!-- OpenTelemetry (registros, métricas, trazas), salud y descubrimiento de servicios (AD-21).
+       Es la plantilla ServiceDefaults de Aspire 13.6.0, sin cambios de comportamiento. -->
+  <PropertyGroup>
+    <IsAspireSharedProject>true</IsAspireSharedProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+  </ItemGroup>
 
 </Project>

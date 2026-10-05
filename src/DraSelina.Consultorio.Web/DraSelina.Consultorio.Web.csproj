@@ -1,8 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <!-- Todo el código de la aplicación: Kernel, contratos base, módulos (por carpeta y namespace), interfaz y host.
-       Cascarón: Wolverine, Blazor e identidad se cablean en las entradas 3 a 7.
        Las dependencias entre namespaces las fija la arquitectura (Invariants & Rules) y las verifican las pruebas. -->
+
+  <ItemGroup>
+    <!-- El SDK web agrega using globales de Microsoft.AspNetCore.* y Microsoft.Extensions.* a todo el proyecto.
+         Con ellos, un archivo de Modules/Agenda/Domain/ podría usar HttpContext sin escribir ningún using y las
+         pruebas de arquitectura, que leen directivas using, no lo verían. Se quitan: solo quedan los de System.*.
+         Lo verifica SolucionEntregadaTests contra el archivo GlobalUsings.g.cs que genera la compilación. -->
+    <Using Remove="Microsoft.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <!-- Solo en tiempo de diseño, para `dotnet ef migrations add`. No llega a quien referencia a Web. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="WolverineFx" />
+    <PackageReference Include="WolverineFx.Postgresql" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DraSelina.Consultorio.ServiceDefaults\DraSelina.Consultorio.ServiceDefaults.csproj" />

@@ -1,10 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Migraciones y datos iniciales (AD-25). Cascarón: se cablea en la entrada 3.
+  <!-- Migraciones y datos iniciales (AD-25): aplica las migraciones de cada módulo, crea el almacenamiento de
+       Wolverine y termina. Lo corre el AppHost antes de arrancar la web.
        Referencia a Web porque ahí viven los DbContext de cada módulo. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DraSelina.Consultorio.Web\DraSelina.Consultorio.Web.csproj" />
+    <ProjectReference Include="..\DraSelina.Consultorio.ServiceDefaults\DraSelina.Consultorio.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

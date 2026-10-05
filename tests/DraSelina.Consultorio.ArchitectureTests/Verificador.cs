@@ -20,6 +20,17 @@ public static class Verificador
     public const string PaqueteProhibido = "paquete o framework prohibido: Kernel, contratos y dominio solo usan la biblioteca base (T-28, AD-12)";
     public const string GlobalUsingProhibido = "global using prohibido: llegaría a todas las capas sin que esta prueba lo vea";
 
+    public const string UsingImplicitoProhibido = "using implícito fuera de System.*: llegaría a todas las capas sin que esta prueba lo vea";
+
+    /// <summary>
+    /// Los <c>using</c> implícitos que el SDK genera para Web: solo se admiten los de <c>System.*</c>.
+    /// Recibe los <c>GlobalUsings.g.cs</c> generados, ya leídos.
+    /// </summary>
+    public static IReadOnlyList<Violacion> VerificarUsingsImplicitos(IEnumerable<Fuente> generados) =>
+        [.. generados.SelectMany(generado => generado.Usos
+            .Where(uso => !EsOEstaDentro(uso, "System"))
+            .Select(uso => new Violacion(generado.Ruta, uso, UsingImplicitoProhibido)))];
+
     public static IReadOnlyList<Violacion> VerificarProyectos(IEnumerable<Proyecto> proyectos)
     {
         var violaciones = new List<Violacion>();

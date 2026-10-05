@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Pruebas de arquitectura: la tabla de referencias de AD-1 como datos, verificada contra los .csproj de src/.
-       No referencia ningún proyecto de src/: lee sus archivos. -->
+       No usa ningún tipo de src/: lee sus archivos. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
@@ -9,6 +9,12 @@
   <ItemGroup>
     <PackageReference Include="xunit.v3" />
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Solo orden de compilación: una prueba lee el GlobalUsings.g.cs que la compilación de Web deja en obj/,
+         así que Web se compila antes. No se referencia su ensamblado: las pruebas siguen leyendo archivos. -->
+    <ProjectReference Include="..\..\src\DraSelina.Consultorio.Web\DraSelina.Consultorio.Web.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

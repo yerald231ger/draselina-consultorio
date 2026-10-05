@@ -36,4 +36,22 @@ public class SolucionEntregadaTests
         Assert.NotEmpty(fuentes);
         Assert.Empty(Verificador.VerificarFuentes(fuentes));
     }
+
+    [Fact]
+    public void Web_no_tiene_using_implicitos_fuera_de_System()
+    {
+        var generados = Lector.UsingsImplicitos(Web);
+
+        Assert.True(generados.Count > 0, "No hay GlobalUsings.g.cs en obj/ de Web: compila la solución antes de correr esta prueba.");
+        Assert.Empty(Verificador.VerificarUsingsImplicitos(generados));
+    }
+
+    [Fact]
+    public void Los_componentes_de_UI_declaran_el_namespace_de_la_interfaz()
+    {
+        // Sin este @namespace los .razor de UI/ caerían en DraSelina.Consultorio.Web.UI, el namespace por carpeta.
+        var imports = Assert.Single(Lector.Fuentes(Web), fuente => fuente.Ruta == "UI/_Imports.razor");
+
+        Assert.Equal("DraSelina.Consultorio.UI", imports.Namespace);
+    }
 }

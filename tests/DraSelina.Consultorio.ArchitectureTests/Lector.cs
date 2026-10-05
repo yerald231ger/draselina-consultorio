@@ -8,7 +8,7 @@ public sealed record Proyecto(string Archivo, IReadOnlyList<string> Referencias)
 
 /// <summary>Un archivo de código de Web: dónde está, qué namespace declara y qué namespaces usa.</summary>
 /// <param name="Ruta">Ruta relativa al proyecto Web, con <c>/</c>.</param>
-/// <param name="Namespace">El namespace que declara; nulo si no declara ninguno (un <c>.razor</c>).</param>
+/// <param name="Namespace">El namespace que declara, con <c>namespace</c> o con <c>@namespace</c> en un <c>.razor</c>; nulo si no declara ninguno.</param>
 /// <param name="Usos">Namespaces de sus directivas <c>using</c> y nombres <c>DraSelina.Consultorio.*</c> escritos completos.</param>
 public sealed record Fuente(string Ruta, string? Namespace, IReadOnlyList<string> Usos, bool TieneGlobalUsing);
 
@@ -73,6 +73,23 @@ public static partial class Lector
             .OrderBy(f => f.Relativa, StringComparer.Ordinal)
             .Select(f => LeerFuente(f.Relativa, File.ReadAllText(f.Ruta)))];
 
+    /// <summary>
+    /// Los <c>GlobalUsings.g.cs</c> que la compilación de Web deja en <c>obj/</c>: ahí quedan escritos los
+    /// <c>using</c> implícitos del SDK. Vacío si Web no se ha compilado.
+    /// </summary>
+    public static IReadOnlyList<Fuente> UsingsImplicitos(string carpetaWeb)
+    {
+        var obj = Path.Combine(carpetaWeb, "obj");
+        if (!Directory.Exists(obj))
+        {
+            return [];
+        }
+
+        return [.. Directory.EnumerateFiles(obj, "*.GlobalUsings.g.cs", SearchOption.AllDirectories)
+            .Order(StringComparer.Ordinal)
+            .Select(ruta => LeerFuente(Relativa(carpetaWeb, ruta), File.ReadAllText(ruta)))];
+    }
+
     /// <summary>Carpetas de Web que existen, relativas al proyecto.</summary>
     public static IReadOnlySet<string> Carpetas(string carpetaWeb) =>
         Directory.EnumerateDirectories(carpetaWeb, "*", SearchOption.AllDirectories)
@@ -112,7 +129,8 @@ public static partial class Lector
 
     private static string Relativa(string carpeta, string ruta) => Path.GetRelativePath(carpeta, ruta).Replace('\\', '/');
 
-    [GeneratedRegex(@"^\s*namespace\s+([\w.]+)")]
+    // namespace X  ·  @namespace X (Razor)
+    [GeneratedRegex(@"^\s*@?namespace\s+([\w.]+)")]
     private static partial Regex DeclaracionDeNamespace();
 
     // using X;  ·  using static X;  ·  using Alias = X;  ·  global using X;  ·  @using X (Razor)

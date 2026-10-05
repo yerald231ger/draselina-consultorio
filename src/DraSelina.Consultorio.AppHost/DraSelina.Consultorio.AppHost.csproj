@@ -1,6 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
 
-  <!-- AppHost de Aspire. Cascarón: se cablea en la entrada 3. -->
+  <!-- AppHost de Aspire: un solo comando levanta PostgreSQL, corre el MigrationService y después la web. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- ASPIRE010 avisa que no se usa el paquete de la CLI `aspire` (AspireUseCliBundle=false). La CLI no está
+         instalada y no hace falta: el panel y el orquestador llegan por NuGet y `dotnet run` arranca todo. -->
+    <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DraSelina.Consultorio.Web\DraSelina.Consultorio.Web.csproj" />
