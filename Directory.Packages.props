@@ -1,0 +1,6 @@
+<Project>
+  <!-- Solo paquetes de la tabla Stack de la arquitectura. La gestión central se activa en Directory.Build.props. -->
+  <ItemGroup>
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+  </ItemGroup>
+</Project>

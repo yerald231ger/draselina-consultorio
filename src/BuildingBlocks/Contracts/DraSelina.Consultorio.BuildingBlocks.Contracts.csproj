@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Contratos base: solo interfaces. Sin referencias a paquetes ni a frameworks (T-28, AD-12). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kernel\DraSelina.Consultorio.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Implementación de Contenido. Cascarón. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Contracts\DraSelina.Consultorio.Contenido.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

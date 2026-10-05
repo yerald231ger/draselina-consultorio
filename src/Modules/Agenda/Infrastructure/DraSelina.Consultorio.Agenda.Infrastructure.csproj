@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Infraestructura de Agenda. Cascarón: DbContext y migraciones son la entrada 3. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Features\DraSelina.Consultorio.Agenda.Features.csproj" />
+    <ProjectReference Include="..\Domain\DraSelina.Consultorio.Agenda.Domain.csproj" />
+    <ProjectReference Include="..\Contracts\DraSelina.Consultorio.Agenda.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

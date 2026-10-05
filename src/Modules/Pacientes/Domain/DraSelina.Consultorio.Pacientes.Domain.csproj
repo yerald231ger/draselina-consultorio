@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Dominio de Pacientes: solo conoce el Kernel. Sin referencias a paquetes ni a frameworks (T-28, AD-12). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Kernel\DraSelina.Consultorio.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>

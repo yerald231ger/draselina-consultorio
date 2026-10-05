@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Infraestructura de Pacientes. Cascarón: DbContext y migraciones son la entrada 3. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Features\DraSelina.Consultorio.Pacientes.Features.csproj" />
+    <ProjectReference Include="..\Domain\DraSelina.Consultorio.Pacientes.Domain.csproj" />
+    <ProjectReference Include="..\Contracts\DraSelina.Consultorio.Pacientes.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

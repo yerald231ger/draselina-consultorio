@@ -1,0 +1,12 @@
+<Project>
+  <!-- Configuración común a todos los proyectos de src/ y tests/. -->
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Versiones centralizadas en Directory.Packages.props. Se activa aquí y no allá para que
+         spikes/arranque, que tiene su propio Directory.Build.props, no quede bajo esta regla. -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,39 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Consultorio.AppHost/DraSelina.Consultorio.AppHost.csproj" />
+    <Project Path="src/Consultorio.MigrationService/DraSelina.Consultorio.MigrationService.csproj" />
+    <Project Path="src/Consultorio.ServiceDefaults/DraSelina.Consultorio.ServiceDefaults.csproj" />
+    <Project Path="src/Consultorio.UI/DraSelina.Consultorio.UI.csproj" />
+    <Project Path="src/Consultorio.Web/DraSelina.Consultorio.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Contracts/DraSelina.Consultorio.BuildingBlocks.Contracts.csproj" />
+    <Project Path="src/BuildingBlocks/Kernel/DraSelina.Consultorio.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Agenda/">
+    <Project Path="src/Modules/Agenda/Contracts/DraSelina.Consultorio.Agenda.Contracts.csproj" />
+    <Project Path="src/Modules/Agenda/Domain/DraSelina.Consultorio.Agenda.Domain.csproj" />
+    <Project Path="src/Modules/Agenda/Features/DraSelina.Consultorio.Agenda.Features.csproj" />
+    <Project Path="src/Modules/Agenda/Infrastructure/DraSelina.Consultorio.Agenda.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Contenido/">
+    <Project Path="src/Modules/Contenido/Contenido/DraSelina.Consultorio.Contenido.csproj" />
+    <Project Path="src/Modules/Contenido/Contracts/DraSelina.Consultorio.Contenido.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Notificaciones/">
+    <Project Path="src/Modules/Notificaciones/Contracts/DraSelina.Consultorio.Notificaciones.Contracts.csproj" />
+    <Project Path="src/Modules/Notificaciones/Features/DraSelina.Consultorio.Notificaciones.Features.csproj" />
+    <Project Path="src/Modules/Notificaciones/Infrastructure/DraSelina.Consultorio.Notificaciones.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Pacientes/">
+    <Project Path="src/Modules/Pacientes/Contracts/DraSelina.Consultorio.Pacientes.Contracts.csproj" />
+    <Project Path="src/Modules/Pacientes/Domain/DraSelina.Consultorio.Pacientes.Domain.csproj" />
+    <Project Path="src/Modules/Pacientes/Features/DraSelina.Consultorio.Pacientes.Features.csproj" />
+    <Project Path="src/Modules/Pacientes/Infrastructure/DraSelina.Consultorio.Pacientes.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DraSelina.Consultorio.ArchitectureTests/DraSelina.Consultorio.ArchitectureTests.csproj" />
+    <Project Path="tests/DraSelina.Consultorio.Kernel.Tests/DraSelina.Consultorio.Kernel.Tests.csproj" />
+  </Folder>
+</Solution>

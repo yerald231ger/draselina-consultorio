@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Infraestructura de Notificaciones. Cascarón: DbContext y migraciones son la entrada 3. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Features\DraSelina.Consultorio.Notificaciones.Features.csproj" />
+    <ProjectReference Include="..\Contracts\DraSelina.Consultorio.Notificaciones.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

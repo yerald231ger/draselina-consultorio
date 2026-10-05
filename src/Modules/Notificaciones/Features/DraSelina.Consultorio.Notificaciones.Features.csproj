@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Casos de uso de Notificaciones (sin dominio). Cascarón: los handlers llegan con sus historias. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Contracts\DraSelina.Consultorio.Notificaciones.Contracts.csproj" />
+    <ProjectReference Include="..\..\Agenda\Contracts\DraSelina.Consultorio.Agenda.Contracts.csproj" />
+    <ProjectReference Include="..\..\Pacientes\Contracts\DraSelina.Consultorio.Pacientes.Contracts.csproj" />
+    <ProjectReference Include="..\..\Contenido\Contracts\DraSelina.Consultorio.Contenido.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

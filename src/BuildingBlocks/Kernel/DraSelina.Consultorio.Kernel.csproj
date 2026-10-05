@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Kernel compartido: solo ids tipados, IClock, Resultado y Actor (E-17). No referencia nada. -->
+
+</Project>

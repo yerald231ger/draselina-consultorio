@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Contratos de Agenda: lo único que el módulo expone (AD-1). Sin referencias a paquetes ni a frameworks (T-28, AD-12). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Kernel\DraSelina.Consultorio.Kernel.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Contracts\DraSelina.Consultorio.BuildingBlocks.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

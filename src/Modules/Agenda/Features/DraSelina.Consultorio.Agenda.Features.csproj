@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Casos de uso de Agenda. Cascarón: los handlers llegan con sus historias. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\DraSelina.Consultorio.Agenda.Domain.csproj" />
+    <ProjectReference Include="..\Contracts\DraSelina.Consultorio.Agenda.Contracts.csproj" />
+    <ProjectReference Include="..\..\Pacientes\Contracts\DraSelina.Consultorio.Pacientes.Contracts.csproj" />
+    <ProjectReference Include="..\..\Contenido\Contracts\DraSelina.Consultorio.Contenido.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
