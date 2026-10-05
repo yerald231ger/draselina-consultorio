@@ -54,4 +54,5 @@ Corte por resultado, no por módulo. Fuera: todo lo de la sección Non-goals del
 - Propiedad compartida — Contenido: la épica 2 crea el módulo con los datos del consultorio y la página del Aviso de privacidad con su versión (la casilla de Consentimiento la enlaza y la guarda, AD-24); la épica 7 agrega los textos del sitio y enlaza el Aviso desde el pie.
 - Decision: sin integración continua, despliegue ni operación en la épica de plataforma; la arquitectura los difiere hasta preparar el piloto (sección Deferred) (Gerardo, 2026-10-05).
 - Revisión independiente del corte (2026-10-05): confirmó cobertura de CAP-1 a CAP-21, el reparto de bitácora y configuración, y los touch points; corrigió prerrequisitos de las épicas 5, 6 y 7 y los dueños compartidos de arriba.
+- Decision: se construye épica por épica, una a la vez, sin carriles en paralelo entre épicas; no hay prisa (Gerardo, 2026-10-05).
 - Open question: las del spec, sección Open Questions; cada épica nombra las que la afectan.

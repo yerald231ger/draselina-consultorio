@@ -58,3 +58,8 @@ La plataforma: host, composición, proyectos base y arnés de pruebas. No contie
 - Decision: esta épica no cubre capacidades; cada requisito cita su sección de la arquitectura (2026-10-05).
 - Unknown: si Wolverine 6 y el AppHost de Aspire arrancan sobre .NET 11; lo contesta la entrada 1 y todas las demás esperan su respuesta.
 - Open question: Testcontainers o el soporte de pruebas de Aspire para el arnés de integración (arquitectura, Deferred); lo decide la historia que lo construye.
+- Decision: desglose en diez entradas aprobado (Gerardo, 2026-10-05). Bala trazadora: la entrada 1, el camino más delgado por AppHost, web, Wolverine, EF Core y PostgreSQL.
+- Decision: secuencia 1 → 2 → 3 → 4 → 5 → 6 → 7; la 7 espera a la 6 porque ambas tocan la configuración de middlewares de Wolverine en el host. La 8 solo espera a la 3 y puede ir en paralelo con 4 a 7, porque se queda en `Consultorio.UI`.
+- Decision: el componente que muestra en el formulario los errores de un `Resultado` inválido se entrega aquí (entrada 9) y no en la épica 2, para que la primera historia de reserva no construya infraestructura (Gerardo, 2026-10-05).
+- Decision: la entrada 7 no comprueba el actor Paciente por Enlace de gestión; ese enlace nace en la épica 3 (AD-19).
+- Revisión independiente del desglose (2026-10-05): confirmó cobertura de P1 a P10 y del Done when; de ella salieron la entrada 4 separada, la entrada 9 y los traspasos nombrados en las entradas 2, 3 y 7.

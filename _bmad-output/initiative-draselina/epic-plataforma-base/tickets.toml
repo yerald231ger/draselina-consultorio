@@ -1,0 +1,111 @@
+# Historias de epic-plataforma-base, en orden de construcción.
+
+[[entry]]
+id = 1
+type = "spike"
+title = "¿Arrancan juntos .NET 11, Wolverine 6 y el AppHost de Aspire?"
+description = "Prototipo desechable que levanta con el AppHost una Blazor Web App en .NET 11 con un handler de Wolverine 6 que escribe en PostgreSQL por EF Core, y contesta además si el fallo de DataAnnotations puede entregarse como Resultado inválido y si un EditForm se liga a un comando de Contracts."
+verify = "Las tres respuestas y el runtime elegido (.NET 11 o .NET 10) quedan como línea Decision en las Notes de la épica, con el registro de la corrida."
+covers = ["P1", "P2"]
+after = []
+hitl = true
+risk = "medium"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Esqueleto de la solución con pruebas de arquitectura"
+description = "Crea la solución con todos los proyectos del Structural Seed sobre el runtime decidido, el Kernel (ids tipados, IClock, Resultado con sus formas inválido y no autorizado, Actor), las interfaces de BuildingBlocks.Contracts (ICommand, IQuery, ISender, IRequiereAdministrador) y las pruebas de arquitectura que verifican la tabla de referencias de AD-1."
+verify = "La solución compila y las pruebas de arquitectura pasan; agregar una referencia prohibida (por ejemplo, de un Domain a EF Core) las hace fallar."
+covers = ["P3"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "El AppHost levanta PostgreSQL, las migraciones y la web, con telemetría"
+description = "El AppHost arranca PostgreSQL, corre el MigrationService (DbContext vacíos de agenda, pacientes y notificaciones, cada uno con su historial en su esquema, más el almacenamiento de Wolverine; identidad queda para la épica 5) y después la aplicación web con el cableado de Blazor completo (componentes Razor y App.razor), con registros y trazas por ServiceDefaults."
+verify = "Un solo comando deja en el panel de Aspire la base arriba, el MigrationService terminado y la web respondiendo con trazas visibles."
+covers = ["P4", "P9"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Arnés de pruebas de integración contra PostgreSQL real"
+description = "Arnés que da a cada corrida una base migrada por el mismo camino que el MigrationService y un esquema propio para los tipos de prueba, y registra como Decision en la épica la elección entre Testcontainers y el soporte de pruebas de Aspire."
+verify = "Una prueba automática confirma que existe un historial de migraciones por esquema y que la aplicación web no aplica migraciones al arrancar."
+covers = ["P4", "P5"]
+after = [3]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Un caso de uso recorre ISender, transacción y outbox"
+description = "ISender sobre Wolverine, con un handler por comando o consulta que devuelve Resultado con códigos cerrados, y la política de un comando una transacción con outbox, demostrada con un comando de prueba que vive solo en el proyecto de pruebas."
+verify = "Una prueba de integración envía un comando de prueba por ISender y comprueba que el cambio y su mensaje de outbox se confirman juntos, y que un fallo esperado vuelve como Resultado con código, sin excepción."
+covers = ["P6"]
+after = [4]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 6
+type = "story"
+title = "La validación de forma llega como Resultado inválido"
+description = "El middleware de DataAnnotations valida todo comando antes de su handler y entrega los errores por campo como Resultado inválido, del modo que contestó la prueba de arranque."
+verify = "Una prueba de integración envía un comando de prueba con datos inválidos y recibe Resultado inválido con el nombre de cada propiedad, sin que el handler se ejecute."
+covers = ["P7"]
+after = [5]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Actor único y rechazo de administración sin sesión"
+description = "Un único servicio del host entrega el actor leyendo el ClaimsPrincipal estándar (Administrador con usuario autenticado, Paciente en la reserva pública, Sistema en mensajes programados) y un único middleware de Wolverine rechaza todo comando o consulta marcado IRequiereAdministrador que llegue sin usuario autenticado; el caso Paciente por Enlace de gestión queda para la épica 3."
+verify = "Una prueba de integración comprueba que un comando marcado se rechaza sin usuario y pasa con un usuario autenticado de prueba, y que el handler recibe Administrador, Paciente o Sistema según el caso."
+covers = ["P8"]
+after = [6]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Base visual y layout público en SSR estático"
+description = "Tokens de DESIGN.md como CSS propio sobre Bootstrap, tipografía y el layout público móvil primero, en una página pública de SSR estático dentro de Consultorio.UI, sin tocar la configuración del host."
+verify = "Gerardo compara la página pública a 390 px contra los mockups (tipografía, colores, botón principal) y confirma que se entrega completa sin conexión interactiva."
+covers = ["P10"]
+after = [3]
+hitl = true
+risk = "low"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Los errores de validación se muestran en el formulario"
+description = "Componente que pinta bajo cada campo los errores de un Resultado inválido y lleva el foco al primero, en un formulario de SSR estático y en un EditForm interactivo, con el estilo de DESIGN.md."
+verify = "Una prueba de componente envía un formulario de prueba con datos inválidos y encuentra cada mensaje bajo su campo, con el foco en el primer error."
+covers = ["P7", "P10"]
+after = [6, 8]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 10
+type = "story"
+title = "Refactor sweep"
+description = "Limpieza de lo aplazado en los planes y revisiones de la épica; su alcance se fija al empezar."
+verify = "Las pruebas de la épica siguen pasando y los pendientes de revisión anotados quedan cerrados o registrados."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+hitl = false
+risk = "low"
