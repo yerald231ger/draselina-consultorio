@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agendar cita (web) — consulta y horario</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6B2A45}a:hover{color:#4F1E33}
+</style>
+</helmet>
+<div style="min-height: 940px; background: #FBF6F5; color: #3A1F29; font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="background: #FFFFFF; border-bottom: 1px solid #EADBD9">
+    <div style="max-width: 1160px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px">
+      <a href="#inicio" style="display: flex; align-items: center; gap: 12px; min-height: 44px; text-decoration: none; color: #3A1F29">
+        <img src="/_blob/d0e3c41ddd3b2e1c6726a1286daa6bde" alt="" style="width: 56px; height: 56px; display: block; flex: none">
+        <span style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 15px; font-weight: 700; color: #6B2A45">Dra. Selina Medina Castillo</span>
+          <span style="font-size: 11px; font-weight: 600; color: #8A4F5A; text-transform: uppercase; letter-spacing: 0.14em">Traumatología y Ortopedia</span>
+        </span>
+      </a>
+      <nav aria-label="Principal" style="flex: 1; display: flex; flex-wrap: wrap; gap: 4px 24px; font-size: 14px; font-weight: 600">
+        <a href="#inicio" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Inicio</a>
+        <a href="#sobre-mi" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Sobre mí</a>
+        <a href="#padecimientos" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Padecimientos y tratamientos</a>
+        <a href="#ubicacion" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Ubicación y horarios</a>
+      </nav>
+      <a href="WebReserva.dc.html" style="height: 44px; padding: 0 20px; border-radius: 12px; background: #6B2A45; color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center">Agendar cita</a>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 1160px; margin: 0 auto; padding: 32px 24px 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h1 style="margin: 0; font-size: 34px; line-height: 1.15; font-weight: 600; color: #6B2A45">Agenda tu cita</h1>
+      <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; font-weight: 600">
+        <li style="display: flex; align-items: center; gap: 8px; color: #6B2A45"><span style="width: 26px; height: 26px; border-radius: 50%; background: #6B2A45; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px">1</span>Consulta y horario</li>
+        <li style="display: flex; align-items: center; gap: 8px; color: #6E5560"><span style="width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #CDB3B5; display: flex; align-items: center; justify-content: center; font-size: 13px; box-sizing: border-box">2</span>Tus datos</li>
+        <li style="display: flex; align-items: center; gap: 8px; color: #6E5560"><span style="width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #CDB3B5; display: flex; align-items: center; justify-content: center; font-size: 13px; box-sizing: border-box">3</span>Confirmación</li>
+      </ol>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+        <section style="background: #FFFFFF; border: 1px solid #EADBD9; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+          <h2 style="margin: 0; font-size: 19px; font-weight: 700">Tipo de consulta</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px">
+            <sc-for list="{{types}}" as="t" hint-placeholder-count="2">
+              <label style="{{t.cardStyle}}">
+                <input type="radio" name="tipo" checked="{{t.selected}}" onChange="{{t.pick}}" style="width: 20px; height: 20px; margin: 2px 0 0; accent-color: #6B2A45; flex: none">
+                <span style="display: flex; flex-direction: column; gap: 4px">
+                  <span style="font-size: 16px; font-weight: 700">{{t.name}} <span style="font-weight: 600; color: #6E5560; font-size: 13px">· 30 min</span></span>
+                  <span style="font-size: 14px; line-height: 1.45; color: #6E5560">{{t.desc}}</span>
+                </span>
+              </label>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #EADBD9; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+            <h2 style="margin: 0; font-size: 19px; font-weight: 700">Día y hora</h2>
+            <div style="font-size: 13px; color: #6E5560">Hora del centro de México · desde mañana y hasta 2 meses</div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 28px">
+            <div style="flex: 999 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; align-items: center; justify-content: space-between">
+                <button type="button" aria-label="Mes anterior" disabled style="width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid #EDE1E0; background: #FFFFFF; color: #C4AEB3; display: flex; align-items: center; justify-content: center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+                </button>
+                <div style="font-size: 16px; font-weight: 700">Octubre 2026</div>
+                <button type="button" aria-label="Mes siguiente" style="width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid #EADBD9; background: #FFFFFF; color: #3A1F29; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+                </button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; font-size: 12px; font-weight: 700; color: #6E5560; text-transform: uppercase; letter-spacing: 0.05em; text-align: center">
+                <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+                <sc-for list="{{cells}}" as="c" hint-placeholder-count="25">
+                  <button type="button" onClick="{{c.pick}}" disabled="{{c.disabled}}" aria-pressed="{{c.selected}}" aria-label="{{c.aria}}" style="{{c.style}}">
+                    <span style="font-size: 15px; font-weight: 700">{{c.num}}</span>
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: {{c.dot}}"></span>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: #6E5560">
+                <span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #6B2A45"></span>Con horarios libres</span>
+                <span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #A88E96; box-sizing: border-box"></span>Lleno o no disponible</span>
+              </div>
+            </div>
+
+            <div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700">{{dayTitle}}</h3>
+              <sc-if value="{{hasSlots}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <sc-for list="{{slots}}" as="s" hint-placeholder-count="3">
+                    <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.selected}}" style="{{s.style}}">{{s.label}}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{noSlots}}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: 14px; line-height: 1.5; color: #6E5560">Este día ya no tiene horarios libres. Elige otro día en el calendario.</div>
+              </sc-if>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border: 1px solid #EADBD9; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-size: 17px; font-weight: 700">Tu cita</h2>
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 14px">
+          <div style="display: flex; flex-direction: column; gap: 2px"><dt style="color: #6E5560">Consulta</dt><dd style="margin: 0; font-weight: 700">{{typeName}} · 30 min</dd></div>
+          <div style="display: flex; flex-direction: column; gap: 2px"><dt style="color: #6E5560">Fecha y hora</dt><dd style="margin: 0; font-weight: 700">{{when}}</dd></div>
+          <div style="display: flex; flex-direction: column; gap: 2px"><dt style="color: #6E5560">Lugar</dt><dd style="margin: 0; font-weight: 700">Hospital Star Médica, consultorio 101</dd></div>
+        </dl>
+        <a href="WebDatos.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 14px; background: #6B2A45; color: #FFFFFF; font-size: 16px; font-weight: 700; text-decoration: none">
+          Continuar
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
+        <div style="font-size: 13px; line-height: 1.45; color: #6E5560">Sin cuenta. Tu cita queda confirmada al instante.</div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":940}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { type: 'primera', day: 6, slot: '16:30' }; }
+  renderVals() {
+    const label = { '15:30': '3:30 pm', '16:00': '4:00 pm', '16:30': '4:30 pm', '17:00': '5:00 pm', '17:30': '5:30 pm' };
+    const all = ['15:30', '16:00', '16:30', '17:00', '17:30'];
+    const avail = {
+      5: ['16:00', '17:30'], 6: ['15:30', '16:30', '17:30'], 7: [], 8: all, 9: ['15:30', '16:00', '17:00'],
+      12: all, 13: ['16:00', '16:30', '17:00', '17:30'], 14: all, 15: ['15:30', '17:30'], 16: all,
+      19: all, 20: all, 21: all, 22: all, 23: all, 26: all, 27: all, 28: all, 29: all, 30: all
+    };
+    const dows = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+    const nums = [null, null, null, 1, 2, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 26, 27, 28, 29, 30];
+    const types = [
+      { id: 'primera', name: 'Primera consulta', desc: 'Lesión o molestia nueva: rodilla, hombro, columna, fracturas.' },
+      { id: 'seguimiento', name: 'Consulta de seguimiento', desc: 'Revisión de un tratamiento, estudio o cirugía en curso.' }
+    ];
+    const day = this.state.day;
+    const free = avail[day] || [];
+    const slot = free.includes(this.state.slot) ? this.state.slot : null;
+    const dowOf = (i) => dows[i % 5];
+    const idx = nums.indexOf(day);
+    const cellBase = 'height: 52px; border-radius: 12px; font-family: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; ';
+    const slotBase = 'height: 48px; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; ';
+    const curType = types.find((t) => t.id === this.state.type) || types[0];
+    return {
+      types: types.map((t) => {
+        const selected = t.id === curType.id;
+        return { ...t, selected, pick: () => this.setState({ type: t.id }),
+          cardStyle: 'display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 14px; cursor: pointer; ' + (selected ? 'border: 2px solid #6B2A45; box-shadow: 0 0 0 4px #F4E6E6;' : 'border: 2px solid #EADBD9;') };
+      }),
+      cells: nums.map((n, i) => {
+        if (n === null) return { num: '', disabled: true, selected: false, aria: 'Sin día', dot: 'transparent', style: cellBase + 'border: 0; background: transparent;', pick: () => {} };
+        const f = avail[n];
+        const past = !f;
+        const full = f && f.length === 0;
+        const selected = n === day;
+        let style = cellBase;
+        if (past) style += 'border: 0; background: transparent; color: #C4AEB3;';
+        else if (full) style += 'border: 1.5px dashed #D9C2C4; background: transparent; color: #7E626C;';
+        else if (selected) style += 'border: 1.5px solid #6B2A45; background: #6B2A45; color: #FFFFFF; cursor: pointer;';
+        else style += 'border: 1.5px solid #EADBD9; background: #FFFFFF; color: #3A1F29; cursor: pointer;';
+        return {
+          num: String(n), disabled: past || full, selected,
+          aria: dowOf(i) + ' ' + n + ' de octubre' + (past ? ', no disponible' : full ? ', lleno' : ', ' + f.length + ' horarios libres'),
+          dot: past || full ? 'transparent' : (selected ? '#FFFFFF' : '#6B2A45'),
+          style,
+          pick: () => { if (!past && !full) this.setState({ day: n, slot: null }); }
+        };
+      }),
+      dayTitle: dowOf(idx) + ' ' + day + ' de octubre',
+      hasSlots: free.length > 0,
+      noSlots: free.length === 0,
+      slots: free.map((t) => {
+        const selected = t === slot;
+        return { label: label[t], selected, pick: () => this.setState({ slot: t }),
+          style: slotBase + (selected ? 'background: #6B2A45; color: #FFFFFF; border: 2px solid #6B2A45;' : 'background: #FFFFFF; color: #3A1F29; border: 2px solid #EADBD9;') };
+      }),
+      typeName: curType.name,
+      when: slot ? dowOf(idx) + ' ' + day + ' de octubre, ' + label[slot] : 'Elige día y hora'
+    };
+  }
+}
+</script>
+</body>
+</html>

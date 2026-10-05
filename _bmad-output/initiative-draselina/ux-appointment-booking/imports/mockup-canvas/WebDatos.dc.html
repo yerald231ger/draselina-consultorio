@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Agendar cita (web) — tus datos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6B2A45}a:hover{color:#4F1E33}
+</style>
+</helmet>
+<div style="min-height: 960px; background: #FBF6F5; color: #3A1F29; font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="background: #FFFFFF; border-bottom: 1px solid #EADBD9">
+    <div style="max-width: 1160px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px">
+      <a href="#inicio" style="display: flex; align-items: center; gap: 12px; min-height: 44px; text-decoration: none; color: #3A1F29">
+        <img src="/_blob/d0e3c41ddd3b2e1c6726a1286daa6bde" alt="" style="width: 56px; height: 56px; display: block; flex: none">
+        <span style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 15px; font-weight: 700; color: #6B2A45">Dra. Selina Medina Castillo</span>
+          <span style="font-size: 11px; font-weight: 600; color: #8A4F5A; text-transform: uppercase; letter-spacing: 0.14em">Traumatología y Ortopedia</span>
+        </span>
+      </a>
+      <nav aria-label="Principal" style="flex: 1; display: flex; flex-wrap: wrap; gap: 4px 24px; font-size: 14px; font-weight: 600">
+        <a href="#inicio" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Inicio</a>
+        <a href="#sobre-mi" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Sobre mí</a>
+        <a href="#padecimientos" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Padecimientos y tratamientos</a>
+        <a href="#ubicacion" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Ubicación y horarios</a>
+      </nav>
+      <a href="WebReserva.dc.html" style="height: 44px; padding: 0 20px; border-radius: 12px; background: #6B2A45; color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center">Agendar cita</a>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 1160px; margin: 0 auto; padding: 32px 24px 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <a href="WebReserva.dc.html" style="align-self: flex-start; display: flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 700; text-decoration: none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+        Volver a horarios
+      </a>
+      <h1 style="margin: 0; font-size: 34px; line-height: 1.15; font-weight: 600; color: #6B2A45">Tus datos</h1>
+      <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; font-weight: 600">
+        <li style="display: flex; align-items: center; gap: 8px; color: #6B2A45"><span style="width: 26px; height: 26px; border-radius: 50%; background: #F4E6E6; color: #6B2A45; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>Consulta y horario</li>
+        <li style="display: flex; align-items: center; gap: 8px; color: #6B2A45"><span style="width: 26px; height: 26px; border-radius: 50%; background: #6B2A45; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px">2</span>Tus datos</li>
+        <li style="display: flex; align-items: center; gap: 8px; color: #6E5560"><span style="width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #CDB3B5; display: flex; align-items: center; justify-content: center; font-size: 13px; box-sizing: border-box">3</span>Confirmación</li>
+      </ol>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <form style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #EADBD9; border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="w-nombre" style="font-size: 14px; font-weight: 700">Nombre completo</label>
+            <input id="w-nombre" type="text" autocomplete="name" placeholder="Como aparece en tu identificación" style="height: 48px; border-radius: 12px; border: 1.5px solid #CDB3B5; padding: 0 14px; font-family: inherit; font-size: 16px; color: #3A1F29">
+            <div style="font-size: 13px; line-height: 1.4; color: #6E5560">Si agendas para otra persona, escribe el nombre del paciente.</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="w-tel" style="font-size: 14px; font-weight: 700">Celular</label>
+            <div style="display: flex; gap: 8px">
+              <div style="height: 48px; border-radius: 12px; border: 1.5px solid #CDB3B5; background: #F6ECEB; padding: 0 14px; display: flex; align-items: center; font-size: 16px; font-weight: 600; box-sizing: border-box">+52</div>
+              <input id="w-tel" type="tel" autocomplete="tel-national" placeholder="10 dígitos" style="flex: 1; min-width: 0; height: 48px; border-radius: 12px; border: 1.5px solid #CDB3B5; padding: 0 14px; font-family: inherit; font-size: 16px; color: #3A1F29">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="w-correo" style="font-size: 14px; font-weight: 700">Correo <span style="font-weight: 500; color: #6E5560">(opcional)</span></label>
+          <input id="w-correo" type="email" autocomplete="email" placeholder="nombre@correo.com" style="height: 48px; border-radius: 12px; border: 1.5px solid #CDB3B5; padding: 0 14px; font-family: inherit; font-size: 16px; color: #3A1F29">
+          <div style="font-size: 13px; line-height: 1.4; color: #6E5560">Ahí te llegan la confirmación, el recordatorio y el enlace para cambiar tu cita.</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="w-motivo" style="font-size: 14px; font-weight: 700">Motivo de la consulta</label>
+          <textarea id="w-motivo" rows="3" placeholder="Ej. dolor de rodilla derecha desde hace dos semanas" style="border-radius: 12px; border: 1.5px solid #CDB3B5; padding: 12px 14px; font-family: inherit; font-size: 16px; line-height: 1.4; color: #3A1F29; resize: vertical"></textarea>
+        </div>
+
+        <label style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 14px; background: #FBF6F5; cursor: pointer">
+          <input type="checkbox" style="width: 22px; height: 22px; margin: 0; accent-color: #6B2A45; flex: none">
+          <span style="font-size: 14px; line-height: 1.5">Acepto el <a href="#aviso" style="font-weight: 700">Aviso de privacidad</a> y doy mi consentimiento expreso para el uso de mis datos de salud con el fin de agendar mi cita.</span>
+        </label>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+          <div style="width: 300px; max-width: 100%; height: 64px; border-radius: 12px; border: 1.5px dashed #CDB3B5; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #6E5560">[Verificación anti-bots · Turnstile]</div>
+        </div>
+      </form>
+
+      <aside style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border: 1px solid #EADBD9; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 700">Tu cita</h2>
+          <a href="WebReserva.dc.html" style="font-size: 14px; font-weight: 700; min-height: 44px; display: flex; align-items: center">Cambiar</a>
+        </div>
+        <dl style="margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 14px">
+          <div style="display: flex; flex-direction: column; gap: 2px"><dt style="color: #6E5560">Consulta</dt><dd style="margin: 0; font-weight: 700">Primera consulta · 30 min</dd></div>
+          <div style="display: flex; flex-direction: column; gap: 2px"><dt style="color: #6E5560">Fecha y hora</dt><dd style="margin: 0; font-weight: 700">Martes 6 de octubre, 4:30 pm</dd></div>
+          <div style="display: flex; flex-direction: column; gap: 2px"><dt style="color: #6E5560">Lugar</dt><dd style="margin: 0; font-weight: 700">Hospital Star Médica, consultorio 101</dd></div>
+        </dl>
+        <a href="WebConfirmada.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 14px; background: #6B2A45; color: #FFFFFF; font-size: 16px; font-weight: 700; text-decoration: none">Confirmar cita</a>
+        <div style="font-size: 13px; line-height: 1.45; color: #6E5560">Queda confirmada al instante, sin esperar aprobación.</div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

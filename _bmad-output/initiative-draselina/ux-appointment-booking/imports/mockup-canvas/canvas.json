@@ -1,0 +1,159 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Cancelar.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "6 · Cancelación tardía",
+      "w": 390,
+      "x": 2350,
+      "y": 0
+    },
+    "Confirmada.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4 · Cita confirmada",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "Datos.dc.html": {
+      "h": 1040,
+      "is_interactive": true,
+      "title": "3 · Tus datos",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "Gestionar.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "5 · Gestionar cita (enlace)",
+      "w": 390,
+      "x": 1880,
+      "y": 0
+    },
+    "Horario.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "2 · Día y hora",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "1 · Tipo de consulta",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "SitioInicio.dc.html": {
+      "expand": "fill",
+      "h": 2900,
+      "is_interactive": true,
+      "page": "page-dckp8n",
+      "title": "Sitio web · Inicio (escritorio)",
+      "w": 1280,
+      "x": 880,
+      "y": 0
+    },
+    "SitioMovil.dc.html": {
+      "h": 4700,
+      "is_interactive": true,
+      "page": "page-dckp8n",
+      "title": "Sitio web · Inicio (celular)",
+      "w": 390,
+      "x": 2240,
+      "y": 0
+    },
+    "WebConfirmada.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Web 3 · Cita confirmada",
+      "w": 1280,
+      "x": 2720,
+      "y": 1500
+    },
+    "WebDatos.dc.html": {
+      "expand": "fill",
+      "h": 960,
+      "is_interactive": true,
+      "title": "Web 2 · Tus datos",
+      "w": 1280,
+      "x": 1360,
+      "y": 1500
+    },
+    "WebReserva.dc.html": {
+      "expand": "fill",
+      "h": 940,
+      "is_interactive": true,
+      "title": "Web 1 · Consulta y horario",
+      "w": 1280,
+      "x": 0,
+      "y": 1500
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-04T18:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "flowTitle": {
+      "kind": "title1",
+      "maxW": 2740,
+      "text": "Reserva del paciente — flujo móvil",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "siteTitle": {
+      "kind": "title1",
+      "maxW": 1750,
+      "page": "page-dckp8n",
+      "text": "Sitio web del consultorio (portafolio)",
+      "w": 240,
+      "x": 880,
+      "y": -260
+    },
+    "webTitle": {
+      "kind": "title1",
+      "maxW": 4000,
+      "text": "Reserva del paciente — flujo web (escritorio)",
+      "w": 240,
+      "x": 0,
+      "y": 1240
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Horario.dc.html",
+    "Datos.dc.html",
+    "Confirmada.dc.html",
+    "Gestionar.dc.html",
+    "Cancelar.dc.html",
+    "WebReserva.dc.html",
+    "WebDatos.dc.html",
+    "WebConfirmada.dc.html",
+    "SitioInicio.dc.html",
+    "SitioMovil.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Page 1"
+    },
+    {
+      "id": "page-dckp8n",
+      "name": "Page 2"
+    }
+  ],
+  "title": "Reserva de citas — Dra. Selina Medina"
+}

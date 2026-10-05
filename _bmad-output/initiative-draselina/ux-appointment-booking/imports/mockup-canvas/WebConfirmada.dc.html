@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cita confirmada (web)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6B2A45}a:hover{color:#4F1E33}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #FBF6F5; color: #3A1F29; font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="background: #FFFFFF; border-bottom: 1px solid #EADBD9">
+    <div style="max-width: 1160px; margin: 0 auto; padding: 14px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px">
+      <a href="#inicio" style="display: flex; align-items: center; gap: 12px; min-height: 44px; text-decoration: none; color: #3A1F29">
+        <img src="/_blob/d0e3c41ddd3b2e1c6726a1286daa6bde" alt="" style="width: 56px; height: 56px; display: block; flex: none">
+        <span style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 15px; font-weight: 700; color: #6B2A45">Dra. Selina Medina Castillo</span>
+          <span style="font-size: 11px; font-weight: 600; color: #8A4F5A; text-transform: uppercase; letter-spacing: 0.14em">Traumatología y Ortopedia</span>
+        </span>
+      </a>
+      <nav aria-label="Principal" style="flex: 1; display: flex; flex-wrap: wrap; gap: 4px 24px; font-size: 14px; font-weight: 600">
+        <a href="#inicio" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Inicio</a>
+        <a href="#sobre-mi" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Sobre mí</a>
+        <a href="#padecimientos" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Padecimientos y tratamientos</a>
+        <a href="#ubicacion" style="color: #4A3039; text-decoration: none; min-height: 44px; display: flex; align-items: center">Ubicación y horarios</a>
+      </nav>
+      <a href="WebReserva.dc.html" style="height: 44px; padding: 0 20px; border-radius: 12px; background: #6B2A45; color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; display: flex; align-items: center">Agendar cita</a>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 760px; margin: 0 auto; padding: 48px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: #6B2A45; color: #FFFFFF; display: flex; align-items: center; justify-content: center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+      </div>
+      <h1 style="margin: 0; font-size: 34px; line-height: 1.15; font-weight: 600; color: #6B2A45">Tu cita está confirmada</h1>
+      <div style="font-size: 16px; line-height: 1.5; color: #6E5560; max-width: 520px">Te enviamos los detalles a tu correo. Un día antes, a las 9:00 am, te llegará un recordatorio.</div>
+    </div>
+
+    <section style="background: #FFFFFF; border: 1px solid #EADBD9; border-radius: 20px; display: flex; flex-direction: column">
+      <div style="padding: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px; border-bottom: 1px solid #F0E4E3">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <div style="font-size: 13px; font-weight: 700; color: #6B2A45; text-transform: uppercase; letter-spacing: 0.06em">Martes</div>
+          <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.02em">6 de octubre, 4:30 pm</div>
+          <div style="font-size: 14px; color: #6E5560">Primera consulta · 30 min · Dra. Selina Medina Castillo</div>
+        </div>
+        <button type="button" style="height: 48px; padding: 0 18px; border-radius: 12px; background: #FFFFFF; border: 2px solid #6B2A45; color: #6B2A45; font-family: inherit; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18M12 13v5M9.5 15.5h5"></path></svg>
+          Agregar a mi calendario
+        </button>
+      </div>
+      <div style="padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+        <div style="display: flex; gap: 10px; align-items: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B2A45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>
+          <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Hospital Star Médica, consultorio 101</span><span style="font-size: 14px; color: #6E5560">Mariano Arista No. 735, Col. Barrio de Tequisquiapan</span></span>
+        </div>
+        <a href="https://maps.google.com" style="font-size: 14px; font-weight: 700; min-height: 44px; display: flex; align-items: center">Abrir en el mapa</a>
+      </div>
+    </section>
+
+    <section style="background: #F4E6E6; border-radius: 20px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 700">Guarda este enlace</h2>
+        <div style="font-size: 14px; line-height: 1.5; color: #4A3039">Con él puedes reprogramar hasta 2 horas antes o cancelar en cualquier momento. No necesitas cuenta.</div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px">
+        <div style="flex: 1 1 280px; min-width: 0; height: 48px; padding: 0 14px; border-radius: 12px; background: #FFFFFF; display: flex; align-items: center; font-size: 14px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">citas.[dominio].mx/c/7KqX…</div>
+        <button type="button" style="height: 48px; padding: 0 20px; border-radius: 12px; border: 0; background: #6B2A45; color: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer">Copiar enlace</button>
+      </div>
+    </section>
+
+    <div style="display: flex; justify-content: center">
+      <a href="WebReserva.dc.html" style="min-height: 44px; display: flex; align-items: center; font-size: 15px; font-weight: 700">Volver al inicio</a>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
