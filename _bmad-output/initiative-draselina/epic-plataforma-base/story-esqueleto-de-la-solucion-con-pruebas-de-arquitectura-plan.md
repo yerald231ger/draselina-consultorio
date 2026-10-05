@@ -3,7 +3,7 @@ title: 'Esqueleto de la solución con pruebas de arquitectura'
 type: 'feature' # feature | bugfix | refactor | chore
 ticket: '2' # the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
 created: '2026-10-05'
-status: 'built' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
+status: done
 baseline_revision: '3269b71c1ca4cbede88284e73a167cab7abfdfb3' # the commit the work starts from, set before any code change
 route: 'full' # oneshot | full — set by step-02
 route_source: 'auto' # pinned | auto — set with route by step-02
