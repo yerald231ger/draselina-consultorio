@@ -3,7 +3,7 @@ title: 'El AppHost levanta PostgreSQL, las migraciones y la web, con telemetría
 type: 'feature' # feature | bugfix | refactor | chore
 ticket: '3' # the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
 created: '2026-10-05'
-status: 'built' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
+status: done
 baseline_revision: '9e35f303dd8dba31fd18f84aedce81d26a92e8ff' # the commit the work starts from, set before any code change
 route: 'full' # oneshot | full — set by step-02
 route_source: 'auto' # pinned | auto — set with route by step-02
