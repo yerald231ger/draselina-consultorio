@@ -110,7 +110,7 @@ Cada capacidad cita sus requisitos. Las consecuencias verificables de cada `FR-n
 - La prueba de arranque (primera historia) confirmó .NET 11 con Wolverine 6 y el AppHost de Aspire el 2026-10-05; no se retrocede a .NET 10.
 - Stack fijo: .NET 11, Blazor Web App, PostgreSQL, Wolverine 6, Aspire 13, DataAnnotations, OpenTelemetry (versiones en la arquitectura, sección Stack).
 - Quedan fuera: MediatR, MassTransit, Hangfire, FluentAssertions, FluentValidation, Serilog y Blazor WebAssembly standalone.
-- Monolito modular: Agenda, Pacientes, Notificaciones y Contenido solo se hablan por `I<Módulo>Api` o por eventos de integración; las referencias entre proyectos son las de la tabla de la arquitectura y se verifican con pruebas de arquitectura (AD-1 a AD-3).
+- Monolito modular: Agenda, Pacientes, Notificaciones y Contenido solo se hablan por `I<Módulo>Api` o por eventos de integración; viven como namespaces dentro de un solo proyecto, `DraSelina.Consultorio.Web`; las dependencias entre namespaces son las de la tabla de la arquitectura y se verifican con pruebas de arquitectura (AD-1 a AD-3).
 - La disponibilidad se calcula al vuelo; nada guarda slots. Un solo agregado, `AgendaAtencion`, resuelve los tramos vigentes y una sola `CalculadoraDeDisponibilidad` los convierte en horarios libres (AD-5).
 - Una Cita ya agendada no se modifica sola. Las cancelaciones derivadas de una custom las elige el Administrador y ocurren después, por evento (AD-6, P-1).
 - El no traslape lo garantiza la base de datos, no el código (AD-8).

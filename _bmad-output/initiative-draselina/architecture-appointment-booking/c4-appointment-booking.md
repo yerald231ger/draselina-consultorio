@@ -185,4 +185,4 @@ Los pasos 7 y 8 ocurren después de responder al paciente: la reserva nunca espe
 ## Lo que no se muestra
 
 - **Despliegue.** No hay diagrama de despliegue porque el aprovisionamiento de Azure está diferido.
-- **Proyectos y capas.** La tabla de referencias permitidas entre proyectos está en el documento de arquitectura.
+- **Proyectos y capas.** Las capas son namespaces dentro de `DraSelina.Consultorio.Web`; las tablas de dependencias permitidas están en el documento de arquitectura.

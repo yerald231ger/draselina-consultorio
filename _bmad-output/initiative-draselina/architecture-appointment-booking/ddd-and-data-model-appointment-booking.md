@@ -573,7 +573,7 @@ classDiagram
 
 ### 2.6 Dónde vive cada pieza en el código
 
-| Pieza | Proyecto |
+| Pieza | Namespace (carpeta dentro de `DraSelina.Consultorio.Web`) |
 | --- | --- |
 | Agregados, objetos de valor, servicio de dominio, eventos de dominio, puertos de escritura | `<Contexto>.Domain` |
 | Handlers, puertos de lectura | `<Contexto>.Features` |
@@ -581,13 +581,13 @@ classDiagram
 | Implementación de puertos, persistencia | `<Contexto>.Infrastructure` |
 | Ids tipados, `IClock`, `Resultado`, `Actor` | `Kernel` |
 
-- **T-28.** `Domain` no referencia nada salvo el `Kernel`. No conoce EF Core, Wolverine, ASP.NET ni otros contextos.
+- **T-28.** El namespace `Domain` de un contexto no usa nada salvo el `Kernel`. No conoce EF Core, Wolverine, ASP.NET ni otros contextos. Las capas son namespaces y carpetas dentro de un solo proyecto, no proyectos separados.
 
 ### 2.7 Cómo se hace cumplir
 
 | Qué | Con qué |
 | --- | --- |
-| Referencias entre proyectos y contextos (E-10, E-13, T-28) | Pruebas de arquitectura |
+| Dependencias entre namespaces y contextos (E-10, E-13, T-28) | Pruebas de arquitectura, sobre las directivas `using` de cada archivo |
 | Invariantes `INV-*` | Una prueba unitaria por invariante, sobre el agregado, sin base de datos |
 | Reglas `RN-*` | Pruebas del agregado o del handler; las que dependen de la base (RN-1, RN-20, RN-26), pruebas de integración |
 | `CalculadoraDeDisponibilidad` | La suite más completa del sistema, sin base de datos |
@@ -1062,3 +1062,4 @@ Permite a Notificaciones mover o eliminar el recordatorio de una cita (AD-20).
 | 2026-10-05 | `AgendaBase` y `AgendaCustom` se unen en un solo agregado, `AgendaAtencion`; la custom pasa a ser entidad interna. Se agrega INV-V1 (tramos vigentes). Un solo puerto, `IAgendaAtencion`. Las tablas no cambian | Gerardo |
 | 2026-10-05 | Cierre del documento. Borrar una custom pregunta qué hacer con las citas que quedan fuera, igual que guardarla (RN-9, RN-10, RN-12, P-1). Las cancelaciones de P-1 llevan como actor al Administrador (T-31). El tope semanal lo decide `Cita.Agendar` con el conteo que le pasa el handler (RN-18). Tramo mínimo en base y custom (INV-B5, INV-A6). Un solo valor para tardía y reprogramación (RN-17); desaparece el corte de reprogramación. E-12 reescrita: Agenda no guarda ni modela datos de contacto | Gerardo |
 | 2026-10-05 | "Ya pasó" se mide desde el inicio de la cita (RN-31). Motivo de consulta obligatorio en línea (INV-C11). Precisiones sin cambio de comportamiento: ids en el Kernel, `ReglasDeAgenda` frente a `ReglasDeReserva`, entradas de la calculadora, Contenido → Agenda para el archivo de calendario. El documento pasa a final, sin revisión independiente | Gerardo |
+| 2026-10-05 | Las capas de cada contexto (`Contracts`, `Domain`, `Features`, `Infrastructure`), el Kernel y la interfaz dejan de ser proyectos: son namespaces y carpetas dentro de `DraSelina.Consultorio.Web` (2.6, T-28, 2.7). Las reglas de dependencia no cambian; ahora las verifican las pruebas, no el compilador. Separarlas en proyectos queda diferido | Gerardo |

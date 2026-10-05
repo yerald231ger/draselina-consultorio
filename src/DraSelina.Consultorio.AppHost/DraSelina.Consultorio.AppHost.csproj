@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- AppHost de Aspire. Cascarón: se cablea en la entrada 3. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\DraSelina.Consultorio.Web\DraSelina.Consultorio.Web.csproj" />
+    <ProjectReference Include="..\DraSelina.Consultorio.MigrationService\DraSelina.Consultorio.MigrationService.csproj" />
+  </ItemGroup>
+
+</Project>

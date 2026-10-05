@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Migraciones y datos iniciales (AD-25). Cascarón: se cablea en la entrada 3.
+       Referencia a Web porque ahí viven los DbContext de cada módulo. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\DraSelina.Consultorio.Web\DraSelina.Consultorio.Web.csproj" />
+  </ItemGroup>
+
+</Project>

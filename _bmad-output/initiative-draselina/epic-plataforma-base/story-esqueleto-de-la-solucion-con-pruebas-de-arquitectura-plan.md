@@ -186,3 +186,12 @@ Cada `.csproj` se llama `DraSelina.Consultorio.<...>.csproj` dentro de la carpet
   - La prueba de archivos compartidos también lee los `.props`/`.targets` generados bajo `obj/`; hoy pasan, pero un paquete futuro podría generar ahí un archivo que la dispare.
   - Los proyectos de host son bibliotecas simples; la entrada 3 cambiará su SDK al cablearlos.
   - Las Implementation Notes dicen 32 pruebas y describen el verificador antes de los parches; el estado final es el de esta sección.
+
+### Cambio posterior a la corrida (2026-10-05, decisión de Gerardo)
+
+Lo construido en la corrida (20 proyectos, uno por capa) se rehízo fuera del flujo por decisión de Gerardo: todo el código de la aplicación vive en `DraSelina.Consultorio.Web`, con módulos y capas por carpeta y namespace; las carpetas de proyecto llevan el nombre completo `DraSelina.Consultorio.*`. Las secciones anteriores de este plan describen la forma vieja.
+
+- Quedan cuatro proyectos en `src/`: `AppHost`, `ServiceDefaults`, `MigrationService` y `Web`. `Kernel`, `BuildingBlocks.Contracts`, los módulos y `UI` son carpetas de `Web`.
+- Las pruebas de arquitectura se reescribieron (`Reglas.cs`, `Lector.cs`, `Verificador.cs`): verifican las dependencias entre namespaces por las directivas `using` de cada archivo según su carpeta, y las referencias entre los cuatro proyectos por los `.csproj`.
+- Verificación: `./dotnet.sh build` → 0 advertencias, 0 errores; `./dotnet.sh test` → 38 de 38 (18 Kernel, 20 arquitectura). Un archivo en `Modules/Agenda/Domain/` con `using DraSelina.Consultorio.BuildingBlocks.Contracts;` hace fallar las pruebas nombrando el archivo y la referencia; al quitarlo vuelven a pasar.
+- La arquitectura, el documento de dominio, el C4, la spec y la épica se actualizaron antes que el código.

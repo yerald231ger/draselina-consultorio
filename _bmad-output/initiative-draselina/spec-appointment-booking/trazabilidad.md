@@ -30,7 +30,7 @@ Para escribir una historia: toma la capacidad, lee sus `FR-n` en el PRD (consecu
 
 | Tema | Dónde |
 | --- | --- |
-| Referencias entre proyectos y módulos | AD-1, AD-2, AD-3; E-10 a E-13; T-28 |
+| Dependencias entre namespaces y módulos | AD-1, AD-2, AD-3; E-10 a E-13; T-28 |
 | Cambio de estado solo por el agregado | AD-4; T-1 a T-7 |
 | Casos de uso por `ISender`, con `Resultado` | AD-10; T-13, T-14 |
 | Validación de forma | AD-12 |

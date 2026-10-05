@@ -28,24 +28,26 @@ Este documento fija solo lo que dos partes construidas por separado podrían hac
 
 Monolito modular: un solo despliegue, una base PostgreSQL. Cada contexto delimitado es un módulo; dentro de cada módulo el código se organiza por caso de uso.
 
-| Capa | Proyecto | Contiene |
-| --- | --- | --- |
-| Kernel | `DraSelina.Consultorio.Kernel` | Ids tipados, `IClock`, `Resultado`, `Actor` |
-| Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `ICommand<T>`, `IQuery<T>`, `ISender`, marcadores de autorización |
-| Contratos | `DraSelina.Consultorio.<Módulo>.Contracts` | Comandos, consultas, DTOs, eventos de integración, API entre módulos |
-| Dominio | `DraSelina.Consultorio.<Módulo>.Domain` | Agregados, objetos de valor, servicios de dominio, puertos de escritura |
-| Casos de uso | `DraSelina.Consultorio.<Módulo>.Features` | Un handler por comando o consulta; puertos de lectura |
-| Infraestructura | `DraSelina.Consultorio.<Módulo>.Infrastructure` | DbContext, migraciones, implementación de puertos |
-| Interfaz | `DraSelina.Consultorio.UI` | Páginas y componentes Blazor |
-| Host | `DraSelina.Consultorio.Web` | Composición, identidad, Wolverine |
+Todo el código de la aplicación vive en un solo proyecto, `DraSelina.Consultorio.Web`. Los módulos y sus capas no son proyectos: son carpetas y namespaces dentro de él. Separarlos en proyectos o en servicios queda diferido hasta que haga falta (Deferred).
 
-Módulos: **Agenda** (núcleo), **Pacientes**, **Notificaciones**, **Contenido**. Notificaciones no tiene dominio. Contenido es `Contracts` más un solo proyecto de implementación.
+| Capa | Namespace | Carpeta dentro de `Web` | Contiene |
+| --- | --- | --- | --- |
+| Kernel | `DraSelina.Consultorio.Kernel` | `Kernel/` | Ids tipados, `IClock`, `Resultado`, `Actor` |
+| Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | `ICommand<T>`, `IQuery<T>`, `ISender`, marcadores de autorización |
+| Contratos | `DraSelina.Consultorio.<Módulo>.Contracts` | `Modules/<Módulo>/Contracts/` | Comandos, consultas, DTOs, eventos de integración, API entre módulos |
+| Dominio | `DraSelina.Consultorio.<Módulo>.Domain` | `Modules/<Módulo>/Domain/` | Agregados, objetos de valor, servicios de dominio, puertos de escritura |
+| Casos de uso | `DraSelina.Consultorio.<Módulo>.Features` | `Modules/<Módulo>/Features/` | Un handler por comando o consulta; puertos de lectura |
+| Infraestructura | `DraSelina.Consultorio.<Módulo>.Infrastructure` | `Modules/<Módulo>/Infrastructure/` | DbContext, migraciones, implementación de puertos |
+| Interfaz | `DraSelina.Consultorio.UI` | `UI/` | Páginas y componentes Blazor |
+| Host | `DraSelina.Consultorio.Web` | raíz del proyecto | Composición, identidad, Wolverine |
+
+Módulos: **Agenda** (núcleo), **Pacientes**, **Notificaciones**, **Contenido**. Notificaciones no tiene dominio. Contenido es `Contracts` más una sola carpeta de implementación (`DraSelina.Consultorio.Contenido`).
 
 ## Invariants & Rules
 
 ```mermaid
 flowchart LR
-    UI[Consultorio.UI] --> CT[Contracts de cada módulo]
+    UI[UI] --> CT[Contracts de cada módulo]
     FE[Features] --> DO[Domain]
     FE --> CT
     FE --> OC[Contracts de otros módulos]
@@ -54,33 +56,42 @@ flowchart LR
     DO --> KE[Kernel]
     CT --> BC[BuildingBlocks.Contracts]
     BC --> KE
-    WEB[Consultorio.Web] --> UI
-    WEB --> IN
-    MIG[MigrationService] --> IN
-    APP[AppHost] --> WEB
-    APP --> MIG
+    HOST[Host · raíz de Web] --> UI
+    HOST --> IN
 ```
 
-| Proyecto | Puede referenciar |
+Dependencias entre namespaces, todos dentro de `DraSelina.Consultorio.Web`:
+
+| Namespace | Puede usar |
 | --- | --- |
 | `Kernel` | nada |
 | `BuildingBlocks.Contracts` | `Kernel` |
 | `<Módulo>.Contracts` | `Kernel`, `BuildingBlocks.Contracts` |
 | `<Módulo>.Domain` | `Kernel` |
-| `<Módulo>.Features` | su `Domain`, su `Contracts`, `Contracts` de otros módulos |
-| `<Módulo>.Infrastructure` | su `Features`, su `Domain`, su `Contracts` |
-| `Contenido` | `Contenido.Contracts` |
-| `Consultorio.UI` | todos los `*.Contracts`, `Kernel` |
-| `Consultorio.Web` | todo (compone) |
-| `MigrationService` | todos los `*.Infrastructure` |
+| `<Módulo>.Features` | su `Domain`, su `Contracts`, `Contracts` de otros módulos, `Kernel`, `BuildingBlocks.Contracts` |
+| `<Módulo>.Infrastructure` | su `Features`, su `Domain`, su `Contracts`, `Kernel`, `BuildingBlocks.Contracts` |
+| `Contenido` | `Contenido.Contracts`, `Kernel`, `BuildingBlocks.Contracts` |
+| `UI` | todos los `*.Contracts`, `Kernel` |
+| `Web` (host) | todo (compone) |
 
-La tabla es la regla; lo que no aparece está prohibido y lo verifican las pruebas de arquitectura.
+`Kernel`, `BuildingBlocks.Contracts`, todo `*.Contracts` y todo `*.Domain` no usan ningún paquete ni framework: solo la biblioteca base de .NET.
+
+Referencias entre proyectos:
+
+| Proyecto | Puede referenciar |
+| --- | --- |
+| `DraSelina.Consultorio.Web` | `ServiceDefaults` |
+| `DraSelina.Consultorio.MigrationService` | `Web`; `ServiceDefaults` `[ASSUMPTION]` |
+| `DraSelina.Consultorio.AppHost` | `Web`, `MigrationService` |
+| `DraSelina.Consultorio.ServiceDefaults` | nada |
+
+Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican las pruebas de arquitectura: las dependencias entre namespaces, por las directivas `using` de cada archivo según su carpeta; las referencias entre proyectos, por los `.csproj`. Como todo compila en un solo ensamblado, el compilador ya no impide una dependencia prohibida: la impiden esas pruebas y la revisión de cada historia.
 
 ### AD-1 — Un módulo solo expone sus Contracts `[ADOPTED]`
 
 - **Binds:** all
 - **Prevents:** que el modelo interno de un módulo se filtre a otro o a la interfaz.
-- **Rule:** las referencias entre proyectos son exactamente las de la tabla anterior. Los ids tipados viven en `Kernel` para que contratos y dominio usen el mismo tipo y ningún contrato exponga un `Guid` desnudo.
+- **Rule:** las dependencias entre namespaces son exactamente las de la tabla anterior. Los ids tipados viven en `Kernel` para que contratos y dominio usen el mismo tipo y ningún contrato exponga un `Guid` desnudo.
 
 ### AD-2 — Datos privados por módulo `[ADOPTED]`
 
@@ -168,7 +179,7 @@ La tabla es la regla; lo que no aparece está prohibido y lo verifican las prueb
 
 - **Binds:** all
 - **Prevents:** reglas de forma duplicadas en dos librerías.
-- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos proyectos. Los atributos estándar que el navegador soporta se validan también ahí en las páginas estáticas; todo lo demás, incluidos los atributos propios, se valida solo en el servidor. El backend valida siempre, antes del handler, con un middleware propio de Wolverine que aplica DataAnnotations a todo comando, y el fallo se entrega como `Resultado` inválido con errores por campo. Las reglas de negocio viven en el agregado, nunca en atributos.
+- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos namespaces. Los atributos estándar que el navegador soporta se validan también ahí en las páginas estáticas; todo lo demás, incluidos los atributos propios, se valida solo en el servidor. El backend valida siempre, antes del handler, con un middleware propio de Wolverine que aplica DataAnnotations a todo comando, y el fallo se entrega como `Resultado` inválido con errores por campo. Las reglas de negocio viven en el agregado, nunca en atributos.
 
 ### AD-13 — El tope semanal por teléfono lo decide Agenda
 
@@ -343,17 +354,17 @@ erDiagram
 
 ```text
 src/
-  Consultorio.AppHost/            # Aspire: aplicación, migraciones y PostgreSQL local
-  Consultorio.ServiceDefaults/    # OpenTelemetry, salud
-  Consultorio.MigrationService/   # migraciones y datos iniciales
-  Consultorio.Web/                # host
-  Consultorio.UI/                 # páginas y componentes
-  BuildingBlocks/Kernel/          # ids, IClock, Resultado, Actor
-  BuildingBlocks/Contracts/       # ICommand, IQuery, ISender, marcadores
-  Modules/Agenda/{Contracts,Domain,Features,Infrastructure}/
-  Modules/Pacientes/{Contracts,Domain,Features,Infrastructure}/
-  Modules/Notificaciones/{Contracts,Features,Infrastructure}/
-  Modules/Contenido/{Contracts,Contenido}/
+  DraSelina.Consultorio.AppHost/            # Aspire: aplicación, migraciones y PostgreSQL local
+  DraSelina.Consultorio.ServiceDefaults/    # OpenTelemetry, salud
+  DraSelina.Consultorio.MigrationService/   # migraciones y datos iniciales
+  DraSelina.Consultorio.Web/                # todo el código de la aplicación
+    Kernel/                                 # ids, IClock, Resultado, Actor
+    BuildingBlocks/Contracts/               # ICommand, IQuery, ISender, marcadores
+    Modules/Agenda/{Contracts,Domain,Features,Infrastructure}/
+    Modules/Pacientes/{Contracts,Domain,Features,Infrastructure}/
+    Modules/Notificaciones/{Contracts,Features,Infrastructure}/
+    Modules/Contenido/{Contracts,Contenido}/
+    UI/                                     # páginas y componentes
 tests/
 ```
 
@@ -377,6 +388,7 @@ tests/
 
 ## Deferred
 
+- **Separar los módulos en proyectos o en servicios.** Hoy todo vive en `DraSelina.Consultorio.Web`, separado por carpeta y namespace. Se sacan a proyectos propios, o a servicios, cuando haya una necesidad concreta; la separación por namespaces y las pruebas de arquitectura existen para que ese paso sea mecánico.
 - **Aprovisionamiento de Azure y despliegue automático.** No se libera nada aún; se decide al preparar el piloto, incluido si Aspire publica a App Service o a Container Apps. Entra aquí todo lo operativo de producción: integración continua como puerta de las pruebas de arquitectura, secretos, HTTPS, chequeos de salud, alertas y respaldos.
 - **Respaldo replicado a otra región.** Mexico Central no lo ofrece para PostgreSQL administrado; decidir la estrategia de respaldo antes de recibir pacientes reales.
 - **Entorno intermedio.** Sin él en el piloto; revisar antes de recibir pacientes reales.

@@ -1,107 +1,222 @@
 namespace DraSelina.Consultorio.ArchitectureTests;
 
-/// <summary>Una prueba por fila de la matriz del plan, con proyectos sintéticos.</summary>
+/// <summary>Las reglas con casos sintéticos: cada archivo se da como texto, sin tocar <c>src/</c>.</summary>
 public class VerificadorTests
 {
+    private static IReadOnlyList<Violacion> Verificar(string ruta, string texto) =>
+        Verificador.VerificarFuentes([Lector.LeerFuente(ruta, texto)]);
+
     [Fact]
-    public void Un_Domain_con_un_paquete_es_violacion_que_nombra_el_proyecto_y_la_referencia()
+    public void Un_Domain_que_usa_EF_Core_es_violacion_que_nombra_el_archivo_y_la_referencia()
     {
-        var proyecto = Proyecto.Con("Agenda.Domain", "Kernel") with { Paquetes = ["Microsoft.EntityFrameworkCore"] };
+        var violacion = Assert.Single(Verificar("Modules/Agenda/Domain/Cita.cs", """
+            using Microsoft.EntityFrameworkCore;
+            using DraSelina.Consultorio.Kernel;
 
-        var violacion = Assert.Single(Verificador.Verificar([proyecto]));
+            namespace DraSelina.Consultorio.Agenda.Domain;
 
-        Assert.Equal(new Violacion("Agenda.Domain", "Microsoft.EntityFrameworkCore", Verificador.PaqueteProhibido), violacion);
-        Assert.Contains("Agenda.Domain", violacion.ToString());
+            public sealed class Cita;
+            """));
+
+        Assert.Equal(
+            new Violacion("Modules/Agenda/Domain/Cita.cs", "Microsoft.EntityFrameworkCore", Verificador.PaqueteProhibido),
+            violacion);
+        Assert.Contains("Modules/Agenda/Domain/Cita.cs", violacion.ToString());
         Assert.Contains("Microsoft.EntityFrameworkCore", violacion.ToString());
     }
 
     [Fact]
-    public void Un_Domain_que_referencia_los_Contracts_de_otro_modulo_es_violacion()
+    public void Un_Domain_que_usa_los_Contracts_de_otro_modulo_es_violacion()
     {
-        var proyecto = Proyecto.Con("Agenda.Domain", "Kernel", "Pacientes.Contracts");
+        var violacion = Assert.Single(Verificar("Modules/Agenda/Domain/Cita.cs", """
+            using DraSelina.Consultorio.Pacientes.Contracts;
 
-        var violacion = Assert.Single(Verificador.Verificar([proyecto]));
+            namespace DraSelina.Consultorio.Agenda.Domain;
+            """));
 
-        Assert.Equal(new Violacion("Agenda.Domain", "Pacientes.Contracts", Verificador.ProyectoNoPermitido), violacion);
+        Assert.Equal(("DraSelina.Consultorio.Pacientes.Contracts", Verificador.CapaNoPermitida), (violacion.Referencia, violacion.Regla));
     }
 
     [Fact]
-    public void La_interfaz_que_referencia_un_Domain_es_violacion()
+    public void La_interfaz_que_usa_un_Domain_es_violacion_tambien_en_un_razor()
     {
-        var proyecto = Proyecto.Con("UI", "Agenda.Contracts", "Agenda.Domain");
+        var violacion = Assert.Single(Verificar("UI/Pages/Agendar.razor", """
+            @page "/agendar"
+            @using DraSelina.Consultorio.Agenda.Contracts
+            @using DraSelina.Consultorio.Agenda.Domain
+            """));
 
-        var violacion = Assert.Single(Verificador.Verificar([proyecto]));
-
-        Assert.Equal(new Violacion("UI", "Agenda.Domain", Verificador.ProyectoNoPermitido), violacion);
+        Assert.Equal(("DraSelina.Consultorio.Agenda.Domain", Verificador.CapaNoPermitida), (violacion.Referencia, violacion.Regla));
     }
 
     [Fact]
-    public void Features_puede_referenciar_los_Contracts_de_otro_modulo()
+    public void Features_puede_usar_los_Contracts_de_otro_modulo_y_cualquier_paquete()
     {
-        var proyecto = Proyecto.Con("Agenda.Features", "Agenda.Domain", "Agenda.Contracts", "Pacientes.Contracts");
+        Assert.Empty(Verificar("Modules/Agenda/Features/Agendar/AgendarHandler.cs", """
+            using Wolverine;
+            using DraSelina.Consultorio.Kernel;
+            using DraSelina.Consultorio.Agenda.Domain;
+            using DraSelina.Consultorio.Agenda.Contracts;
+            using DraSelina.Consultorio.Pacientes.Contracts;
 
-        Assert.Empty(Verificador.Verificar([proyecto]));
+            namespace DraSelina.Consultorio.Agenda.Features.Agendar;
+            """));
     }
 
     [Fact]
-    public void Un_proyecto_que_la_tabla_no_nombra_es_violacion()
+    public void Features_no_puede_usar_el_Domain_ni_las_Features_de_otro_modulo()
     {
-        var proyecto = Proyecto.Con("Facturacion.Domain", "Kernel");
+        var referencias = Verificar("Modules/Agenda/Features/Agendar/AgendarHandler.cs", """
+            using DraSelina.Consultorio.Pacientes.Domain;
+            using DraSelina.Consultorio.Pacientes.Features;
 
-        var violacion = Assert.Single(Verificador.Verificar([proyecto]));
+            namespace DraSelina.Consultorio.Agenda.Features.Agendar;
+            """).Select(v => v.Referencia);
 
-        Assert.Equal(new Violacion("Facturacion.Domain", "Facturacion.Domain", Verificador.ProyectoDesconocido), violacion);
+        Assert.Equal(["DraSelina.Consultorio.Pacientes.Domain", "DraSelina.Consultorio.Pacientes.Features"], referencias);
     }
 
     [Fact]
-    public void Features_no_puede_referenciar_el_Domain_ni_las_Features_de_otro_modulo()
+    public void Un_nombre_escrito_completo_cuenta_igual_que_un_using()
     {
-        var proyecto = Proyecto.Con("Agenda.Features", "Pacientes.Domain", "Pacientes.Features");
+        var violacion = Assert.Single(Verificar("Modules/Agenda/Domain/Cita.cs", """
+            namespace DraSelina.Consultorio.Agenda.Domain;
 
-        var referencias = Verificador.Verificar([proyecto]).Select(v => v.Referencia);
+            public sealed class Cita
+            {
+                private DraSelina.Consultorio.Agenda.Infrastructure.AgendaDbContext? _db;
+            }
+            """));
 
-        Assert.Equal(["Pacientes.Domain", "Pacientes.Features"], referencias);
+        Assert.Equal("DraSelina.Consultorio.Agenda.Infrastructure.AgendaDbContext", violacion.Referencia);
     }
 
     [Fact]
-    public void El_Kernel_no_referencia_nada()
+    public void Ninguna_capa_puede_usar_el_host()
     {
-        var proyecto = Proyecto.Con("Kernel", "BuildingBlocks.Contracts");
+        var violacion = Assert.Single(Verificar("Modules/Agenda/Infrastructure/AgendaDbContext.cs", """
+            using DraSelina.Consultorio.Web;
 
-        var violacion = Assert.Single(Verificador.Verificar([proyecto]));
+            namespace DraSelina.Consultorio.Agenda.Infrastructure;
+            """));
 
-        Assert.Equal("BuildingBlocks.Contracts", violacion.Referencia);
+        Assert.Equal(Verificador.CapaNoPermitida, violacion.Regla);
     }
 
     [Fact]
-    public void Un_Contracts_con_framework_ensamblado_u_otro_SDK_es_violacion()
+    public void El_Kernel_no_usa_nada_salvo_la_biblioteca_base()
     {
-        var proyecto = Proyecto.Con("Agenda.Contracts", "Kernel", "BuildingBlocks.Contracts") with
-        {
-            Sdks = ["Microsoft.NET.Sdk.Web"],
-            Frameworks = ["Microsoft.AspNetCore.App"],
-            Ensamblados = ["Algo.dll"],
-        };
+        Assert.Empty(Verificar("Kernel/Resultado.cs", """
+            using System.Collections.ObjectModel;
 
-        var reglas = Verificador.Verificar([proyecto]).Select(v => (v.Referencia, v.Regla));
+            namespace DraSelina.Consultorio.Kernel;
+            """));
 
-        Assert.Equal(
-            [
-                ("Microsoft.AspNetCore.App", Verificador.FrameworkProhibido),
-                ("Algo.dll", Verificador.EnsambladoProhibido),
-                ("Microsoft.NET.Sdk.Web", Verificador.SdkProhibido),
-            ],
-            reglas);
+        var violacion = Assert.Single(Verificar("Kernel/Resultado.cs", """
+            using DraSelina.Consultorio.BuildingBlocks.Contracts;
+
+            namespace DraSelina.Consultorio.Kernel;
+            """));
+
+        Assert.Equal(Verificador.CapaNoPermitida, violacion.Regla);
     }
 
     [Fact]
-    public void Fuera_de_Kernel_contratos_y_dominio_los_paquetes_no_son_asunto_de_esta_regla()
+    public void Un_Contracts_que_usa_ASP_NET_es_violacion()
     {
-        var proyecto = Proyecto.Con("Agenda.Infrastructure", "Agenda.Features") with
-        {
-            Paquetes = ["Microsoft.EntityFrameworkCore"],
-        };
+        var violacion = Assert.Single(Verificar("Modules/Agenda/Contracts/ConfirmarReserva.cs", """
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.AspNetCore.Mvc;
 
-        Assert.Empty(Verificador.Verificar([proyecto]));
+            namespace DraSelina.Consultorio.Agenda.Contracts;
+            """));
+
+        Assert.Equal(("Microsoft.AspNetCore.Mvc", Verificador.PaqueteProhibido), (violacion.Referencia, violacion.Regla));
+    }
+
+    [Fact]
+    public void El_namespace_debe_corresponder_a_la_carpeta()
+    {
+        var violacion = Assert.Single(Verificar("Modules/Agenda/Domain/Cita.cs", """
+            namespace DraSelina.Consultorio.Agenda.Features;
+            """));
+
+        Assert.Equal(("DraSelina.Consultorio.Agenda.Features", Verificador.NamespaceFueraDeSuCarpeta), (violacion.Referencia, violacion.Regla));
+    }
+
+    [Fact]
+    public void Una_carpeta_de_modulo_que_la_arquitectura_no_nombra_es_violacion()
+    {
+        var violacion = Assert.Single(Verificar("Modules/Facturacion/Domain/Factura.cs", """
+            namespace DraSelina.Consultorio.Facturacion.Domain;
+            """));
+
+        Assert.Equal(Verificador.CapaDesconocida, violacion.Regla);
+    }
+
+    [Fact]
+    public void El_host_compone_y_puede_usar_todo()
+    {
+        Assert.Empty(Verificar("Program.cs", """
+            using Wolverine;
+            using DraSelina.Consultorio.Agenda.Infrastructure;
+            using DraSelina.Consultorio.UI;
+            """));
+    }
+
+    [Fact]
+    public void Un_global_using_es_violacion_en_cualquier_archivo()
+    {
+        var violacion = Assert.Single(Verificar("GlobalUsings.cs", """
+            global using Microsoft.EntityFrameworkCore;
+            """));
+
+        Assert.Equal(Verificador.GlobalUsingProhibido, violacion.Regla);
+    }
+
+    [Fact]
+    public void Un_using_de_recurso_o_un_comentario_no_cuentan_como_dependencia()
+    {
+        Assert.Empty(Verificar("Modules/Agenda/Domain/Cita.cs", """
+            namespace DraSelina.Consultorio.Agenda.Domain;
+
+            // No conoce a DraSelina.Consultorio.Agenda.Infrastructure ni a Microsoft.EntityFrameworkCore.
+            public sealed class Cita
+            {
+                public void Leer()
+                {
+                    using var flujo = new System.IO.MemoryStream();
+                }
+            }
+            """));
+    }
+
+    [Fact]
+    public void Un_proyecto_que_la_arquitectura_no_nombra_es_violacion()
+    {
+        var proyecto = Lector.LeerProyecto("Modules/Agenda/Domain/DraSelina.Consultorio.Agenda.Domain.csproj", """<Project Sdk="Microsoft.NET.Sdk" />""");
+
+        var violacion = Assert.Single(Verificador.VerificarProyectos([proyecto]));
+
+        Assert.Equal(("Agenda.Domain", Verificador.ProyectoDesconocido), (violacion.Referencia, violacion.Regla));
+    }
+
+    [Fact]
+    public void Web_no_puede_referenciar_al_MigrationService_y_el_MigrationService_si_a_Web()
+    {
+        static Proyecto Con(string nombre, string referencia) => Lector.LeerProyecto(
+            $"DraSelina.Consultorio.{nombre}/DraSelina.Consultorio.{nombre}.csproj",
+            $"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <ProjectReference Include="..\DraSelina.Consultorio.{referencia}\DraSelina.Consultorio.{referencia}.csproj" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        Assert.Empty(Verificador.VerificarProyectos([Con("MigrationService", "Web")]));
+
+        var violacion = Assert.Single(Verificador.VerificarProyectos([Con("Web", "MigrationService")]));
+        Assert.Equal(new Violacion("Web", "MigrationService", Verificador.ProyectoNoPermitido), violacion);
     }
 }

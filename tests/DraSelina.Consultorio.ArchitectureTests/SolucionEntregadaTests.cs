@@ -1,44 +1,39 @@
 namespace DraSelina.Consultorio.ArchitectureTests;
 
-/// <summary>La regla contra los proyectos reales de <c>src/</c>.</summary>
+/// <summary>Las reglas contra lo que hay de verdad en <c>src/</c>.</summary>
 public class SolucionEntregadaTests
 {
-    private static readonly string Src = LectorDeProyectos.CarpetaSrc();
-
-    [Fact]
-    public void Los_proyectos_reales_de_src_no_tienen_violaciones()
-    {
-        var proyectos = LectorDeProyectos.Leer(Src);
-
-        Assert.NotEmpty(proyectos);
-        Assert.Empty(Verificador.Verificar(proyectos));
-    }
+    private static readonly string Src = Lector.CarpetaSrc();
+    private static readonly string Web = Lector.CarpetaWeb(Src);
 
     [Fact]
     public void Los_proyectos_de_src_coinciden_uno_a_uno_con_el_Structural_Seed()
     {
-        var esperados = TablaDeReferencias.Filas.Values
-            .Select(fila => $"{fila.Carpeta}/{TablaDeReferencias.Raiz}{fila.Proyecto}.csproj")
-            .Order(StringComparer.Ordinal);
+        var esperados = Reglas.Proyectos.Values.Select(fila => fila.Archivo).Order(StringComparer.Ordinal);
 
-        var reales = LectorDeProyectos.Archivos(Src)
-            .Select(ruta => Path.GetRelativePath(Src, ruta).Replace('\\', '/'))
-            .Order(StringComparer.Ordinal);
-
-        Assert.Equal(esperados, reales);
+        Assert.Equal(esperados, Lector.Proyectos(Src).Select(p => p.Archivo));
     }
 
     [Fact]
-    public void Ningun_archivo_compartido_de_MSBuild_declara_referencias()
+    public void Las_referencias_entre_proyectos_no_tienen_violaciones()
     {
-        var archivos = LectorDeProyectos.ArchivosCompartidos(Src);
-        var raiz = Path.GetDirectoryName(Src)!;
+        Assert.Empty(Verificador.VerificarProyectos(Lector.Proyectos(Src)));
+    }
 
-        var declaradas = archivos.SelectMany(archivo => LectorDeProyectos
-            .ReferenciasCompartidas(File.ReadAllText(archivo))
-            .Select(referencia => $"{Path.GetRelativePath(raiz, archivo).Replace('\\', '/')} -> {referencia}"));
+    [Fact]
+    public void Cada_capa_de_la_arquitectura_tiene_su_carpeta_en_Web()
+    {
+        var carpetas = Lector.Carpetas(Web);
 
-        Assert.Contains(archivos, archivo => Path.GetFileName(archivo) == "Directory.Build.props");
-        Assert.Empty(declaradas);
+        Assert.All(Reglas.Capas.Values, capa => Assert.Contains(capa.Carpeta, carpetas));
+    }
+
+    [Fact]
+    public void El_codigo_de_Web_no_tiene_violaciones()
+    {
+        var fuentes = Lector.Fuentes(Web);
+
+        Assert.NotEmpty(fuentes);
+        Assert.Empty(Verificador.VerificarFuentes(fuentes));
     }
 }

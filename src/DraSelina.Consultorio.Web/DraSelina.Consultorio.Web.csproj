@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Todo el código de la aplicación: Kernel, contratos base, módulos (por carpeta y namespace), interfaz y host.
+       Cascarón: Wolverine, Blazor e identidad se cablean en las entradas 3 a 7.
+       Las dependencias entre namespaces las fija la arquitectura (Invariants & Rules) y las verifican las pruebas. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\DraSelina.Consultorio.ServiceDefaults\DraSelina.Consultorio.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>
