@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Contratos: sin referencias a ASP.NET ni a paquetes (AD-12). DataAnnotations viene en la BCL. -->
+  <PropertyGroup>
+    <TargetFramework>$(DestinoArranque)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

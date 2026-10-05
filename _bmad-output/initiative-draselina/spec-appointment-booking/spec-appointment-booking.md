@@ -107,7 +107,7 @@ Cada capacidad cita sus requisitos. Las consecuencias verificables de cada `FR-n
 
 - Las reglas `E-n`, `T-n`, `INV-n`, `RN-n` (dominio, Parte I) y `AD-1` a `AD-28` (arquitectura) son invariantes del diseño. Una historia las cita; no las reescribe ni las contradice. Solo Gerardo las cambia, primero en el documento.
 - Lo marcado `[ASSUMPTION]` en cualquier documento se construye así, pero no es invariante.
-- La primera historia es una prueba de arranque: .NET 11 con Wolverine 6 y el AppHost de Aspire. Si falla, se retrocede a .NET 10 y se pierde solo la validación en navegador.
+- La prueba de arranque (primera historia) confirmó .NET 11 con Wolverine 6 y el AppHost de Aspire el 2026-10-05; no se retrocede a .NET 10.
 - Stack fijo: .NET 11, Blazor Web App, PostgreSQL, Wolverine 6, Aspire 13, DataAnnotations, OpenTelemetry (versiones en la arquitectura, sección Stack).
 - Quedan fuera: MediatR, MassTransit, Hangfire, FluentAssertions, FluentValidation, Serilog y Blazor WebAssembly standalone.
 - Monolito modular: Agenda, Pacientes, Notificaciones y Contenido solo se hablan por `I<Módulo>Api` o por eventos de integración; las referencias entre proyectos son las de la tabla de la arquitectura y se verifican con pruebas de arquitectura (AD-1 a AD-3).
@@ -152,11 +152,14 @@ Cada capacidad cita sus requisitos. Las consecuencias verificables de cada `FR-n
 
 Ninguna impide dividir el trabajo. Responsable: Gerardo.
 
+**Resueltas por la primera historia (2026-10-05)**
+
+- Wolverine 6 y el AppHost de Aspire arrancan sobre .NET 11, agregando `WolverineFx.RuntimeCompilation`.
+- El middleware de DataAnnotations de Wolverine lanza excepción; el `Resultado` inválido lo entrega un middleware propio.
+- Un `EditForm` se liga directamente a los comandos de `Contracts`, que son clases con propiedades `set`.
+
 **Se resuelven en la primera historia**
 
-- ¿Wolverine 6 y el AppHost de Aspire arrancan sobre .NET 11?
-- ¿El middleware de DataAnnotations de Wolverine entrega `Resultado` inválido en lugar de lanzar excepción?
-- ¿Un `EditForm` puede ligarse directamente a los comandos de `Contracts`?
 - ¿Hace falta `btree_gist` mientras la restricción use solo un rango?
 
 **Antes de construir la superficie afectada**

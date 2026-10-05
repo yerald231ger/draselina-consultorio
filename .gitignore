@@ -26,3 +26,6 @@ secrets.json
 
 # BMad: flujos renderizados (temporales)
 _bmad/render/
+
+# SDK de .NET instalado local a un prototipo (spikes/*/.dotnet)
+.dotnet/

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Arranque.AppHost/Arranque.AppHost.csproj" />
+  <Project Path="Arranque.Contracts/Arranque.Contracts.csproj" />
+  <Project Path="Arranque.Web/Arranque.Web.csproj" />
+</Solution>

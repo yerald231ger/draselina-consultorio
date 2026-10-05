@@ -1,0 +1,29 @@
+@page "/"
+@inject IMessageBus Bus
+
+<h1>Forma A: clase con set</h1>
+
+<EditForm EditContext="contexto" FormName="registrar-nota" OnSubmit="Enviar">
+    <label>Texto <InputText @bind-Value="Comando!.Texto" /></label>
+    <ValidationMessage For="() => Comando!.Texto" />
+    <button type="submit">Guardar</button>
+</EditForm>
+
+<Estado Envio="envio" />
+
+@code {
+    [SupplyParameterFromForm] private RegistrarNota? Comando { get; set; }
+
+    private readonly Envio envio = new();
+    private EditContext contexto = default!;
+    private ValidationMessageStore mensajes = default!;
+
+    protected override void OnInitialized()
+    {
+        Comando ??= new RegistrarNota();
+        contexto = new EditContext(Comando);
+        mensajes = new ValidationMessageStore(contexto);
+    }
+
+    private Task Enviar() => envio.Enviar(Bus, Comando!, contexto, mensajes);
+}

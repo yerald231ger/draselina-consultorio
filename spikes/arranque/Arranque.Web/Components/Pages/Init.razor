@@ -1,0 +1,30 @@
+@page "/init"
+@inject IMessageBus Bus
+
+<h1>Forma B: record con init</h1>
+
+<EditForm EditContext="contexto" FormName="registrar-nota" OnSubmit="Enviar">
+    @* @bind-Value no compila contra una propiedad init (CS8852); se usa Value + ValueExpression. *@
+    <label>Texto <InputText Value="@Comando!.Texto" ValueExpression="() => Comando!.Texto" /></label>
+    <ValidationMessage For="() => Comando!.Texto" />
+    <button type="submit">Guardar</button>
+</EditForm>
+
+<Estado Envio="envio" />
+
+@code {
+    [SupplyParameterFromForm] private RegistrarNotaInit? Comando { get; set; }
+
+    private readonly Envio envio = new();
+    private EditContext contexto = default!;
+    private ValidationMessageStore mensajes = default!;
+
+    protected override void OnInitialized()
+    {
+        Comando ??= new RegistrarNotaInit();
+        contexto = new EditContext(Comando);
+        mensajes = new ValidationMessageStore(contexto);
+    }
+
+    private Task Enviar() => envio.Enviar(Bus, Comando!, contexto, mensajes);
+}

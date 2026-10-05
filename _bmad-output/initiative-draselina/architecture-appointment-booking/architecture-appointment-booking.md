@@ -168,7 +168,7 @@ La tabla es la regla; lo que no aparece está prohibido y lo verifican las prueb
 
 - **Binds:** all
 - **Prevents:** reglas de forma duplicadas en dos librerías.
-- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos proyectos. Los atributos estándar que el navegador soporta se validan también ahí en las páginas estáticas; todo lo demás, incluidos los atributos propios, se valida solo en el servidor. El backend valida siempre, antes del handler, con el middleware de DataAnnotations de Wolverine, y el fallo se entrega como `Resultado` inválido con errores por campo. Las reglas de negocio viven en el agregado, nunca en atributos.
+- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos proyectos. Los atributos estándar que el navegador soporta se validan también ahí en las páginas estáticas; todo lo demás, incluidos los atributos propios, se valida solo en el servidor. El backend valida siempre, antes del handler, con un middleware propio de Wolverine que aplica DataAnnotations a todo comando, y el fallo se entrega como `Resultado` inválido con errores por campo. Las reglas de negocio viven en el agregado, nunca en atributos.
 
 ### AD-13 — El tope semanal por teléfono lo decide Agenda
 
@@ -279,6 +279,7 @@ La tabla es la regla; lo que no aparece está prohibido y lo verifican las prueb
 | Ids y datos | Guid v7 tipado. Teléfono en E.164. Instantes en UTC (`timestamptz`). Tramos como hora local sin zona. Rangos semiabiertos. |
 | Resultados | Todo comando y consulta devuelve `Resultado`. Los fallos esperados llevan un código de un conjunto cerrado por módulo, definido en `Contracts`; nunca se lanzan como excepción ni se comunican con texto. |
 | Textos | El dominio devuelve códigos. Los textos que ve el paciente viven en la interfaz y en las plantillas de correo, con el tono de `EXPERIENCE.md`. |
+| Comandos | Clase con propiedades `set`, nunca `record`. Los formularios se ligan directo al comando; no hay modelos de formulario aparte. Eventos de integración y DTOs pueden ser `record`. |
 | Errores de validación | Por campo, con el nombre de la propiedad del comando. |
 | Transacciones | Un comando, una transacción, un módulo: cambio, bitácora y outbox juntos. |
 | Lecturas | `AsNoTracking()` y proyección; nunca `SaveChanges` en una consulta. |
@@ -293,7 +294,7 @@ Versiones verificadas en la web el 2026-10-04.
 | --- | --- |
 | .NET / ASP.NET Core / Blazor Web App | 11.0 (candidata vigente al crear la solución; definitiva en noviembre de 2026) |
 | Aspire (AppHost, ServiceDefaults) | 13.6.0 |
-| WolverineFx, `.EntityFrameworkCore`, `.Postgresql`, `.DataAnnotationsValidation` | 6.45.x |
+| WolverineFx, `.EntityFrameworkCore`, `.Postgresql`, `.RuntimeCompilation` | 6.45.x |
 | EF Core | 10.0.12, hasta que salga la 11.0 definitiva |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3, hasta que salga la 11.0 definitiva |
 | PostgreSQL con `btree_gist` | 18.x `[ASSUMPTION: disponible en Azure Flexible Server; si no, 17.x]` |
@@ -390,9 +391,9 @@ tests/
 
 ## Open Questions
 
-1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Decidido seguir con .NET 11. Wolverine 6 declara soporte para .NET 9 y 10; no se pudo confirmar sobre .NET 11, ni que el AppHost acepte ese destino. La primera historia es una prueba de arranque; si falla, se retrocede a .NET 10 y se pierde solo la validación en navegador de AD-12.
-2. **Fallo de validación como resultado.** Confirmar que el middleware de DataAnnotations de Wolverine puede entregar `Resultado` inválido en lugar de lanzar excepción; si no, se escribe un middleware propio.
-3. **Formulario ligado al comando.** Confirmar que un `EditForm` puede ligarse directamente a los comandos de `Contracts`.
+1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Resuelta el 2026-10-05: arrancan juntos sobre .NET 11.0.0-rc.1 y se sigue con .NET 11. Wolverine 6 necesita el paquete `WolverineFx.RuntimeCompilation` para arrancar en modo dinámico. Registro: `spikes/arranque/REGISTRO.md`.
+2. **Fallo de validación como resultado.** Resuelta el 2026-10-05: el middleware de DataAnnotations de Wolverine, con su configuración por defecto, lanza `ValidationException`; se usa un middleware propio (AD-12). Registro: `spikes/arranque/REGISTRO.md`.
+3. **Formulario ligado al comando.** Resuelta el 2026-10-05: un `EditForm` se liga directo al comando con `[SupplyParameterFromForm]`; los comandos son clases con propiedades `set` (Consistency Conventions). Registro: `spikes/arranque/REGISTRO.md`.
 4. **Hora de la Agenda del día** cuando hay citas por la mañana.
 5. **Motivo de consulta en la Agenda del día.** Es un dato de salud que viaja por correo; ¿se envía, o solo hora y Paciente?
 6. **PostgreSQL 18 en Azure Flexible Server.** Confirmar la versión disponible al aprovisionar.

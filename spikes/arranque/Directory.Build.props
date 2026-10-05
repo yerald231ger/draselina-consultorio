@@ -1,0 +1,7 @@
+<Project>
+  <!-- Un solo lugar para el destino. La corrida de retroceso a net10.0 no hizo falta y no se probó (ver REGISTRO.md). -->
+  <PropertyGroup>
+    <DestinoArranque Condition="'$(DestinoArranque)' == ''">net11.0</DestinoArranque>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
