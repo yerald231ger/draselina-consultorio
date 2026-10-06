@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Testcontainers.PostgreSql;
+using Wolverine;
 
 // Un solo arnés para toda la corrida: xUnit lo crea antes de la primera prueba que lo pide y lo apaga al final.
 [assembly: AssemblyFixture(typeof(Arnes))]
@@ -94,8 +96,19 @@ public sealed class Arnes : IAsyncLifetime
     // Una sola fábrica por llamada, que desecha quien la pidió.
     private sealed class Web(string cadenaDeConexion) : WebApplicationFactory<Program>
     {
-        protected override void ConfigureWebHost(IWebHostBuilder builder) =>
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
             builder.UseSetting($"ConnectionStrings:{BaseDeDatos.Nombre}", cadenaDeConexion);
+
+            // Los tipos de prueba entran a la web en memoria como entra un módulo: su contexto, su puerto y su
+            // renglón en la política de transacción (AddPruebas), y sus handlers descubiertos por Wolverine. La
+            // política no se toca aquí: es la que fijó el host.
+            builder.ConfigureServices(servicios =>
+            {
+                servicios.AddPruebas(cadenaDeConexion);
+                servicios.ConfigureWolverine(opciones => opciones.Discovery.IncludeAssembly(typeof(Arnes).Assembly));
+            });
+        }
     }
 
     // Después de migrar: el esquema de los tipos de prueba y sus tablas. No pasa por migraciones ni toca

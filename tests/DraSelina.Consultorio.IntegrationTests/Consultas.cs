@@ -27,6 +27,24 @@ internal static class Consultas
         return (long)(await comando.ExecuteScalarAsync(cancelacion))!;
     }
 
+    /// <summary>
+    /// Cuántos mensajes guardados en el almacenamiento de Wolverine llevan ese texto en su cuerpo, entre los que
+    /// entran y los que salen. Para encontrar el de una prueba, el texto es un valor que solo ella conoce.
+    /// </summary>
+    public static async Task<long> MensajesGuardadosAsync(string cadena, string textoDelCuerpo, CancellationToken cancelacion)
+    {
+        const string sql = """
+            select (select count(*) from wolverine.wolverine_incoming_envelopes where position(@valor in encode(body, 'escape')) > 0)
+                 + (select count(*) from wolverine.wolverine_outgoing_envelopes where position(@valor in encode(body, 'escape')) > 0)
+            """;
+
+        await using var conexion = new NpgsqlConnection(cadena);
+        await conexion.OpenAsync(cancelacion);
+        await using var comando = new NpgsqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("valor", textoDelCuerpo);
+        return (long)(await comando.ExecuteScalarAsync(cancelacion))!;
+    }
+
     private static async Task<List<string>> ListaAsync(string cadena, string sql, string valor, CancellationToken cancelacion)
     {
         await using var conexion = new NpgsqlConnection(cadena);

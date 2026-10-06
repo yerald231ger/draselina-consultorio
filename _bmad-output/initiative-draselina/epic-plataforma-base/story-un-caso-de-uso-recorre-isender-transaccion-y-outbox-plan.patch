@@ -1,0 +1,766 @@
+diff --git a/Directory.Packages.props b/Directory.Packages.props
+index 62aaa83..3021990 100644
+--- a/Directory.Packages.props
++++ b/Directory.Packages.props
+@@ -17,7 +17,10 @@
+     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+     <!-- WolverineFx 6.45.x. -->
+     <PackageVersion Include="WolverineFx" Version="6.45.0" />
++    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.45.0" />
+     <PackageVersion Include="WolverineFx.Postgresql" Version="6.45.0" />
++    <!-- Sin este paquete Wolverine 6 no arranca en modo dinámico: es el compilador de sus handlers. -->
++    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.45.0" />
+     <PackageVersion Include="xunit.v3" Version="4.0.1" />
+     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
+     <!-- Solo en pruebas. La misma versión que ASP.NET Core: la del runtime de .dotnet/. -->
+diff --git a/README.md b/README.md
+index 6b54659..259fe56 100644
+--- a/README.md
++++ b/README.md
+@@ -70,16 +70,124 @@ Lo que da el arnés:
+ | --- | --- |
+ | `CadenaDeConexion` | La base migrada: esquemas `agenda`, `pacientes`, `notificaciones`, `wolverine` y `pruebas`. |
+ | `ArrancarWeb()` / `ArrancarWeb(cadena)` | La web con su `Program` real, en memoria, contra la base migrada o contra la que se indique. |
++| `ArrancarWebSinMensajeria(cadena)` | La web sin almacenamiento de mensajes ni colas durables. Solo para una base sin el esquema `wolverine`, donde la web real se niega a arrancar. |
+ | `CrearBaseVaciaAsync()` | Una base nueva sin migrar en el mismo servidor; devuelve su cadena de conexión. |
+ | `CrearContextoDePruebas()` | Un `PruebasDbContext` sobre el esquema `pruebas`. |
+ 
+-**Dónde poner un tipo de prueba.** Un tipo que solo existe para probar (una entidad, y más adelante un comando o
+-un handler de prueba) vive en `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/`. Si tiene tabla, se agrega
++**Dónde poner un tipo de prueba.** Un tipo que solo existe para probar (una entidad, un comando, una consulta, un
++evento o un handler de prueba) vive en `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/`. Si tiene tabla, se agrega
+ su `DbSet` a `Pruebas/PruebasDbContext.cs`: el arnés crea la tabla en el esquema `pruebas` al arrancar la corrida,
+ sin migraciones. Ningún esquema de producción recibe tablas de prueba. `Apunte` es el ejemplo mínimo.
+ 
+ Para migrar otra base por el mismo camino: `await MigrationService.EjecutarAsync(cadena)`.
+ 
++## Casos de uso
++
++Todo caso de uso es un comando o una consulta, con exactamente un handler, y devuelve `Resultado` (AD-10). La
++interfaz lo despacha por `ISender`, que el host implementa sobre Wolverine (`SenderDeWolverine.cs`). Nadie más
++usa `ISender` (AD-3) y la interfaz nunca usa `IMessageBus`.
++
++### Cómo se forma
++
++| Pieza | Forma | Dónde vive |
++| --- | --- | --- |
++| Comando | Clase con propiedades `set` que implementa `ICommand<T>`; nunca `record`. | `Modules/<Módulo>/Contracts/` |
++| Consulta | Clase con propiedades `set` que implementa `IQuery<T>`. | `Modules/<Módulo>/Contracts/` |
++| Códigos de fallo | Constantes `string` en una clase estática, junto al comando: el conjunto cerrado del módulo. | `Modules/<Módulo>/Contracts/` |
++| Evento | Puede ser `record`. | `Modules/<Módulo>/Contracts/` |
++| Handler | Clase pública cuyo nombre termina en `Handler`, con un método `Handle` que recibe el comando o la consulta y devuelve `Resultado<T>` (o `Task<Resultado<T>>`). Lo demás que necesita lo recibe como parámetro de `Handle`. Uno por comando o consulta. | `Modules/<Módulo>/Features/` |
++
++`T` es el valor que el `Resultado` trae en el éxito. Wolverine encuentra el handler por su nombre y su método: no
++se registra en ningún lado.
++
++```csharp
++public sealed class Anotar : ICommand<Guid>
++{
++    public Guid Id { get; set; }
++    public string Texto { get; set; } = "";
++}
++
++public static class CodigosDeAnotacion
++{
++    public const string TextoRepetido = "anotacion.texto_repetido";
++}
++
++public sealed record AnotacionHecha(Guid AnotacionId);
++
++public static class AnotarHandler
++{
++    public static async Task<Resultado<Guid>> Handle(Anotar comando, PruebasDbContext db, IMessageBus bus, CancellationToken cancelacion)
++    {
++        if (await db.Anotaciones.AnyAsync(a => a.Texto == comando.Texto, cancelacion))
++        {
++            return Resultado.Fallo(CodigosDeAnotacion.TextoRepetido).Como<Guid>();   // fallo esperado: código, no excepción
++        }
++
++        db.Anotaciones.Add(new Anotacion { Id = comando.Id, Texto = comando.Texto });
++        await db.SaveChangesAsync(cancelacion);
++        await bus.PublishAsync(new AnotacionHecha(comando.Id));                      // sale después de confirmar
++        return comando.Id;                                                           // éxito: el valor se convierte solo
++    }
++}
++```
++
++Es el comando de prueba de `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/Anotar.cs`, recortado.
++
++- **Fallo esperado:** `Resultado.Fallo(codigo).Como<T>()`, con un código del conjunto cerrado. Nunca una
++  excepción ni un texto.
++- **Fallo inesperado:** una excepción. `ISender` no la convierte en `Resultado`: sale tal cual a quien despachó.
++- **Sin handler:** `ISender` lanza una excepción que nombra el tipo del comando.
++
++### Un comando, una transacción
++
++La política la fija el host una sola vez, en `Program.cs`, para todo handler que recibe un `DbContext`. Ni el
++comando ni el handler la piden, y el handler no abre ni confirma transacciones.
++
++- Lo que el handler cambia por su `DbContext` y los mensajes que publica (`IMessageBus.PublishAsync`,
++  `ScheduleAsync`) se confirman juntos, o ninguno. El mensaje se guarda en el esquema `wolverine` dentro de la
++  misma transacción que el cambio (outbox).
++- Si el handler lanza, no queda ni el cambio ni el mensaje, aunque ya hubiera llamado a `SaveChangesAsync`.
++- El mensaje se entrega a su handler después de confirmar: el handler de un evento ya ve el cambio. Un mensaje
++  puede entregarse más de una vez; su handler debe tolerarlo.
++- Los mensajes van a colas locales durables: el monolito no tiene otro transporte.
++- El handler de un evento es otro mensaje, con su propia transacción bajo la misma política.
++
++Dos condiciones que la política necesita:
++
++- El `DbContext` del módulo se registra con `optionsLifetime: ServiceLifetime.Singleton`, como en los
++  `Registro.cs` de `Modules/*/Infrastructure/`. Sin eso Wolverine rechaza el handler al primer mensaje
++  (`InvalidServiceLocationException`).
++- El esquema `wolverine` ya existe: lo crea el `MigrationService`. Contra una base sin migrar la web no arranca
++  y lo dice (`The Wolverine message storage ... is missing`); no crea nada (AD-25).
++
++Pendiente, sin decidir: qué pasa cuando un handler cambia datos y después devuelve un `Resultado` no exitoso.
++Hasta que se decida, el fallo esperado se devuelve antes de cambiar nada.
++
++### Escribir un comando de prueba
++
++En `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/`, nunca en `src/`:
++
++1. El comando (o la consulta), sus códigos, su evento y su handler, todos públicos. `Anotar.cs` y
++   `LeerAnotacion.cs` son el modelo.
++2. Si guarda algo, su entidad y su `DbSet` en `PruebasDbContext`: la tabla queda en el esquema `pruebas`.
++3. No hay que registrar nada: el arnés hace que la web en memoria descubra los handlers del ensamblado de pruebas
++   y registra `PruebasDbContext` igual que un contexto de módulo, bajo la política del host.
++
++La prueba despacha por `ISender`, resuelto del contenedor de la web en memoria (`CasoDeUsoTests.cs`):
++
++```csharp
++await using var web = arnes.ArrancarWeb();
++await using var ambito = web.Services.CreateAsyncScope();
++var sender = ambito.ServiceProvider.GetRequiredService<ISender>();
++
++var resultado = await sender.SendAsync(new Anotar { Id = Guid.CreateVersion7(), Texto = "..." }, cancelacion);
++```
++
++Para comprobar que un mensaje quedó guardado sin depender de la velocidad de quien lo procesa, se programa para
++más tarde (`ScheduleAsync`): se queda como fila en el esquema `wolverine` y `Consultas.MensajesGuardadosAsync` lo
++encuentra por un valor de su cuerpo. Para comprobar que llega, se publica de inmediato y se espera, con límite de
++tiempo, el rastro que deja su handler.
++
+ ## Arrancar
+ 
+ Hace falta Docker en ejecución. Un solo comando levanta todo:
+@@ -95,7 +203,7 @@ El AppHost de Aspire arranca, en este orden:
+ 2. `migraciones`: el `MigrationService`. Aplica las migraciones de Agenda, Pacientes y Notificaciones, crea el
+    almacenamiento de Wolverine en el esquema `wolverine` y termina.
+ 3. `web`: la aplicación, en <http://localhost:5080>. Arranca solo si `migraciones` terminó con código 0. La web
+-   nunca crea ni migra nada (AD-25).
++   nunca crea ni migra nada (AD-25); arranca Wolverine sobre el esquema `wolverine` que dejó `migraciones`.
+ 
+ El panel de Aspire queda en <http://localhost:15080>; la dirección con el token de entrada sale en la consola
+ (`Login to the dashboard at ...`). Ahí se ven los tres recursos con su estado, sus registros y las trazas: pide
+diff --git a/src/DraSelina.Consultorio.Web/AlmacenamientoDeWolverine.cs b/src/DraSelina.Consultorio.Web/AlmacenamientoDeWolverine.cs
+index c9452c6..c063848 100644
+--- a/src/DraSelina.Consultorio.Web/AlmacenamientoDeWolverine.cs
++++ b/src/DraSelina.Consultorio.Web/AlmacenamientoDeWolverine.cs
+@@ -8,7 +8,8 @@ namespace DraSelina.Consultorio.Web;
+ 
+ /// <summary>
+ /// El almacenamiento de mensajes de Wolverine, definido una sola vez: misma base y mismo esquema para
+-/// el MigrationService, que lo crea, y para la web, que lo usará sin crearlo (AD-2, AD-25).
++/// el MigrationService, que lo crea, y para la web, que lo usa sin crearlo (AD-2, AD-25). Si no existe, la web
++/// no arranca.
+ /// </summary>
+ public static class AlmacenamientoDeWolverine
+ {
+diff --git a/src/DraSelina.Consultorio.Web/DraSelina.Consultorio.Web.csproj b/src/DraSelina.Consultorio.Web/DraSelina.Consultorio.Web.csproj
+index f46e9eb..5ed0b80 100644
+--- a/src/DraSelina.Consultorio.Web/DraSelina.Consultorio.Web.csproj
++++ b/src/DraSelina.Consultorio.Web/DraSelina.Consultorio.Web.csproj
+@@ -17,7 +17,9 @@
+     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+     <PackageReference Include="WolverineFx" />
++    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+     <PackageReference Include="WolverineFx.Postgresql" />
++    <PackageReference Include="WolverineFx.RuntimeCompilation" />
+   </ItemGroup>
+ 
+   <ItemGroup>
+diff --git a/src/DraSelina.Consultorio.Web/Modules/Agenda/Infrastructure/Registro.cs b/src/DraSelina.Consultorio.Web/Modules/Agenda/Infrastructure/Registro.cs
+index 29312d7..bd99a6a 100644
+--- a/src/DraSelina.Consultorio.Web/Modules/Agenda/Infrastructure/Registro.cs
++++ b/src/DraSelina.Consultorio.Web/Modules/Agenda/Infrastructure/Registro.cs
+@@ -7,5 +7,10 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure;
+ public static class Registro
+ {
+     public static IServiceCollection AddAgenda(this IServiceCollection servicios, string cadenaDeConexion) =>
+-        servicios.AddDbContext<AgendaDbContext>(opciones => AgendaDbContext.Configurar(opciones, cadenaDeConexion));
++        // Las opciones son las mismas para toda la aplicación: se registran una sola vez (singleton). Así el host
++        // puede dar el contexto a un handler sin pedirlo al contenedor en cada mensaje. El contexto sigue siendo
++        // uno por ámbito.
++        servicios.AddDbContext<AgendaDbContext>(
++            opciones => AgendaDbContext.Configurar(opciones, cadenaDeConexion),
++            optionsLifetime: ServiceLifetime.Singleton);
+ }
+diff --git a/src/DraSelina.Consultorio.Web/Modules/Notificaciones/Infrastructure/Registro.cs b/src/DraSelina.Consultorio.Web/Modules/Notificaciones/Infrastructure/Registro.cs
+index acf7d58..5cac96c 100644
+--- a/src/DraSelina.Consultorio.Web/Modules/Notificaciones/Infrastructure/Registro.cs
++++ b/src/DraSelina.Consultorio.Web/Modules/Notificaciones/Infrastructure/Registro.cs
+@@ -7,5 +7,10 @@ namespace DraSelina.Consultorio.Notificaciones.Infrastructure;
+ public static class Registro
+ {
+     public static IServiceCollection AddNotificaciones(this IServiceCollection servicios, string cadenaDeConexion) =>
+-        servicios.AddDbContext<NotificacionesDbContext>(opciones => NotificacionesDbContext.Configurar(opciones, cadenaDeConexion));
++        // Las opciones son las mismas para toda la aplicación: se registran una sola vez (singleton). Así el host
++        // puede dar el contexto a un handler sin pedirlo al contenedor en cada mensaje. El contexto sigue siendo
++        // uno por ámbito.
++        servicios.AddDbContext<NotificacionesDbContext>(
++            opciones => NotificacionesDbContext.Configurar(opciones, cadenaDeConexion),
++            optionsLifetime: ServiceLifetime.Singleton);
+ }
+diff --git a/src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/Registro.cs b/src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/Registro.cs
+index 1b5830c..0e32c7a 100644
+--- a/src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/Registro.cs
++++ b/src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/Registro.cs
+@@ -7,5 +7,10 @@ namespace DraSelina.Consultorio.Pacientes.Infrastructure;
+ public static class Registro
+ {
+     public static IServiceCollection AddPacientes(this IServiceCollection servicios, string cadenaDeConexion) =>
+-        servicios.AddDbContext<PacientesDbContext>(opciones => PacientesDbContext.Configurar(opciones, cadenaDeConexion));
++        // Las opciones son las mismas para toda la aplicación: se registran una sola vez (singleton). Así el host
++        // puede dar el contexto a un handler sin pedirlo al contenedor en cada mensaje. El contexto sigue siendo
++        // uno por ámbito.
++        servicios.AddDbContext<PacientesDbContext>(
++            opciones => PacientesDbContext.Configurar(opciones, cadenaDeConexion),
++            optionsLifetime: ServiceLifetime.Singleton);
+ }
+diff --git a/src/DraSelina.Consultorio.Web/Program.cs b/src/DraSelina.Consultorio.Web/Program.cs
+index 3231dae..0df0149 100644
+--- a/src/DraSelina.Consultorio.Web/Program.cs
++++ b/src/DraSelina.Consultorio.Web/Program.cs
+@@ -1,4 +1,5 @@
+ using DraSelina.Consultorio.Agenda.Infrastructure;
++using DraSelina.Consultorio.BuildingBlocks.Contracts;
+ using DraSelina.Consultorio.Notificaciones.Infrastructure;
+ using DraSelina.Consultorio.Pacientes.Infrastructure;
+ using DraSelina.Consultorio.UI;
+@@ -6,6 +7,8 @@ using DraSelina.Consultorio.Web;
+ using Microsoft.AspNetCore.Builder;
+ using Microsoft.Extensions.DependencyInjection;
+ using Microsoft.Extensions.Hosting;
++using Wolverine;
++using Wolverine.EntityFrameworkCore;
+ 
+ var builder = WebApplication.CreateBuilder(args);
+ 
+@@ -21,6 +24,25 @@ builder.Services
+     .AddPacientes(cadena)
+     .AddNotificaciones(cadena);
+ 
++// El único camino de la interfaz hacia el backend (AD-10).
++builder.Services.AddScoped<ISender, SenderDeWolverine>();
++
++builder.Host.UseWolverine(opciones =>
++{
++    // Esquema `wolverine`, sin crear ni cambiar tablas al arrancar (AD-25).
++    AlmacenamientoDeWolverine.Configurar(opciones, cadena);
++
++    // Un comando, una transacción. Se fija aquí, una sola vez, para todo handler que use un DbContext: ni el
++    // comando ni el handler la piden. Lo que el handler cambia y los mensajes que publica se confirman juntos,
++    // o ninguno; los mensajes salen del outbox después de confirmar.
++    opciones.UseEntityFrameworkCoreTransactions();
++    opciones.Policies.AutoApplyTransactions();
++
++    // El monolito no tiene otro transporte: los mensajes van a colas locales, y durables para que se guarden
++    // en el esquema `wolverine` dentro de esa misma transacción.
++    opciones.Policies.UseDurableLocalQueues();
++});
++
+ builder.Services.AddRazorComponents();
+ 
+ var app = builder.Build();
+diff --git a/src/DraSelina.Consultorio.Web/SenderDeWolverine.cs b/src/DraSelina.Consultorio.Web/SenderDeWolverine.cs
+new file mode 100644
+index 0000000..6cf2921
+--- /dev/null
++++ b/src/DraSelina.Consultorio.Web/SenderDeWolverine.cs
+@@ -0,0 +1,29 @@
++using DraSelina.Consultorio.BuildingBlocks.Contracts;
++using DraSelina.Consultorio.Kernel;
++using Wolverine;
++
++namespace DraSelina.Consultorio.Web;
++
++/// <summary>
++/// <see cref="ISender"/> sobre Wolverine (AD-10). Ejecuta el handler del comando o de la consulta en línea y
++/// devuelve su <see cref="Resultado{T}"/>. Una excepción del handler sale tal cual: no se convierte en resultado.
++/// </summary>
++internal sealed class SenderDeWolverine(IMessageBus bus) : ISender
++{
++    public Task<Resultado<T>> SendAsync<T>(ICommand<T> comando, CancellationToken cancellationToken = default) =>
++        DespacharAsync<T>(comando, cancellationToken);
++
++    public Task<Resultado<T>> SendAsync<T>(IQuery<T> consulta, CancellationToken cancellationToken = default) =>
++        DespacharAsync<T>(consulta, cancellationToken);
++
++    private async Task<Resultado<T>> DespacharAsync<T>(object mensaje, CancellationToken cancelacion)
++    {
++        ArgumentNullException.ThrowIfNull(mensaje);
++
++        // Sin handler, Wolverine lanza aquí una excepción que nombra el tipo del mensaje.
++        var resultado = await bus.InvokeAsync<Resultado<T>>(mensaje, cancelacion);
++
++        return resultado ?? throw new InvalidOperationException(
++            $"El handler de {mensaje.GetType().FullName} no devolvió un {nameof(Resultado)}<{typeof(T).Name}>.");
++    }
++}
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/Arnes.cs b/tests/DraSelina.Consultorio.IntegrationTests/Arnes.cs
+index 46fc939..53f6387 100644
+--- a/tests/DraSelina.Consultorio.IntegrationTests/Arnes.cs
++++ b/tests/DraSelina.Consultorio.IntegrationTests/Arnes.cs
+@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
+ using Microsoft.EntityFrameworkCore;
+ using Microsoft.EntityFrameworkCore.Infrastructure;
+ using Microsoft.EntityFrameworkCore.Storage;
++using Microsoft.Extensions.DependencyInjection;
+ using Npgsql;
+ using Testcontainers.PostgreSql;
++using Wolverine;
+ 
+ // Un solo arnés para toda la corrida: xUnit lo crea antes de la primera prueba que lo pide y lo apaga al final.
+ [assembly: AssemblyFixture(typeof(Arnes))]
+@@ -86,16 +88,45 @@ public sealed class Arnes : IAsyncLifetime
+     /// Quien la pide la desecha: <c>await using var web = arnes.ArrancarWeb(cadena);</c>
+     /// </summary>
+     public WebApplicationFactory<Program> ArrancarWeb(string cadenaDeConexion) =>
+-        new Web(cadenaDeConexion);
++        new Web(cadenaDeConexion, sinMensajeria: false);
+ 
+     /// <summary>Arranca la web en memoria contra la base migrada de la corrida.</summary>
+     public WebApplicationFactory<Program> ArrancarWeb() => ArrancarWeb(CadenaDeConexion);
+ 
++    /// <summary>
++    /// La web en memoria con Wolverine solo como despachador en proceso: sin almacenamiento de mensajes, sin
++    /// colas durables y sin nodo. Es para una base donde el esquema <c>wolverine</c> no existe: ahí la web real
++    /// se niega a arrancar. Lo demás del <c>Program</c> corre igual.
++    /// </summary>
++    public WebApplicationFactory<Program> ArrancarWebSinMensajeria(string cadenaDeConexion) =>
++        new Web(cadenaDeConexion, sinMensajeria: true);
++
+     // Una sola fábrica por llamada, que desecha quien la pidió.
+-    private sealed class Web(string cadenaDeConexion) : WebApplicationFactory<Program>
++    private sealed class Web(string cadenaDeConexion, bool sinMensajeria) : WebApplicationFactory<Program>
+     {
+-        protected override void ConfigureWebHost(IWebHostBuilder builder) =>
++        protected override void ConfigureWebHost(IWebHostBuilder builder)
++        {
+             builder.UseSetting($"ConnectionStrings:{BaseDeDatos.Nombre}", cadenaDeConexion);
++
++            // Los tipos de prueba entran a la web en memoria como entrará un módulo: su contexto registrado igual
++            // que los de producción y sus handlers descubiertos por Wolverine. La política de transacción no se
++            // toca aquí: es la que fijó el host.
++            builder.ConfigureServices(servicios =>
++            {
++                servicios.AddDbContext<PruebasDbContext>(
++                    opciones => opciones.UseNpgsql(cadenaDeConexion),
++                    optionsLifetime: ServiceLifetime.Singleton);
++                servicios.ConfigureWolverine(opciones =>
++                {
++                    opciones.Discovery.IncludeAssembly(typeof(Arnes).Assembly);
++                    if (sinMensajeria)
++                    {
++                        opciones.Durability.Mode = DurabilityMode.MediatorOnly;
++                        opciones.Durability.DurabilityAgentEnabled = false;
++                    }
++                });
++            });
++        }
+     }
+ 
+     // Después de migrar: el esquema de los tipos de prueba y sus tablas. No pasa por migraciones ni toca
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/CasoDeUsoTests.cs b/tests/DraSelina.Consultorio.IntegrationTests/CasoDeUsoTests.cs
+new file mode 100644
+index 0000000..cec420c
+--- /dev/null
++++ b/tests/DraSelina.Consultorio.IntegrationTests/CasoDeUsoTests.cs
+@@ -0,0 +1,149 @@
++using DraSelina.Consultorio.BuildingBlocks.Contracts;
++using DraSelina.Consultorio.IntegrationTests.Pruebas;
++using DraSelina.Consultorio.Kernel;
++using Microsoft.AspNetCore.Mvc.Testing;
++using Microsoft.EntityFrameworkCore;
++using Microsoft.Extensions.DependencyInjection;
++
++namespace DraSelina.Consultorio.IntegrationTests;
++
++/// <summary>
++/// Un caso de uso recorre <see cref="ISender"/>, la transacción y el outbox. Los comandos, la consulta y el
++/// evento son de prueba (<c>Pruebas/</c>) y corren en la web en memoria, con su <c>Program</c> real: la política
++/// de un comando, una transacción es la del host.
++/// </summary>
++public sealed class CasoDeUsoTests(Arnes arnes)
++{
++    private static readonly TimeSpan UnaHora = TimeSpan.FromHours(1);
++
++    private static CancellationToken Cancelacion => TestContext.Current.CancellationToken;
++
++    [Fact]
++    public async Task Un_comando_con_exito_guarda_su_cambio_y_su_mensaje()
++    {
++        await using var web = arnes.ArrancarWeb();
++        var comando = NuevoComando(avisarEn: UnaHora);
++
++        var resultado = await EnviarAsync(web, comando);
++
++        Assert.True(resultado.EsExito);
++        Assert.Equal(comando.Id, resultado.Valor);
++        Assert.True(await ExisteAnotacionAsync(comando.Id));
++        Assert.Equal(1, await MensajesDeAsync(comando.Id));
++    }
++
++    [Fact]
++    public async Task Un_fallo_esperado_vuelve_como_resultado_con_codigo_y_no_deja_nada()
++    {
++        await using var web = arnes.ArrancarWeb();
++        var primero = NuevoComando(avisarEn: UnaHora);
++        Assert.True((await EnviarAsync(web, primero)).EsExito);
++
++        // El mismo texto otra vez: la condición que el handler rechaza.
++        var repetido = NuevoComando(avisarEn: UnaHora);
++        repetido.Texto = primero.Texto;
++
++        var resultado = await EnviarAsync(web, repetido);
++
++        Assert.Equal(FormaDeResultado.Fallo, resultado.Forma);
++        Assert.Equal(CodigosDeAnotacion.TextoRepetido, resultado.Codigo);
++        Assert.False(await ExisteAnotacionAsync(repetido.Id));
++        Assert.Equal(0, await MensajesDeAsync(repetido.Id));
++    }
++
++    [Fact]
++    public async Task Un_fallo_inesperado_sale_como_excepcion_y_no_deja_ni_cambio_ni_mensaje()
++    {
++        await using var web = arnes.ArrancarWeb();
++        var comando = NuevoComando(avisarEn: UnaHora);
++        comando.LanzarAlFinal = true;
++
++        // El handler guardó y publicó antes de lanzar.
++        await Assert.ThrowsAsync<FalloInesperadoDePrueba>(() => EnviarAsync(web, comando));
++
++        Assert.False(await ExisteAnotacionAsync(comando.Id));
++        Assert.Equal(0, await MensajesDeAsync(comando.Id));
++    }
++
++    [Fact]
++    public async Task El_mensaje_llega_a_su_handler_despues_de_confirmada_la_transaccion()
++    {
++        await using var web = arnes.ArrancarWeb();
++        var comando = NuevoComando(avisarEn: null);
++
++        Assert.True((await EnviarAsync(web, comando)).EsExito);
++
++        var rastro = await EsperarRastroAsync(comando.Id, TimeSpan.FromSeconds(30));
++        Assert.True(rastro.AnotacionConfirmada, "El handler del evento corrió sin ver la anotación confirmada.");
++    }
++
++    [Fact]
++    public async Task Una_consulta_devuelve_el_dato_leido()
++    {
++        await using var web = arnes.ArrancarWeb();
++        var anotacion = new Anotacion { Id = Guid.CreateVersion7(), Texto = $"anotación {Guid.NewGuid():N}" };
++        await using (var escritura = arnes.CrearContextoDePruebas())
++        {
++            escritura.Anotaciones.Add(anotacion);
++            await escritura.SaveChangesAsync(Cancelacion);
++        }
++
++        await using var ambito = web.Services.CreateAsyncScope();
++        var resultado = await ambito.ServiceProvider.GetRequiredService<ISender>()
++            .SendAsync(new LeerAnotacion { Id = anotacion.Id }, Cancelacion);
++
++        Assert.True(resultado.EsExito);
++        Assert.Equal(anotacion.Texto, resultado.Valor);
++    }
++
++    [Fact]
++    public async Task Un_comando_sin_handler_lanza_una_excepcion_que_nombra_su_tipo()
++    {
++        await using var web = arnes.ArrancarWeb();
++        await using var ambito = web.Services.CreateAsyncScope();
++        var sender = ambito.ServiceProvider.GetRequiredService<ISender>();
++
++        var error = await Assert.ThrowsAnyAsync<Exception>(() => sender.SendAsync(new ComandoSinHandler(), Cancelacion));
++
++        Assert.Contains(nameof(ComandoSinHandler), error.Message);
++    }
++
++    private static Anotar NuevoComando(TimeSpan? avisarEn) =>
++        new() { Id = Guid.CreateVersion7(), Texto = $"anotación {Guid.NewGuid():N}", AvisarEn = avisarEn };
++
++    // Siempre por ISender, resuelto del contenedor de la web en memoria: el único camino.
++    private static async Task<Resultado<Guid>> EnviarAsync(WebApplicationFactory<Program> web, Anotar comando)
++    {
++        await using var ambito = web.Services.CreateAsyncScope();
++        return await ambito.ServiceProvider.GetRequiredService<ISender>().SendAsync(comando, Cancelacion);
++    }
++
++    private async Task<bool> ExisteAnotacionAsync(Guid id)
++    {
++        await using var contexto = arnes.CrearContextoDePruebas();
++        return await contexto.Anotaciones.AsNoTracking().AnyAsync(a => a.Id == id, Cancelacion);
++    }
++
++    // El evento lleva el id de su anotación: con él se encuentra su mensaje en el esquema wolverine.
++    private Task<long> MensajesDeAsync(Guid anotacionId) =>
++        Consultas.MensajesGuardadosAsync(arnes.CadenaDeConexion, anotacionId.ToString(), Cancelacion);
++
++    private async Task<RastroDeAnotacion> EsperarRastroAsync(Guid anotacionId, TimeSpan limite)
++    {
++        var fin = DateTime.UtcNow + limite;
++        while (true)
++        {
++            await using (var contexto = arnes.CrearContextoDePruebas())
++            {
++                var rastro = await contexto.Rastros.AsNoTracking().SingleOrDefaultAsync(r => r.Id == anotacionId, Cancelacion);
++                if (rastro is not null)
++                {
++                    return rastro;
++                }
++            }
++
++            Assert.True(DateTime.UtcNow < fin, $"El handler del evento no dejó su rastro en {limite.TotalSeconds:0} segundos.");
++            await Task.Delay(TimeSpan.FromMilliseconds(100), Cancelacion);
++        }
++    }
++}
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/Consultas.cs b/tests/DraSelina.Consultorio.IntegrationTests/Consultas.cs
+index b7c14c3..9329506 100644
+--- a/tests/DraSelina.Consultorio.IntegrationTests/Consultas.cs
++++ b/tests/DraSelina.Consultorio.IntegrationTests/Consultas.cs
+@@ -27,6 +27,24 @@ internal static class Consultas
+         return (long)(await comando.ExecuteScalarAsync(cancelacion))!;
+     }
+ 
++    /// <summary>
++    /// Cuántos mensajes guardados en el almacenamiento de Wolverine llevan ese texto en su cuerpo, entre los que
++    /// entran y los que salen. Para encontrar el de una prueba, el texto es un valor que solo ella conoce.
++    /// </summary>
++    public static async Task<long> MensajesGuardadosAsync(string cadena, string textoDelCuerpo, CancellationToken cancelacion)
++    {
++        const string sql = """
++            select (select count(*) from wolverine.wolverine_incoming_envelopes where position(@valor in encode(body, 'escape')) > 0)
++                 + (select count(*) from wolverine.wolverine_outgoing_envelopes where position(@valor in encode(body, 'escape')) > 0)
++            """;
++
++        await using var conexion = new NpgsqlConnection(cadena);
++        await conexion.OpenAsync(cancelacion);
++        await using var comando = new NpgsqlCommand(sql, conexion);
++        comando.Parameters.AddWithValue("valor", textoDelCuerpo);
++        return (long)(await comando.ExecuteScalarAsync(cancelacion))!;
++    }
++
+     private static async Task<List<string>> ListaAsync(string cadena, string sql, string valor, CancellationToken cancelacion)
+     {
+         await using var conexion = new NpgsqlConnection(cadena);
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/Anotacion.cs b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/Anotacion.cs
+new file mode 100644
+index 0000000..b205c2a
+--- /dev/null
++++ b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/Anotacion.cs
+@@ -0,0 +1,19 @@
++namespace DraSelina.Consultorio.IntegrationTests.Pruebas;
++
++/// <summary>La fila que guarda el comando de prueba <see cref="Anotar"/>.</summary>
++public sealed class Anotacion
++{
++    public Guid Id { get; set; }
++
++    public string Texto { get; set; } = "";
++}
++
++/// <summary>El rastro que deja el handler de <see cref="AnotacionHecha"/> cuando el mensaje llega.</summary>
++public sealed class RastroDeAnotacion
++{
++    /// <summary>El id de la anotación que el evento anuncia.</summary>
++    public Guid Id { get; set; }
++
++    /// <summary>Si la anotación ya se podía leer cuando corrió el handler del evento.</summary>
++    public bool AnotacionConfirmada { get; set; }
++}
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/Anotar.cs b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/Anotar.cs
+new file mode 100644
+index 0000000..4292ffe
+--- /dev/null
++++ b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/Anotar.cs
+@@ -0,0 +1,92 @@
++using DraSelina.Consultorio.BuildingBlocks.Contracts;
++using DraSelina.Consultorio.Kernel;
++using Microsoft.EntityFrameworkCore;
++using Wolverine;
++
++namespace DraSelina.Consultorio.IntegrationTests.Pruebas;
++
++/// <summary>
++/// Comando de prueba: guarda una <see cref="Anotacion"/> y publica <see cref="AnotacionHecha"/>. Devuelve el id.
++/// Como todo comando, es una clase con propiedades <c>set</c>.
++/// </summary>
++public sealed class Anotar : ICommand<Guid>
++{
++    public Guid Id { get; set; }
++
++    public string Texto { get; set; } = "";
++
++    /// <summary>
++    /// Nulo: el evento se publica de inmediato. Con valor: se programa para dentro de ese tiempo, y mientras
++    /// tanto se queda guardado en el esquema <c>wolverine</c>, donde una prueba lo puede ver sin carreras.
++    /// </summary>
++    public TimeSpan? AvisarEn { get; set; }
++
++    /// <summary>El handler guarda, publica y después lanza: el fallo que nadie espera.</summary>
++    public bool LanzarAlFinal { get; set; }
++}
++
++/// <summary>El conjunto cerrado de códigos de fallo esperado de las anotaciones de prueba.</summary>
++public static class CodigosDeAnotacion
++{
++    public const string TextoRepetido = "anotacion.texto_repetido";
++    public const string NoExiste = "anotacion.no_existe";
++}
++
++/// <summary>Evento de prueba. Puede ser <c>record</c>; lleva solo el id.</summary>
++public sealed record AnotacionHecha(Guid AnotacionId);
++
++/// <summary>La excepción que lanza <see cref="Anotar"/> con <see cref="Anotar.LanzarAlFinal"/>.</summary>
++public sealed class FalloInesperadoDePrueba(Guid anotacionId) : Exception($"Fallo inesperado de prueba en la anotación {anotacionId}.");
++
++/// <summary>Un handler por comando. No abre ni confirma ninguna transacción: eso lo hace la política del host.</summary>
++public static class AnotarHandler
++{
++    public static async Task<Resultado<Guid>> Handle(Anotar comando, PruebasDbContext db, IMessageBus bus, CancellationToken cancelacion)
++    {
++        // El fallo esperado se devuelve antes de cambiar nada, con un código del conjunto cerrado.
++        if (await db.Anotaciones.AnyAsync(a => a.Texto == comando.Texto, cancelacion))
++        {
++            return Resultado.Fallo(CodigosDeAnotacion.TextoRepetido).Como<Guid>();
++        }
++
++        db.Anotaciones.Add(new Anotacion { Id = comando.Id, Texto = comando.Texto });
++        await db.SaveChangesAsync(cancelacion);
++
++        var evento = new AnotacionHecha(comando.Id);
++        if (comando.AvisarEn is { } espera)
++        {
++            await bus.ScheduleAsync(evento, espera);
++        }
++        else
++        {
++            await bus.PublishAsync(evento);
++        }
++
++        if (comando.LanzarAlFinal)
++        {
++            throw new FalloInesperadoDePrueba(comando.Id);
++        }
++
++        return comando.Id;
++    }
++}
++
++/// <summary>El handler del evento: deja un rastro y anota si la anotación ya estaba confirmada.</summary>
++public static class AnotacionHechaHandler
++{
++    public static async Task Handle(AnotacionHecha evento, PruebasDbContext db, CancellationToken cancelacion)
++    {
++        // Un mensaje puede entregarse más de una vez: el rastro se deja una sola.
++        if (await db.Rastros.AnyAsync(r => r.Id == evento.AnotacionId, cancelacion))
++        {
++            return;
++        }
++
++        db.Rastros.Add(new RastroDeAnotacion
++        {
++            Id = evento.AnotacionId,
++            AnotacionConfirmada = await db.Anotaciones.AnyAsync(a => a.Id == evento.AnotacionId, cancelacion),
++        });
++        await db.SaveChangesAsync(cancelacion);
++    }
++}
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/LeerAnotacion.cs b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/LeerAnotacion.cs
+new file mode 100644
+index 0000000..6d84552
+--- /dev/null
++++ b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/LeerAnotacion.cs
+@@ -0,0 +1,28 @@
++using DraSelina.Consultorio.BuildingBlocks.Contracts;
++using DraSelina.Consultorio.Kernel;
++using Microsoft.EntityFrameworkCore;
++
++namespace DraSelina.Consultorio.IntegrationTests.Pruebas;
++
++/// <summary>Consulta de prueba: el texto de una <see cref="Anotacion"/>.</summary>
++public sealed class LeerAnotacion : IQuery<string>
++{
++    public Guid Id { get; set; }
++}
++
++/// <summary>Un handler por consulta: lee sin seguimiento, proyecta y nunca guarda.</summary>
++public static class LeerAnotacionHandler
++{
++    public static async Task<Resultado<string>> Handle(LeerAnotacion consulta, PruebasDbContext db, CancellationToken cancelacion)
++    {
++        var texto = await db.Anotaciones.AsNoTracking()
++            .Where(a => a.Id == consulta.Id)
++            .Select(a => a.Texto)
++            .SingleOrDefaultAsync(cancelacion);
++
++        return texto is null ? Resultado.Fallo(CodigosDeAnotacion.NoExiste).Como<string>() : texto;
++    }
++}
++
++/// <summary>Un comando al que nadie le escribió handler.</summary>
++public sealed class ComandoSinHandler : ICommand<int>;
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/PruebasDbContext.cs b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/PruebasDbContext.cs
+index 6ed3186..ed75486 100644
+--- a/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/PruebasDbContext.cs
++++ b/tests/DraSelina.Consultorio.IntegrationTests/Pruebas/PruebasDbContext.cs
+@@ -13,6 +13,10 @@ public sealed class PruebasDbContext(DbContextOptions<PruebasDbContext> options)
+ 
+     public DbSet<Apunte> Apuntes => Set<Apunte>();
+ 
++    public DbSet<Anotacion> Anotaciones => Set<Anotacion>();
++
++    public DbSet<RastroDeAnotacion> Rastros => Set<RastroDeAnotacion>();
++
+     public static DbContextOptions<PruebasDbContext> Opciones(string cadenaDeConexion) =>
+         new DbContextOptionsBuilder<PruebasDbContext>().UseNpgsql(cadenaDeConexion).Options;
+ 
+diff --git a/tests/DraSelina.Consultorio.IntegrationTests/WebNoMigraTests.cs b/tests/DraSelina.Consultorio.IntegrationTests/WebNoMigraTests.cs
+index e23071c..17b1844 100644
+--- a/tests/DraSelina.Consultorio.IntegrationTests/WebNoMigraTests.cs
++++ b/tests/DraSelina.Consultorio.IntegrationTests/WebNoMigraTests.cs
+@@ -19,7 +19,9 @@ public sealed class WebNoMigraTests(Arnes arnes)
+     {
+         var vacia = await arnes.CrearBaseVaciaAsync(Cancelacion);
+ 
+-        await using var web = arnes.ArrancarWeb(vacia);
++        // Sin el almacenamiento de mensajes la web real no arranca (la prueba de abajo); aquí se arranca sin él
++        // para ver qué hace todo lo demás.
++        await using var web = arnes.ArrancarWebSinMensajeria(vacia);
+         using var cliente = web.CreateClient();
+         using var respuesta = await cliente.GetAsync("/", Cancelacion);
+ 
+@@ -36,4 +38,19 @@ public sealed class WebNoMigraTests(Arnes arnes)
+ 
+         Assert.Empty(await Consultas.EsquemasConTablaAsync(vacia, Consultas.Historial, Cancelacion));
+     }
++
++    [Fact]
++    public async Task La_web_real_no_arranca_en_una_base_vacia_y_tampoco_crea_nada()
++    {
++        var vacia = await arnes.CrearBaseVaciaAsync(Cancelacion);
++
++        await using var web = arnes.ArrancarWeb(vacia);
++        var error = Assert.ThrowsAny<Exception>(() => web.CreateClient());
++
++        // Se niega por lo que falta, no por otra causa: el almacenamiento de mensajes que crea el MigrationService.
++        Assert.Contains(AlmacenamientoDeWolverine.Esquema, error.ToString());
++        Assert.False(
++            await Consultas.ExisteEsquemaAsync(vacia, AlmacenamientoDeWolverine.Esquema, Cancelacion),
++            $"La web creó el esquema '{AlmacenamientoDeWolverine.Esquema}'.");
++    }
+ }

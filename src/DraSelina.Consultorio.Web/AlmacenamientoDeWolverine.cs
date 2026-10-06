@@ -8,7 +8,8 @@ namespace DraSelina.Consultorio.Web;
 
 /// <summary>
 /// El almacenamiento de mensajes de Wolverine, definido una sola vez: misma base y mismo esquema para
-/// el MigrationService, que lo crea, y para la web, que lo usará sin crearlo (AD-2, AD-25).
+/// el MigrationService, que lo crea, y para la web, que lo usa sin crearlo (AD-2, AD-25). Si no existe, la web
+/// no arranca.
 /// </summary>
 public static class AlmacenamientoDeWolverine
 {
