@@ -295,7 +295,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 | Transacciones | Un comando, una transacción, un módulo: cambio, bitácora y outbox juntos. |
 | Lecturas | `AsNoTracking()` y proyección; nunca `SaveChanges` en una consulta. |
 | Archivo de calendario | Un solo generador, en Agenda, usado por la pantalla de confirmación y por Notificaciones. El lugar lo pide a Contenido por `IContenidoApi`. `[ASSUMPTION]` |
-| Pruebas | Dominio y handlers sin base de datos; integración contra PostgreSQL real; reglas de referencia como pruebas de arquitectura. |
+| Pruebas | Dominio y handlers sin base de datos; integración contra PostgreSQL real, levantado con Testcontainers y migrado ejecutando el `MigrationService`; reglas de referencia como pruebas de arquitectura. |
 
 ## Stack
 
@@ -313,6 +313,7 @@ Versiones verificadas en la web el 2026-10-04.
 | xunit.v3 | 4.0.1 |
 | bUnit | 2.11.3 |
 | Testcontainers.PostgreSql | 4.15.0 |
+| Microsoft.AspNetCore.Mvc.Testing (solo en pruebas) | la misma que ASP.NET Core |
 | libphonenumber-csharp | última estable al crear la solución |
 | Correo: Azure Communication Services Email | servicio |
 | Anti-bots: Cloudflare Turnstile | servicio |
@@ -398,7 +399,6 @@ tests/
 - **Recurrencia en la agenda custom.** No hay patrón que la pida.
 - **Edición de contenido desde administración.** En el piloto el contenido se despliega con la aplicación.
 - **Rol de Asistente, fusión de pacientes duplicados, retención y derechos ARCO.** Después del piloto.
-- **Arnés de pruebas de integración.** Testcontainers, como en el plan, o el soporte de pruebas de Aspire; lo decide la primera historia que lo necesite.
 - **Uso de Specifications en el dominio.** Decisión de implementación.
 
 ## Open Questions

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pruebas de integración contra PostgreSQL real. El arnés (Arnes.cs) levanta un contenedor una vez por
+       corrida y lo migra ejecutando el MigrationService. Necesita Docker en ejecución. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DraSelina.Consultorio.Web\DraSelina.Consultorio.Web.csproj" />
+    <!-- El MigrationService se ejecuta como proceso, no se referencia su ensamblado: así corre su Program real
+         y no choca con el Program de Web. La referencia solo lo compila antes y entrega la ruta de su .dll. -->
+    <ProjectReference Include="..\..\src\DraSelina.Consultorio.MigrationService\DraSelina.Consultorio.MigrationService.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="EnsambladoDelMigrationService" />
+  </ItemGroup>
+
+  <!-- Deja la ruta del .dll del MigrationService como metadato del ensamblado de pruebas (la lee MigrationService.cs). -->
+  <Target Name="RegistrarRutaDelMigrationService" BeforeTargets="GetAssemblyAttributes" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>RutaDelMigrationService</_Parameter1>
+        <_Parameter2>@(EnsambladoDelMigrationService->'%(FullPath)')</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+
+</Project>

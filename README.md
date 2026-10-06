@@ -18,11 +18,67 @@ Siempre con `./dotnet.sh`, que es `dotnet` con el SDK y el runtime de `.dotnet/`
 ```bash
 ./dotnet.sh --version   # 11.0.100-rc.1.26425.128
 ./dotnet.sh build       # 0 errores, 0 advertencias (las advertencias son errores)
-./dotnet.sh test        # todas las pruebas
+./dotnet.sh test        # todas las pruebas; necesita Docker en ejecución
 ```
 
 Por qué la envoltura: `global.json` redirige el SDK pero no el runtime. Con el `dotnet` del sistema la solución
 compila, pero las pruebas no arrancan porque el sistema no tiene el runtime 11.
+
+## Pruebas
+
+`./dotnet.sh test` corre los tres proyectos de `tests/`. No hace falta el AppHost arriba ni ningún otro comando.
+
+- `Kernel.Tests` y `ArchitectureTests` no usan base de datos.
+- `IntegrationTests` corre contra PostgreSQL real y **necesita Docker en ejecución**. Sin Docker estas pruebas
+  fallan con un mensaje que lo dice; no se omiten.
+
+### El arnés de integración
+
+`tests/DraSelina.Consultorio.IntegrationTests/Arnes.cs`. Una vez por corrida:
+
+1. Levanta PostgreSQL (`postgres:18.3`, la misma versión mayor que el AppHost) en un contenedor de Testcontainers.
+2. Migra la base ejecutando el `MigrationService` real como proceso, igual que el AppHost. Si sale con un código
+   distinto de 0, la corrida falla y muestra el código y la salida del proceso.
+3. Crea el esquema `pruebas` con las tablas de los tipos de prueba.
+4. Al terminar, borra el contenedor de PostgreSQL. El contenedor de limpieza de Testcontainers
+   (`testcontainers-ryuk-*`) sigue listado unos segundos más y desaparece solo.
+
+La base es una sola para toda la corrida y la comparten todas las pruebas, que corren en paralelo: cada prueba
+crea los datos que necesita con valores propios y no depende del orden ni de lo que dejó otra.
+
+### Escribir una prueba de integración
+
+La clase recibe el arnés por su constructor; no hay que declarar nada más:
+
+```csharp
+public sealed class MiPruebaTests(Arnes arnes)
+{
+    [Fact]
+    public async Task Hace_algo_contra_la_base()
+    {
+        var cadena = arnes.CadenaDeConexion;                // la base de la corrida, ya migrada
+        await using var web = arnes.ArrancarWeb();          // la web en memoria contra esa base
+        using var cliente = web.CreateClient();
+        // ...
+    }
+}
+```
+
+Lo que da el arnés:
+
+| Miembro | Para qué |
+| --- | --- |
+| `CadenaDeConexion` | La base migrada: esquemas `agenda`, `pacientes`, `notificaciones`, `wolverine` y `pruebas`. |
+| `ArrancarWeb()` / `ArrancarWeb(cadena)` | La web con su `Program` real, en memoria, contra la base migrada o contra la que se indique. |
+| `CrearBaseVaciaAsync()` | Una base nueva sin migrar en el mismo servidor; devuelve su cadena de conexión. |
+| `CrearContextoDePruebas()` | Un `PruebasDbContext` sobre el esquema `pruebas`. |
+
+**Dónde poner un tipo de prueba.** Un tipo que solo existe para probar (una entidad, y más adelante un comando o
+un handler de prueba) vive en `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/`. Si tiene tabla, se agrega
+su `DbSet` a `Pruebas/PruebasDbContext.cs`: el arnés crea la tabla en el esquema `pruebas` al arrancar la corrida,
+sin migraciones. Ningún esquema de producción recibe tablas de prueba. `Apunte` es el ejemplo mínimo.
+
+Para migrar otra base por el mismo camino: `await MigrationService.EjecutarAsync(cadena)`.
 
 ## Arrancar
 
@@ -108,6 +164,7 @@ src/
 tests/
   DraSelina.Consultorio.Kernel.Tests/
   DraSelina.Consultorio.ArchitectureTests/
+  DraSelina.Consultorio.IntegrationTests/   # arnés y pruebas contra PostgreSQL real (Docker)
 scripts/
   verificar-arranque.sh # comprueba el arranque contra el AppHost levantado
 spikes/                 # prototipos desechables; no son parte de la solución
