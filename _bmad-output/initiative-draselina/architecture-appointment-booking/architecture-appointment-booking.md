@@ -261,7 +261,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** all
 - **Prevents:** módulos que migran cada uno a su manera, o un host que migra al arrancar.
-- **Rule:** cada DbContext lleva su historial de migraciones en su propio esquema. La extensión `btree_gist`, la restricción de exclusión y la collation se crean con SQL explícito en la migración del módulo que las posee. Un único proyecto `MigrationService` aplica todas las migraciones y ejecuta los datos iniciales; lo corre el AppHost en local y, cuando exista, el despliegue. La aplicación web nunca migra al arrancar. Los datos iniciales son idempotentes y de su módulo: Agenda base inicial, tipos de visita y reglas por defecto (Agenda); horas de envío (Notificaciones); cuenta del administrador (host).
+- **Rule:** cada DbContext lleva su historial de migraciones en su propio esquema. La extensión `btree_gist`, la restricción de exclusión y la collation se crean con SQL explícito en la migración del módulo que las posee. Un único proyecto `MigrationService` aplica todas las migraciones y ejecuta los datos iniciales; lo corre el AppHost en local y, cuando exista, el despliegue. La aplicación web nunca migra al arrancar. Sobre una base sin migrar, se niega a arrancar. Los datos iniciales son idempotentes y de su módulo: Agenda base inicial, tipos de visita y reglas por defecto (Agenda); horas de envío (Notificaciones); cuenta del administrador (host).
 
 ### AD-26 — Concurrencia sobre una fecha
 
@@ -292,8 +292,8 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 | Textos | El dominio devuelve códigos. Los textos que ve el paciente viven en la interfaz y en las plantillas de correo, con el tono de `EXPERIENCE.md`. |
 | Comandos | Clase con propiedades `set`, nunca `record`. Los formularios se ligan directo al comando; no hay modelos de formulario aparte. Eventos de integración y DTOs pueden ser `record`. |
 | Errores de validación | Por campo, con el nombre de la propiedad del comando. |
-| Transacciones | Un comando, una transacción, un módulo: cambio, bitácora y outbox juntos. |
-| Lecturas | `AsNoTracking()` y proyección; nunca `SaveChanges` en una consulta. |
+| Transacciones | Un comando, una transacción, un módulo: cambio, bitácora y outbox juntos. La transacción es la del módulo del handler y la abre el host. El handler guarda de forma explícita; el host confirma si el `Resultado` es exitoso y deshace todo si no. |
+| Lecturas | `AsNoTracking()` y proyección; nunca `SaveChanges` en una consulta. Las consultas corren sin transacción. |
 | Archivo de calendario | Un solo generador, en Agenda, usado por la pantalla de confirmación y por Notificaciones. El lugar lo pide a Contenido por `IContenidoApi`. `[ASSUMPTION]` |
 | Pruebas | Dominio y handlers sin base de datos; integración contra PostgreSQL real, levantado con Testcontainers y migrado ejecutando el `MigrationService`; reglas de referencia como pruebas de arquitectura. |
 
