@@ -3,7 +3,7 @@ title: 'Arnés de pruebas de integración contra PostgreSQL real'
 type: 'feature' # feature | bugfix | refactor | chore
 ticket: '4' # the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
 created: '2026-10-06'
-status: 'built' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
+status: done
 baseline_revision: 'a6d6a9c64f01a084f6eff72a8f8ee649bb439ed3' # the commit the work starts from, set before any code change
 route: 'full' # oneshot | full — set by step-02
 route_source: 'auto' # pinned | auto — set with route by step-02
