@@ -13,7 +13,7 @@ Contenido que pertenece a arquitectura, diseño de solución o planeación, no a
 | Estados de la Cita | Se guardan Agendada, No se presentó, Cancelada; Atendida se calcula | Ciclo de vida de la Cita |
 | Identidad del Paciente | Guid v7; emparejamiento por teléfono E.164 y nombre normalizado | Pacientes por dentro |
 | Enlace de gestión | Token derivado de la Cita con una clave del servidor (AD-19); se guarda solo el hash; deja de valer cuando el inicio de la Cita ya pasó | Key design decisions |
-| Mensajería y tareas | Wolverine con outbox en PostgreSQL, sin broker | Reglas de la estructura |
+| Mensajería y tareas | Outbox propio en PostgreSQL y servicios en segundo plano, sin broker ni librería de mensajería | Reglas de la estructura |
 | Interfaz | Blazor: SSR estático en lo público, Interactive Server en administración | Reglas de la estructura |
 | Acceso | ASP.NET Core Identity con 2FA | Technology choices |
 | Correo | Azure Communication Services detrás de `INotificationChannel` | Notifications |
@@ -23,7 +23,7 @@ Contenido que pertenece a arquitectura, diseño de solución o planeación, no a
 ## Alternativas descartadas
 
 - MediatR y MassTransit v9 (licencia comercial); MassTransit v8 (fin de mantenimiento).
-- Hangfire y outbox propio (reemplazados por Wolverine).
+- Hangfire. Wolverine (se adoptó y se quitó el 2026-10-06: pedía más código para rodearlo del que ahorraba).
 - Blazor WebAssembly standalone (obligaría a una API aparte y primera visita lenta).
 - Azure SQL (más caro que PostgreSQL).
 - FluentAssertions (licencia comercial).

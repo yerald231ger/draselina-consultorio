@@ -108,7 +108,7 @@ Cada capacidad cita sus requisitos. Las consecuencias verificables de cada `FR-n
 - Las reglas `E-n`, `T-n`, `INV-n`, `RN-n` (dominio, Parte I) y `AD-1` a `AD-28` (arquitectura) son invariantes del diseño. Una historia las cita; no las reescribe ni las contradice. Solo Gerardo las cambia, primero en el documento.
 - Lo marcado `[ASSUMPTION]` en cualquier documento se construye así, pero no es invariante.
 - La prueba de arranque (primera historia) confirmó .NET 11 con Wolverine 6 y el AppHost de Aspire el 2026-10-05; no se retrocede a .NET 10.
-- Stack fijo: .NET 11, Blazor Web App, PostgreSQL, Wolverine 6, Aspire 13, DataAnnotations, OpenTelemetry (versiones en la arquitectura, sección Stack).
+- Stack fijo: .NET 11, Blazor Web App, PostgreSQL, Aspire 13, DataAnnotations, OpenTelemetry (versiones en la arquitectura, sección Stack). Sin librería de mensajería ni de despacho: handlers propios, outbox propio y servicios en segundo plano.
 - Quedan fuera: MediatR, MassTransit, Hangfire, FluentAssertions, FluentValidation, Serilog y Blazor WebAssembly standalone.
 - Monolito modular: Agenda, Pacientes, Notificaciones y Contenido solo se hablan por `I<Módulo>Api` o por eventos de integración; viven como namespaces dentro de un solo proyecto, `DraSelina.Consultorio.Web`; las dependencias entre namespaces son las de la tabla de la arquitectura y se verifican con pruebas de arquitectura (AD-1 a AD-3).
 - La disponibilidad se calcula al vuelo; nada guarda slots. Un solo agregado, `AgendaAtencion`, resuelve los tramos vigentes y una sola `CalculadoraDeDisponibilidad` los convierte en horarios libres (AD-5).
@@ -156,6 +156,7 @@ Ninguna impide dividir el trabajo. Responsable: Gerardo.
 
 - Wolverine 6 y el AppHost de Aspire arrancan sobre .NET 11, agregando `WolverineFx.RuntimeCompilation`.
 - El middleware de DataAnnotations de Wolverine lanza excepción; el `Resultado` inválido lo entrega un middleware propio.
+- Wolverine se quitó el 2026-10-06 (épica Plataforma base, Notes); de esa prueba sigue vigente la elección de .NET 11.
 - Un `EditForm` se liga directamente a los comandos de `Contracts`, que son clases con propiedades `set`.
 
 **Se resuelven en la primera historia**

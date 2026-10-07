@@ -7,7 +7,7 @@ paradigm: 'Monolito modular con contextos delimitados (DDD), puertos hexagonales
 scope: 'Todo el sistema del piloto: sitio del consultorio, reserva pública, administración, notificaciones'
 status: final
 created: '2026-10-04'
-updated: '2026-10-05'
+updated: '2026-10-06'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, FR-30]
 sources:
   - ../prd-appointment-booking/prd-appointment-booking.md
@@ -33,13 +33,13 @@ Todo el código de la aplicación vive en un solo proyecto, `DraSelina.Consultor
 | Capa | Namespace | Carpeta dentro de `Web` | Contiene |
 | --- | --- | --- | --- |
 | Kernel | `DraSelina.Consultorio.Kernel` | `Kernel/` | Ids tipados, `IClock`, `Resultado`, `Actor` |
-| Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | `ICommand<T>`, `IQuery<T>`, `ISender`, marcadores de autorización |
+| Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | `ICommand<T>`, `IQuery<T>`, `ICommandHandler<TComando, T>`, `IQueryHandler<TConsulta, T>`, marcadores de autorización |
 | Contratos | `DraSelina.Consultorio.<Módulo>.Contracts` | `Modules/<Módulo>/Contracts/` | Comandos, consultas, DTOs, eventos de integración, API entre módulos |
 | Dominio | `DraSelina.Consultorio.<Módulo>.Domain` | `Modules/<Módulo>/Domain/` | Agregados, objetos de valor, servicios de dominio, puertos de escritura |
 | Casos de uso | `DraSelina.Consultorio.<Módulo>.Features` | `Modules/<Módulo>/Features/` | Un handler por comando o consulta; puertos de lectura |
 | Infraestructura | `DraSelina.Consultorio.<Módulo>.Infrastructure` | `Modules/<Módulo>/Infrastructure/` | DbContext, migraciones, implementación de puertos |
 | Interfaz | `DraSelina.Consultorio.UI` | `UI/` | Páginas y componentes Blazor |
-| Host | `DraSelina.Consultorio.Web` | raíz del proyecto | Composición, identidad, Wolverine |
+| Host | `DraSelina.Consultorio.Web` | raíz del proyecto | Composición, identidad, decoradores de los handlers y entrega de eventos del outbox |
 
 Módulos: **Agenda** (núcleo), **Pacientes**, **Notificaciones**, **Contenido**. Notificaciones no tiene dominio. Contenido es `Contracts` más una sola carpeta de implementación (`DraSelina.Consultorio.Contenido`).
 
@@ -97,15 +97,15 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** all
 - **Prevents:** dos dueños de una misma tabla.
-- **Rule:** cada módulo con datos tiene su DbContext y su esquema: `agenda`, `pacientes`, `notificaciones`. El host es dueño de `identidad`; Wolverine, de `wolverine`. Contenido no tiene esquema en el piloto: su contenido se despliega con la aplicación. Sin joins ni llaves foráneas entre esquemas. Un módulo nunca lee ni escribe tablas de otro.
+- **Rule:** cada módulo con datos tiene su DbContext y su esquema: `agenda`, `pacientes`, `notificaciones`. El host es dueño de `identidad`. El outbox de un módulo que publica eventos es una tabla de su propio esquema. Contenido no tiene esquema en el piloto: su contenido se despliega con la aplicación. Sin joins ni llaves foráneas entre esquemas. Un módulo nunca lee ni escribe tablas de otro.
 
 ### AD-3 — Cómo se hablan los módulos `[ADOPTED]`
 
 - **Binds:** Agenda, Pacientes, Notificaciones, Contenido
 - **Prevents:** llamadas cruzadas ad hoc, eventos con forma libre o con datos ajenos, consumidores que recalculan lo que el dueño ya decidió.
 - **Rule:**
-  - Entre módulos, síncrono solo por las interfaces `I<Módulo>Api` de `Contracts`. `ISender` es exclusivo de la interfaz.
-  - Asíncrono por eventos de integración publicados por el outbox. Agenda nunca llama a Notificaciones.
+  - Entre módulos, síncrono solo por las interfaces `I<Módulo>Api` de `Contracts`. Los handlers de casos de uso son exclusivos de la interfaz: un módulo nunca pide el handler de otro.
+  - Asíncrono por eventos de integración publicados por el outbox del módulo que publica: una tabla en su propio esquema, donde el evento se guarda en la misma transacción que el cambio. Un servicio del host en segundo plano entrega cada evento a sus handlers y reintenta los que fallan; un evento puede entregarse más de una vez. Agenda nunca llama a Notificaciones.
   - Todo evento lleva `EventoId`, `OcurridoEn`, `CitaId`, `PatientId` y `Actor`. Además: `CitaAgendada {Inicio, Fin, Origen}`, `CitaReprogramada {InicioAnterior, InicioNuevo, FinNuevo}`, `CitaCancelada {Inicio, Motivo}`.
   - Ningún evento lleva nombre, teléfono, correo, motivo de consulta ni el enlace de gestión.
   - Un consumidor nunca recalcula una clasificación que Agenda ya decidió (por ejemplo, cancelación tardía) y deduplica por `EventoId`.
@@ -159,11 +159,11 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 - **Prevents:** estados finales que luego hay que corregir.
 - **Rule:** se guardan tres: `Agendada`, `NoSePresento`, `Cancelada` (motivo: paciente, tarde, consultorio). `Atendida` se deriva de `Agendada` con el inicio ya pasado; "ya pasó" siempre se mide desde el inicio de la Cita. Reprogramar no es un estado.
 
-### AD-10 — La interfaz habla con el backend por `ISender` `[ADOPTED]`
+### AD-10 — La interfaz habla con el backend por el handler de cada caso de uso
 
 - **Binds:** all
-- **Prevents:** páginas que usan dominio, DbContext o Wolverine directamente; interfaz que arma datos de varios módulos.
-- **Rule:** todo caso de uso es un `ICommand<T>` o `IQuery<T>` en `*.Contracts` con exactamente un handler, y devuelve `Resultado`. La interfaz no compone datos de dos módulos: el handler de la consulta los reúne pidiendo a la API del otro módulo, en lote (`IPacientesApi.ObtenerContactos(ids)`). Sin MVC; HTTP solo con Minimal APIs y solo donde un formulario no alcanza (descarga del archivo de calendario).
+- **Prevents:** páginas que usan dominio o DbContext directamente; interfaz que arma datos de varios módulos; una librería de despacho entre la página y el caso de uso.
+- **Rule:** todo caso de uso es un `ICommand<T>` o `IQuery<T>` en `*.Contracts` con exactamente un handler, que implementa `ICommandHandler<TComando, T>` o `IQueryHandler<TConsulta, T>` y devuelve `Resultado<T>`. Esas dos interfaces viven en `BuildingBlocks.Contracts`. La interfaz pide al contenedor el handler del caso de uso que necesita, por su interfaz, y nunca conoce la clase que lo implementa. Cada módulo registra sus handlers. No hay `ISender`, mediador ni librería de despacho. La interfaz no compone datos de dos módulos: el handler de la consulta los reúne pidiendo a la API del otro módulo, en lote (`IPacientesApi.ObtenerContactos(ids)`). Sin MVC; HTTP solo con Minimal APIs y solo donde un formulario no alcanza (descarga del archivo de calendario).
 
 ### AD-11 — Modo de renderizado por zona
 
@@ -179,7 +179,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** all
 - **Prevents:** reglas de forma duplicadas en dos librerías.
-- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos namespaces. Los atributos estándar que el navegador soporta se validan también ahí en las páginas estáticas; todo lo demás, incluidos los atributos propios, se valida solo en el servidor. El backend valida siempre, antes del handler, con un middleware propio de Wolverine que aplica DataAnnotations a todo comando, y el fallo se entrega como `Resultado` inválido con errores por campo. Las reglas de negocio viven en el agregado, nunca en atributos.
+- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos namespaces. Los atributos estándar que el navegador soporta se validan también ahí en las páginas estáticas; todo lo demás, incluidos los atributos propios, se valida solo en el servidor. El backend valida siempre, antes del handler, con un decorador que envuelve a todo handler de comando y aplica DataAnnotations; el fallo se entrega como `Resultado` inválido con errores por campo y el handler no se ejecuta. Las reglas de negocio viven en el agregado, nunca en atributos.
 
 ### AD-13 — El tope semanal por teléfono lo decide Agenda
 
@@ -191,7 +191,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** FR-19
 - **Prevents:** una tabla de ajustes compartida con varios escritores; un umbral leído por dos módulos.
-- **Rule:** Agenda guarda sus reglas de reserva y los tipos de visita; Notificaciones guarda la hora del Recordatorio y de la Agenda del día. La pantalla de Configuración compone ambas por `ISender`. Un módulo nunca lee la configuración de otro: recibe el resultado ya decidido (AD-3).
+- **Rule:** Agenda guarda sus reglas de reserva y los tipos de visita; Notificaciones guarda la hora del Recordatorio y de la Agenda del día. La pantalla de Configuración compone ambas pidiendo el handler de cada consulta. Un módulo nunca lee la configuración de otro: recibe el resultado ya decidido (AD-3).
 
 ### AD-15 — Los datos del consultorio viven en Contenido
 
@@ -227,7 +227,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** FR-21 a FR-26
 - **Prevents:** que una reserva dependa del correo, trabajos programados fuera de Notificaciones, o dos dueños del Recordatorio.
-- **Rule:** la reserva confirma sin esperar al correo: el evento se guarda con la Cita y el envío ocurre después, con reintentos. Notificaciones reacciona a los eventos; pide contacto a Pacientes, datos del consultorio a Contenido, y enlace de gestión y archivo de calendario a Agenda; envía por `INotificationChannel`. Es la única dueña del Recordatorio: lo programa con `CitaAgendada`, lo mueve con `CitaReprogramada` y lo elimina con `CitaCancelada`. Recordatorio y Agenda del día son mensajes programados durables de Wolverine. La Agenda del día pregunta a Agenda qué hay ese día; nunca lee sus tablas.
+- **Rule:** la reserva confirma sin esperar al correo: el evento se guarda con la Cita y el envío ocurre después, con reintentos. Notificaciones reacciona a los eventos; pide contacto a Pacientes, datos del consultorio a Contenido, y enlace de gestión y archivo de calendario a Agenda; envía por `INotificationChannel`. Es la única dueña del Recordatorio: lo programa con `CitaAgendada`, lo mueve con `CitaReprogramada` y lo elimina con `CitaCancelada`. El Recordatorio es una fila en una tabla de Notificaciones, con la hora en que debe enviarse. Un servicio en segundo plano de Notificaciones revisa a intervalos, envía los que ya tocan y deja pendientes los que fallan para la siguiente vuelta. `[ASSUMPTION: cada minuto]` Ese mismo servicio envía la Agenda del día a la hora configurada, una sola vez por fecha. La Agenda del día pregunta a Agenda qué hay ese día; nunca lee sus tablas.
 
 ### AD-21 — Un solo camino de telemetría
 
@@ -241,8 +241,8 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 - **Prevents:** comandos o consultas de administración alcanzables sin sesión; actor de bitácora inventado por cada handler.
 - **Rule:**
   - ASP.NET Core Identity en el host, con segundo factor obligatorio y sin registro público.
-  - Todo comando y consulta de administración lleva el marcador `IRequiereAdministrador` en `Contracts`. Un único middleware de Wolverine rechaza los que lleguen sin usuario autenticado. No se confía en que la página esté protegida.
-  - El host entrega el actor por un único servicio: `Administrador` cuando hay sesión; `Paciente` cuando el comando llega con un enlace de gestión válido o desde la reserva pública; `Sistema` en mensajes programados. Una política que reacciona a un evento interno usa el actor que viene en ese evento, no `Sistema`: las cancelaciones elegidas al guardar o borrar una custom quedan a nombre del `Administrador`.
+  - Todo comando y consulta de administración lleva el marcador `IRequiereAdministrador` en `Contracts`. Un único decorador, que envuelve a todo handler de comando y de consulta, rechaza con `Resultado` no autorizado los que lleguen sin usuario autenticado. No se confía en que la página esté protegida.
+  - El host entrega el actor por un único servicio: `Administrador` cuando hay sesión; `Paciente` cuando el comando llega con un enlace de gestión válido o desde la reserva pública; `Sistema` en los trabajos programados (Recordatorio, Agenda del día). Una política que reacciona a un evento interno usa el actor que viene en ese evento, no `Sistema`: las cancelaciones elegidas al guardar o borrar una custom quedan a nombre del `Administrador`.
   - Las páginas de reserva llevan límite de frecuencia y verificación anti-bots, resueltos en el host antes de despachar el comando.
 
 ### AD-23 — Datos sensibles
@@ -261,7 +261,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** all
 - **Prevents:** módulos que migran cada uno a su manera, o un host que migra al arrancar.
-- **Rule:** cada DbContext lleva su historial de migraciones en su propio esquema. La extensión `btree_gist`, la restricción de exclusión y la collation se crean con SQL explícito en la migración del módulo que las posee. Un único proyecto `MigrationService` aplica todas las migraciones y ejecuta los datos iniciales; lo corre el AppHost en local y, cuando exista, el despliegue. La aplicación web nunca migra al arrancar. Sobre una base sin migrar, se niega a arrancar. Los datos iniciales son idempotentes y de su módulo: Agenda base inicial, tipos de visita y reglas por defecto (Agenda); horas de envío (Notificaciones); cuenta del administrador (host).
+- **Rule:** cada DbContext lleva su historial de migraciones en su propio esquema. La extensión `btree_gist`, la restricción de exclusión y la collation se crean con SQL explícito en la migración del módulo que las posee. Un único proyecto `MigrationService` aplica todas las migraciones y ejecuta los datos iniciales; lo corre el AppHost en local y, cuando exista, el despliegue. La aplicación web nunca migra ni crea nada al arrancar: sobre una base sin migrar arranca igual y la deja como estaba. Los datos iniciales son idempotentes y de su módulo: Agenda base inicial, tipos de visita y reglas por defecto (Agenda); horas de envío (Notificaciones); cuenta del administrador (host).
 
 ### AD-26 — Concurrencia sobre una fecha
 
@@ -292,7 +292,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 | Textos | El dominio devuelve códigos. Los textos que ve el paciente viven en la interfaz y en las plantillas de correo, con el tono de `EXPERIENCE.md`. |
 | Comandos | Clase con propiedades `set`, nunca `record`. Los formularios se ligan directo al comando; no hay modelos de formulario aparte. Eventos de integración y DTOs pueden ser `record`. |
 | Errores de validación | Por campo, con el nombre de la propiedad del comando. |
-| Transacciones | Un comando, una transacción, un módulo: cambio, bitácora y outbox juntos. La transacción es la del módulo del handler y la abre el host. El handler guarda de forma explícita; el host confirma si el `Resultado` es exitoso y deshace todo si no. |
+| Transacciones | Un comando, una transacción, un módulo: cambio, bitácora y outbox juntos. El handler del comando abre la transacción de su módulo por un puerto, guarda de forma explícita y la confirma. Toda salida con un `Resultado` no exitoso deshace la transacción antes de devolver; una excepción también la deshace. Quien llama al handler nunca abre, confirma ni guarda. |
 | Lecturas | `AsNoTracking()` y proyección; nunca `SaveChanges` en una consulta. Las consultas corren sin transacción. |
 | Archivo de calendario | Un solo generador, en Agenda, usado por la pantalla de confirmación y por Notificaciones. El lugar lo pide a Contenido por `IContenidoApi`. `[ASSUMPTION]` |
 | Pruebas | Dominio y handlers sin base de datos; integración contra PostgreSQL real, levantado con Testcontainers y migrado ejecutando el `MigrationService`; reglas de referencia como pruebas de arquitectura. |
@@ -305,7 +305,6 @@ Versiones verificadas en la web el 2026-10-04.
 | --- | --- |
 | .NET / ASP.NET Core / Blazor Web App | 11.0 (candidata vigente al crear la solución; definitiva en noviembre de 2026) |
 | Aspire (AppHost, ServiceDefaults) | 13.6.0 |
-| WolverineFx, `.EntityFrameworkCore`, `.Postgresql`, `.RuntimeCompilation` | 6.45.x |
 | EF Core | 10.0.12, hasta que salga la 11.0 definitiva |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3, hasta que salga la 11.0 definitiva |
 | PostgreSQL con `btree_gist` | 18.x `[ASSUMPTION: disponible en Azure Flexible Server; si no, 17.x]` |
@@ -314,6 +313,7 @@ Versiones verificadas en la web el 2026-10-04.
 | bUnit | 2.11.3 |
 | Testcontainers.PostgreSql | 4.15.0 |
 | Microsoft.AspNetCore.Mvc.Testing (solo en pruebas) | la misma que ASP.NET Core |
+| Scrutor | 6.1.x `[ASSUMPTION: la versión que usa Cypma.Cop; se confirma que corre sobre .NET 11 al agregarla]` |
 | libphonenumber-csharp | última estable al crear la solución |
 | Correo: Azure Communication Services Email | servicio |
 | Anti-bots: Cloudflare Turnstile | servicio |
@@ -336,7 +336,7 @@ flowchart TB
         NO -->|contrato| CO
         NO -->|contrato| AG
     end
-    W --> DB[(PostgreSQL · esquemas agenda, pacientes, notificaciones, identidad, wolverine)]
+    W --> DB[(PostgreSQL · esquemas agenda, pacientes, notificaciones, identidad)]
     NO --> EM[Proveedor de correo]
     EM --> P
     EM --> S[Dra. Selina]
@@ -360,7 +360,7 @@ src/
   DraSelina.Consultorio.MigrationService/   # migraciones y datos iniciales
   DraSelina.Consultorio.Web/                # todo el código de la aplicación
     Kernel/                                 # ids, IClock, Resultado, Actor
-    BuildingBlocks/Contracts/               # ICommand, IQuery, ISender, marcadores
+    BuildingBlocks/Contracts/               # ICommand, IQuery, sus handlers, marcadores
     Modules/Agenda/{Contracts,Domain,Features,Infrastructure}/
     Modules/Pacientes/{Contracts,Domain,Features,Infrastructure}/
     Modules/Notificaciones/{Contracts,Features,Infrastructure}/
@@ -403,8 +403,8 @@ tests/
 
 ## Open Questions
 
-1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Resuelta el 2026-10-05: arrancan juntos sobre .NET 11.0.0-rc.1 y se sigue con .NET 11. Wolverine 6 necesita el paquete `WolverineFx.RuntimeCompilation` para arrancar en modo dinámico. Registro: `spikes/arranque/REGISTRO.md`.
-2. **Fallo de validación como resultado.** Resuelta el 2026-10-05: el middleware de DataAnnotations de Wolverine, con su configuración por defecto, lanza `ValidationException`; se usa un middleware propio (AD-12). Registro: `spikes/arranque/REGISTRO.md`.
+1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Resuelta el 2026-10-05: arrancan juntos sobre .NET 11.0.0-rc.1 y se sigue con .NET 11. Wolverine 6 necesita el paquete `WolverineFx.RuntimeCompilation` para arrancar en modo dinámico. Registro: `spikes/arranque/REGISTRO.md`. Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12.
+2. **Fallo de validación como resultado.** Resuelta el 2026-10-05: el middleware de DataAnnotations de Wolverine, con su configuración por defecto, lanza `ValidationException`; se usa un middleware propio (AD-12). Registro: `spikes/arranque/REGISTRO.md`. Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12.
 3. **Formulario ligado al comando.** Resuelta el 2026-10-05: un `EditForm` se liga directo al comando con `[SupplyParameterFromForm]`; los comandos son clases con propiedades `set` (Consistency Conventions). Registro: `spikes/arranque/REGISTRO.md`.
 4. **Hora de la Agenda del día** cuando hay citas por la mañana.
 5. **Motivo de consulta en la Agenda del día.** Es un dato de salud que viaja por correo; ¿se envía, o solo hora y Paciente?

@@ -2,7 +2,7 @@
 title: "Diagramas C4 — Sistema de citas, Dra. Selina Medina"
 status: final
 created: 2026-10-04
-updated: 2026-10-05
+updated: 2026-10-06
 source: architecture-appointment-booking.md
 ---
 
@@ -54,7 +54,7 @@ C4Container
   System_Boundary(citas, "Sistema de citas") {
     Container(web, "Aplicación web", "Blazor Web App, .NET 11", "Sitio y reserva en SSR estático; administración en Interactive Server; módulos y mensajería en el mismo proceso")
     Container(mig, "Servicio de migraciones", ".NET 11, EF Core", "Aplica migraciones y datos iniciales; corre antes que la aplicación")
-    ContainerDb(db, "Base de datos", "PostgreSQL con btree_gist", "Esquemas agenda, pacientes, notificaciones, identidad y wolverine")
+    ContainerDb(db, "Base de datos", "PostgreSQL con btree_gist", "Esquemas agenda, pacientes, notificaciones e identidad")
   }
 
   System_Ext(correo, "Proveedor de correo", "Azure Communication Services Email")
@@ -86,23 +86,23 @@ C4Component
   Container_Boundary(web, "Aplicación web") {
     Component(uiPub, "Interfaz pública", "Blazor SSR estático", "Sitio y pasos de la reserva; sin estado en el servidor")
     Component(uiAdm, "Interfaz de administración", "Blazor Interactive Server", "Agenda, calendario de atención, pacientes, configuración")
-    Component(host, "Host", "ASP.NET Core Identity, Wolverine", "Sesión con segundo factor, actor, límite de frecuencia, despacho de comandos")
+    Component(host, "Host", "ASP.NET Core Identity", "Sesión con segundo factor, actor, límite de frecuencia, decoradores de los handlers, entrega de eventos")
     Component(agenda, "Agenda", "Módulo núcleo", "Citas, agenda de atención, disponibilidad, bitácora")
     Component(pacientes, "Pacientes", "Módulo", "Identidad y contacto del paciente")
     Component(notif, "Notificaciones", "Módulo", "Correos, recordatorio y agenda del día")
     Component(contenido, "Contenido", "Módulo", "Textos del sitio y datos del consultorio")
-    ComponentQueue(outbox, "Eventos de cita", "Outbox de Wolverine", "CitaAgendada, CitaReprogramada, CitaCancelada")
+    ComponentQueue(outbox, "Eventos de cita", "Tabla agenda.outbox", "CitaAgendada, CitaReprogramada, CitaCancelada")
   }
 
-  Rel(uiPub, host, "Envía comandos y consultas por", "ISender")
-  Rel(uiAdm, host, "Envía comandos y consultas por", "ISender")
+  Rel(uiPub, host, "Pide el handler de cada caso de uso a", "ICommandHandler, IQueryHandler")
+  Rel(uiAdm, host, "Pide el handler de cada caso de uso a", "ICommandHandler, IQueryHandler")
   Rel(host, agenda, "Despacha a")
   Rel(host, pacientes, "Despacha a")
   Rel(host, contenido, "Despacha a")
   Rel(agenda, pacientes, "Busca o crea al paciente en", "IPacientesApi")
   Rel(agenda, contenido, "Pide el lugar para el archivo de calendario a", "IContenidoApi")
   Rel(agenda, outbox, "Publica en")
-  Rel(notif, outbox, "Se suscribe a")
+  Rel(notif, outbox, "Recibe, entregados por el host, los eventos de")
   Rel(notif, pacientes, "Pide contacto a", "IPacientesApi")
   Rel(notif, agenda, "Pide enlace y calendario a", "IAgendaApi")
   Rel(notif, contenido, "Pide datos del consultorio a", "IContenidoApi")
@@ -121,7 +121,7 @@ El núcleo. La disponibilidad se calcula; nunca se guardan slots.
 C4Component
   title Componentes — Módulo Agenda
 
-  Component_Ext(host, "Host", "Wolverine", "Despacha comandos y consultas ya validados")
+  Component_Ext(host, "Host", "Decoradores", "Valida y autoriza antes de cada handler")
   Component_Ext(pacientes, "Pacientes", "IPacientesApi", "Identidad del paciente")
   ContainerDb(db, "Esquema agenda", "PostgreSQL", "Citas, agenda base, agenda custom, tipos de visita, bitácora")
 
@@ -162,14 +162,14 @@ C4Dynamic
 
   Container_Boundary(web, "Aplicación web") {
     Component(ui, "Interfaz pública", "Blazor SSR estático", "Formulario de confirmación")
-    Component(host, "Host", "Wolverine", "Anti-bots, validación, despacho")
+    Component(host, "Host", "ASP.NET Core", "Anti-bots y validación")
     Component(agenda, "Agenda", "Módulo", "AgendarCita")
     Component(pacientes, "Pacientes", "Módulo", "BuscarOCrear")
     Component(notif, "Notificaciones", "Módulo", "Confirmación y recordatorio")
   }
 
   Rel(paciente, ui, "1. Envía el formulario con su SolicitudId")
-  Rel(ui, host, "2. Envía AgendarCita", "ISender")
+  Rel(ui, host, "2. Envía AgendarCita", "ICommandHandler")
   Rel(host, agenda, "3. Verifica anti-bots, valida la forma y despacha")
   Rel(agenda, pacientes, "4. Busca o crea al paciente y pide los que comparten teléfono")
   Rel(agenda, db, "5. Toma el candado de la fecha, lee tramos vigentes, guarda cita, bitácora y evento")

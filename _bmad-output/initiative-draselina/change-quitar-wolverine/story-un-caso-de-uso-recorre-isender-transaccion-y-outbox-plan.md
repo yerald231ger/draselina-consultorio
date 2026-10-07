@@ -1,7 +1,7 @@
 ---
 title: 'Un caso de uso recorre ISender, transacción y outbox'
 type: 'feature' # feature | bugfix | refactor | chore
-ticket: '5' # the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
+ticket: '' # era la entrada 5 sobre Wolverine; se vacía para que este plan retirado no marque como retirada a la entrada 5 reescrita. Antes: the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
 created: '2026-10-06'
 status: 'dropped' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
 baseline_revision: '95d40a6e4b730ea783a6d15e5df3a88f16595ffb' # the commit the work starts from, set before any code change
@@ -229,6 +229,6 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 - Status: dropped
 - Gerardo decidió quitar Wolverine de la solución el 2026-10-06. Este plan y su parche quedan como registro de los dos intentos sobre Wolverine; no se continúan.
 - El código de este plan (commit `b2e3c10`) se revirtió con un commit de reversión. La entrada 5 se reescribió ("Un caso de uso recorre su handler, su transacción y Resultado") y tendrá un plan nuevo.
-- Propuesta de cambio: [change-quitar-wolverine.md](../change-quitar-wolverine/change-quitar-wolverine.md).
+- Propuesta de cambio: [change-quitar-wolverine.md](change-quitar-wolverine.md).
 - La revisión de seguimiento que se lanzó ese día (lente `quick`, 7 hallazgos) no se trió: perdió objeto con la decisión. Sus hallazgos eran sobre las comprobaciones de arranque de la política de Wolverine, la visibilidad pública que pide su código generado y la comprobación de almacenamiento al arrancar; ninguno aplica al reemplazo. Uno sí era sobre el proceso: señaló que el plan decía "Sin commits" y el cambio estaba confirmado; los commits los hizo el orquestador al cerrar, sin preguntar antes a Gerardo.
 - Lo rescatable para el plan nuevo: la matriz de once filas del `<intent-contract>` y la forma de los tipos de prueba (`Anotar`, `LeerAnotacion`, el puerto `IAnotaciones`), que están en el historial de git en `b2e3c10`.

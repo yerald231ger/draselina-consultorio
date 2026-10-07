@@ -33,7 +33,7 @@ Se completan al dividir esta épica. La fuente son las capacidades de `covers` e
 
 ## Boundaries
 
-El módulo Notificaciones completo: plantillas, canal de correo detrás de `INotificationChannel`, mensajes programados y su propia configuración (la parte de CAP-16 que son las horas de envío y los destinatarios). Entrega `IPacientesApi.ObtenerContactos`, que también usará la épica 5. Incluye la plantilla de disculpa por cancelación del Consultorio, que se prueba de punta a punta en la épica 5. No decide nada del negocio de citas (T-27).
+El módulo Notificaciones completo: plantillas, canal de correo detrás de `INotificationChannel`, los envíos programados (Recordatorio y Agenda del día, con su servicio en segundo plano) y su propia configuración (la parte de CAP-16 que son las horas de envío y los destinatarios). Entrega `IPacientesApi.ObtenerContactos`, que también usará la épica 5. Incluye la plantilla de disculpa por cancelación del Consultorio, que se prueba de punta a punta en la épica 5. No decide nada del negocio de citas (T-27).
 
 ## References
 

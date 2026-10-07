@@ -3,7 +3,7 @@ title: "Diseño de dominio (DDD) y modelo de datos — Sistema de citas, Dra. Se
 status: final
 invariant: true
 created: 2026-10-04
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - architecture-appointment-booking.md
   - ../brainstorm-agenda-horario-configuracion/brainstorm-agenda-horario-configuracion.md
@@ -487,7 +487,7 @@ Las reacciones que ocurren fuera de Agenda (enviar la disculpa, mover el recorda
 
 **Notificaciones.** Casos de uso e infraestructura, sin agregados.
 
-- **T-24.** Reacciona a los tres eventos de Agenda y a sus propios mensajes programados. Pide lo que necesita por contrato.
+- **T-24.** Reacciona a los tres eventos de Agenda y envía, cuando les llega su hora, sus propios envíos programados (Recordatorio y Agenda del día). Pide lo que necesita por contrato.
 - **T-25.** Es la única dueña del recordatorio: lo programa al agendarse la cita, lo mueve al reprogramarse y lo elimina al cancelarse.
 - **T-26.** La reserva nunca espera al correo: el envío ocurre después, con reintentos, y deduplica por `EventoId`.
 - **T-27.** No decide nada del negocio de citas: ni si una cancelación fue tardía, ni si un día se atiende. Lo pregunta o lo recibe.
@@ -581,7 +581,7 @@ classDiagram
 | Implementación de puertos, persistencia | `<Contexto>.Infrastructure` |
 | Ids tipados, `IClock`, `Resultado`, `Actor` | `Kernel` |
 
-- **T-28.** El namespace `Domain` de un contexto no usa nada salvo el `Kernel`. No conoce EF Core, Wolverine, ASP.NET ni otros contextos. Las capas son namespaces y carpetas dentro de un solo proyecto, no proyectos separados.
+- **T-28.** El namespace `Domain` de un contexto no usa nada salvo el `Kernel`. No conoce EF Core, ASP.NET ni otros contextos. Las capas son namespaces y carpetas dentro de un solo proyecto, no proyectos separados.
 
 ### 2.7 Cómo se hace cumplir
 
@@ -619,7 +619,7 @@ Las columnas y restricciones que implementan una regla de la Parte I o una decis
 | Tema | Convención | Origen |
 | --- | --- | --- |
 | Base | PostgreSQL, una sola base | AD-2 |
-| Esquemas | `agenda`, `pacientes`, `notificaciones`, `identidad` (host), `wolverine` | AD-2 |
+| Esquemas | `agenda`, `pacientes`, `notificaciones`, `identidad` (host) | AD-2 |
 | Entre esquemas | Sin llaves foráneas ni joins; solo el id | AD-2 |
 | Nombres | Tablas y columnas en `snake_case`, en español | `[ASSUMPTION]` |
 | Identificadores | `uuid`, Guid v7 generado en el dominio | AD-18 |
@@ -819,7 +819,6 @@ erDiagram
     recordatorio_programado {
         uuid cita_id PK "id de agenda.cita, sin FK"
         timestamptz programado_para
-        integer version
     }
 ```
 
@@ -952,6 +951,19 @@ Se escribe en la misma transacción que el cambio (AD-16). Solo se inserta; nunc
 
 - Índice en `(entidad, entidad_id, ocurrido_en)`.
 
+### `agenda.outbox` `[ASSUMPTION: tabla completa]`
+
+Los eventos de integración que Agenda publica (AD-3). Cada fila se guarda en la misma transacción que el cambio que la origina.
+
+| Columna | Tipo | Nulo | Notas |
+| --- | --- | --- | --- |
+| `id` | `uuid` | no | PK. Es el `EventoId` del evento |
+| `tipo` | `text` | no | `CitaAgendada`, `CitaReprogramada`, `CitaCancelada` |
+| `contenido` | `jsonb` | no | El evento serializado. Sin datos personales (AD-23) |
+| `ocurrido_en` | `timestamptz` | no | |
+| `entregado_en` | `timestamptz` | sí | Nulo mientras está pendiente |
+| `intentos` | `integer` | no | Entregas fallidas hasta ahora |
+
 ## Esquema `pacientes`
 
 ### `pacientes.paciente`
@@ -995,7 +1007,7 @@ Registro de lo enviado, para no duplicar correos (AD-3 pide deduplicar por `Even
 | Columna | Tipo | Nulo | Notas |
 | --- | --- | --- | --- |
 | `id` | `uuid` | no | PK |
-| `evento_id` | `uuid` | sí | Nulo en mensajes programados |
+| `evento_id` | `uuid` | sí | Nulo en los envíos programados |
 | `cita_id` | `uuid` | sí | Sin llave foránea |
 | `tipo` | `text` | no | `Confirmacion`, `Recordatorio`, `Reprogramada`, `Cancelada`, `CanceladaPorConsultorio`, `AlertaTardia`, `AgendaDelDia` |
 | `canal` | `text` | no | `correo` |
@@ -1007,18 +1019,16 @@ Registro de lo enviado, para no duplicar correos (AD-3 pide deduplicar por `Even
 
 ### `notificaciones.recordatorio_programado` `[ASSUMPTION: tabla completa]`
 
-Permite a Notificaciones mover o eliminar el recordatorio de una cita (AD-20).
+El recordatorio pendiente de una cita (AD-20). El servicio en segundo plano de Notificaciones envía los que tienen `programado_para` ya cumplido. Mover el recordatorio es actualizar `programado_para`; eliminarlo es borrar la fila. `[ASSUMPTION]` Al enviarlo se borra la fila; lo enviado queda en `notificaciones.mensaje`.
 
 | Columna | Tipo | Nulo | Notas |
 | --- | --- | --- | --- |
 | `cita_id` | `uuid` | no | PK |
 | `programado_para` | `timestamptz` | no | |
-| `version` | `integer` | no | El mensaje programado lleva la versión; al dispararse, si no coincide, se descarta |
 
 ## Esquemas que no se diseñan aquí
 
 - **`identidad`:** las tablas estándar de ASP.NET Core Identity. Las crea la migración del host.
-- **`wolverine`:** outbox, colas durables y mensajes programados. Las crea Wolverine.
 
 ## Datos iniciales (AD-25)
 
@@ -1046,7 +1056,8 @@ Permite a Notificaciones mover o eliminar el recordatorio de una cita (AD-20).
 - `orden` y `activo` en `tipo_de_visita`.
 - `nombre_busqueda` como columna aparte para la búsqueda.
 - Los correos de la doctora y del administrador viven en la configuración de Notificaciones.
-- Las tablas `notificaciones.mensaje` y `notificaciones.recordatorio_programado` completas.
+- Las tablas `notificaciones.mensaje`, `notificaciones.recordatorio_programado` y `agenda.outbox` completas.
+- El recordatorio se borra al enviarse.
 - Tope semanal inicial de 3.
 
 ---
@@ -1063,3 +1074,4 @@ Permite a Notificaciones mover o eliminar el recordatorio de una cita (AD-20).
 | 2026-10-05 | Cierre del documento. Borrar una custom pregunta qué hacer con las citas que quedan fuera, igual que guardarla (RN-9, RN-10, RN-12, P-1). Las cancelaciones de P-1 llevan como actor al Administrador (T-31). El tope semanal lo decide `Cita.Agendar` con el conteo que le pasa el handler (RN-18). Tramo mínimo en base y custom (INV-B5, INV-A6). Un solo valor para tardía y reprogramación (RN-17); desaparece el corte de reprogramación. E-12 reescrita: Agenda no guarda ni modela datos de contacto | Gerardo |
 | 2026-10-05 | "Ya pasó" se mide desde el inicio de la cita (RN-31). Motivo de consulta obligatorio en línea (INV-C11). Precisiones sin cambio de comportamiento: ids en el Kernel, `ReglasDeAgenda` frente a `ReglasDeReserva`, entradas de la calculadora, Contenido → Agenda para el archivo de calendario. El documento pasa a final, sin revisión independiente | Gerardo |
 | 2026-10-05 | Las capas de cada contexto (`Contracts`, `Domain`, `Features`, `Infrastructure`), el Kernel y la interfaz dejan de ser proyectos: son namespaces y carpetas dentro de `DraSelina.Consultorio.Web` (2.6, T-28, 2.7). Las reglas de dependencia no cambian; ahora las verifican las pruebas, no el compilador. Separarlas en proyectos queda diferido | Gerardo |
+| 2026-10-06 | Se quita Wolverine de la solución. T-24: "mensajes programados" pasa a "envíos programados (Recordatorio y Agenda del día)", que Notificaciones envía cuando les llega su hora. T-28: sale la palabra "Wolverine" de lo que el dominio no conoce. Ninguna de las dos reglas cambia de fondo. En la Parte II: sale el esquema `wolverine`, `recordatorio_programado` pierde `version` y se agrega `agenda.outbox` | Gerardo |
