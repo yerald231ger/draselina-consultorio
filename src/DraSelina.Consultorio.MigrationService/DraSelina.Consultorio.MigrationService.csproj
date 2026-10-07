@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Migraciones y datos iniciales (AD-25): aplica las migraciones de cada módulo, crea el almacenamiento de
-       Wolverine y termina. Lo corre el AppHost antes de arrancar la web.
+  <!-- Migraciones y datos iniciales (AD-25): aplica las migraciones de cada módulo y termina. Lo corre el
+       AppHost antes de arrancar la web.
        Referencia a Web porque ahí viven los DbContext de cada módulo. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

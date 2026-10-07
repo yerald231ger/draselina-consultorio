@@ -5,7 +5,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 var postgres = builder.AddPostgres("postgres");
 var consultorio = postgres.AddDatabase("consultorio");
 
-// Aplica las migraciones de todos los módulos, crea el almacenamiento de Wolverine y termina (AD-25).
+// Aplica las migraciones de todos los módulos y termina (AD-25).
 var migraciones = builder.AddProject<Projects.DraSelina_Consultorio_MigrationService>("migraciones")
     .WithReference(consultorio)
     .WaitFor(consultorio);

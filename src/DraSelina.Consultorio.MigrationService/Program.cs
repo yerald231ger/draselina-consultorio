@@ -9,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;
-using Wolverine;
 
 // Aplica todas las migraciones y termina. Sale con 0 si todo quedó aplicado y con 1 si algo falló:
 // el AppHost solo arranca la web cuando este proceso termina con 0.
@@ -32,11 +31,9 @@ if (builder.Configuration.GetConnectionString(BaseDeDatos.Nombre) is { } cadena)
         .AddAgenda(cadena)
         .AddPacientes(cadena)
         .AddNotificaciones(cadena);
-
-    builder.UseWolverine(opciones => AlmacenamientoDeWolverine.Configurar(opciones, cadena));
 }
 
-// El host se construye pero no se arranca: solo hacen falta sus servicios, no un bus de mensajes corriendo.
+// El host se construye pero no se arranca: solo hacen falta sus servicios.
 using var host = builder.Build();
 
 var registro = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("DraSelina.Consultorio.MigrationService");
@@ -56,10 +53,6 @@ try
     await Migrar<AgendaDbContext>(AgendaDbContext.Esquema);
     await Migrar<PacientesDbContext>(PacientesDbContext.Esquema);
     await Migrar<NotificacionesDbContext>(NotificacionesDbContext.Esquema);
-
-    registro.LogInformation("Creando el almacenamiento de Wolverine en el esquema {Esquema}", AlmacenamientoDeWolverine.Esquema);
-    await AlmacenamientoDeWolverine.CrearAsync(host.Services);
-    registro.LogInformation("Almacenamiento de Wolverine listo en el esquema {Esquema}", AlmacenamientoDeWolverine.Esquema);
 
     registro.LogInformation("Migraciones terminadas");
     return 0;

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Verifica el arranque contra el AppHost YA levantado en otra terminal:
 #   ./dotnet.sh run --project src/DraSelina.Consultorio.AppHost
-# Ejecuta cuatro filas: arranque completo, historial de migraciones por esquema, almacenamiento de
-# Wolverine y salud. Sale con 0 solo si todas pasan; si no, con el número de filas que fallan.
+# Ejecuta tres filas: arranque completo, historial de migraciones por esquema y salud.
+# Sale con 0 solo si todas pasan; si no, con el número de filas que fallan.
 # Necesita docker, curl y kubectl. kubectl se usa para preguntarle al orquestador de Aspire (DCP) el
 # estado y el código de salida de cada recurso; no hace falta ningún clúster.
 # Uso: scripts/verificar-arranque.sh [url-de-la-web]      (por defecto http://localhost:5080)
@@ -92,22 +92,11 @@ fi
 cierra
 
 # --- Fila 3 ---------------------------------------------------------------------------------------
-fila "Almacenamiento de Wolverine"
-if [ -z "$CONTENEDOR" ]; then
-  falla "sin PostgreSQL no se puede consultar"
-else
-  N="$(sql "select count(*) from information_schema.schemata where schema_name='wolverine'")"
-  T="$(sql "select count(*) from information_schema.tables where table_schema='wolverine'")"
-  if [ "$N" = "1" ] && [ "${T:-0}" -gt 0 ]; then ok "esquema wolverine con $T tablas"; else falla "esquema wolverine: existe=$N tablas=${T:-?}"; fi
-fi
-cierra
-
-# --- Fila 4 ---------------------------------------------------------------------------------------
 fila "Salud"
 HTTP="$(curl -s -m 10 -o /dev/null -w '%{http_code}' "$WEB/health")"
 [ "$HTTP" = "200" ] && ok "GET $WEB/health -> 200" || falla "GET $WEB/health -> $HTTP"
 cierra
 
 echo
-if [ "$FALLAS" -eq 0 ]; then echo "RESULTADO: las cuatro filas pasan"; else echo "RESULTADO: $FALLAS fila(s) fallan"; fi
+if [ "$FALLAS" -eq 0 ]; then echo "RESULTADO: las tres filas pasan"; else echo "RESULTADO: $FALLAS fila(s) fallan"; fi
 exit "$FALLAS"

@@ -1,7 +1,6 @@
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
-using DraSelina.Consultorio.Web;
 
 namespace DraSelina.Consultorio.IntegrationTests;
 
@@ -34,9 +33,9 @@ public sealed class BaseMigradaTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task El_almacenamiento_de_Wolverine_esta_en_su_esquema()
+    public async Task La_base_migrada_no_tiene_el_esquema_wolverine()
     {
-        Assert.True(await Consultas.ExisteEsquemaAsync(arnes.CadenaDeConexion, AlmacenamientoDeWolverine.Esquema, Cancelacion));
-        Assert.NotEmpty(await Consultas.TablasAsync(arnes.CadenaDeConexion, AlmacenamientoDeWolverine.Esquema, Cancelacion));
+        // El MigrationService ya no crea ningún almacenamiento de mensajes: ese esquema no existe.
+        Assert.False(await Consultas.ExisteEsquemaAsync(arnes.CadenaDeConexion, "wolverine", Cancelacion));
     }
 }

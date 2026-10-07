@@ -53,7 +53,7 @@ public class VerificadorTests
     public void Features_puede_usar_los_Contracts_de_otro_modulo_y_cualquier_paquete()
     {
         Assert.Empty(Verificar("Modules/Agenda/Features/Agendar/AgendarHandler.cs", """
-            using Wolverine;
+            using Microsoft.Extensions.Logging;
             using DraSelina.Consultorio.Kernel;
             using DraSelina.Consultorio.Agenda.Domain;
             using DraSelina.Consultorio.Agenda.Contracts;
@@ -158,7 +158,7 @@ public class VerificadorTests
     public void El_host_compone_y_puede_usar_todo()
     {
         Assert.Empty(Verificar("Program.cs", """
-            using Wolverine;
+            using Microsoft.AspNetCore.Builder;
             using DraSelina.Consultorio.Agenda.Infrastructure;
             using DraSelina.Consultorio.UI;
             """));

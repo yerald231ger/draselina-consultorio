@@ -15,9 +15,6 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <!-- WolverineFx 6.45.x. -->
-    <PackageVersion Include="WolverineFx" Version="6.45.0" />
-    <PackageVersion Include="WolverineFx.Postgresql" Version="6.45.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <!-- Solo en pruebas. La misma versión que ASP.NET Core: la del runtime de .dotnet/. -->

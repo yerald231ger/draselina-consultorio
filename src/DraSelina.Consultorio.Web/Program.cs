@@ -14,8 +14,8 @@ builder.AddServiceDefaults();
 
 var cadena = BaseDeDatos.CadenaDeConexion(builder.Configuration);
 
-// Solo se registran los contextos. La web nunca crea ni migra nada al arrancar (AD-25):
-// eso lo hace el MigrationService, que termina antes de que la web arranque.
+// Cada módulo registra lo suyo: su contexto, su puerto de transacción y sus handlers (AD-10). La web nunca crea
+// ni migra nada al arrancar (AD-25): eso lo hace el MigrationService, que termina antes de que la web arranque.
 builder.Services
     .AddAgenda(cadena)
     .AddPacientes(cadena)

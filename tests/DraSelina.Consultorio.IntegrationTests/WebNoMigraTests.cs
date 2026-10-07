@@ -2,7 +2,6 @@ using System.Net;
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
-using DraSelina.Consultorio.Web;
 
 namespace DraSelina.Consultorio.IntegrationTests;
 
@@ -25,10 +24,7 @@ public sealed class WebNoMigraTests(Arnes arnes)
 
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
 
-        string[] esquemas =
-        [
-            AgendaDbContext.Esquema, PacientesDbContext.Esquema, NotificacionesDbContext.Esquema, AlmacenamientoDeWolverine.Esquema,
-        ];
+        string[] esquemas = [AgendaDbContext.Esquema, PacientesDbContext.Esquema, NotificacionesDbContext.Esquema];
         foreach (var esquema in esquemas)
         {
             Assert.False(await Consultas.ExisteEsquemaAsync(vacia, esquema, Cancelacion), $"La web creó el esquema '{esquema}'.");

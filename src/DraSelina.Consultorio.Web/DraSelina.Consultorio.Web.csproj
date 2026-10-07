@@ -16,8 +16,6 @@
     <!-- Solo en tiempo de diseño, para `dotnet ef migrations add`. No llega a quien referencia a Web. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-    <PackageReference Include="WolverineFx" />
-    <PackageReference Include="WolverineFx.Postgresql" />
   </ItemGroup>
 
   <ItemGroup>

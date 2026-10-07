@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Testcontainers.PostgreSql;
 
@@ -94,8 +95,13 @@ public sealed class Arnes : IAsyncLifetime
     // Una sola fábrica por llamada, que desecha quien la pidió.
     private sealed class Web(string cadenaDeConexion) : WebApplicationFactory<Program>
     {
-        protected override void ConfigureWebHost(IWebHostBuilder builder) =>
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
             builder.UseSetting($"ConnectionStrings:{BaseDeDatos.Nombre}", cadenaDeConexion);
+
+            // Los tipos de prueba entran a la web en memoria como entra un módulo: con su registro (AddPruebas).
+            builder.ConfigureServices(servicios => servicios.AddPruebas(cadenaDeConexion));
+        }
     }
 
     // Después de migrar: el esquema de los tipos de prueba y sus tablas. No pasa por migraciones ni toca
