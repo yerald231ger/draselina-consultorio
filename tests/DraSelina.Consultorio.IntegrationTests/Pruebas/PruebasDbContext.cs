@@ -13,10 +13,6 @@ public sealed class PruebasDbContext(DbContextOptions<PruebasDbContext> options)
 
     public DbSet<Apunte> Apuntes => Set<Apunte>();
 
-    public DbSet<Anotacion> Anotaciones => Set<Anotacion>();
-
-    public DbSet<RastroDeAnotacion> Rastros => Set<RastroDeAnotacion>();
-
     public static DbContextOptions<PruebasDbContext> Opciones(string cadenaDeConexion) =>
         new DbContextOptionsBuilder<PruebasDbContext>().UseNpgsql(cadenaDeConexion).Options;
 

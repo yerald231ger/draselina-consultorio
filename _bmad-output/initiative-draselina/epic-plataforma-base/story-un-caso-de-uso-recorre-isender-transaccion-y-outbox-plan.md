@@ -3,7 +3,7 @@ title: 'Un caso de uso recorre ISender, transacción y outbox'
 type: 'feature' # feature | bugfix | refactor | chore
 ticket: '5' # the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
 created: '2026-10-06'
-status: 'built' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
+status: 'dropped' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
 baseline_revision: '95d40a6e4b730ea783a6d15e5df3a88f16595ffb' # the commit the work starts from, set before any code change
 route: 'full' # oneshot | full — set by step-02
 route_source: 'auto' # pinned | auto — set with route by step-02
@@ -12,7 +12,7 @@ review: 'quick' # none | quick | thorough — set by step-04
 review_source: 'pinned' # pinned | auto — set with review by step-04
 lenses_ran: ['quick'] # ids of the lenses launched, set by step-04
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
-followup_review_recommended: true # set by step-04 at Finalize — true if the LLM decided another review pass is worthwhile
+followup_review_recommended: false # set by step-04 at Finalize — true if the LLM decided another review pass is worthwhile
 context:
   - '{project-root}/_bmad-output/initiative-draselina/architecture-appointment-booking/architecture-appointment-booking.md'
   - '{project-root}/README.md'
@@ -223,3 +223,12 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
   - El README fija como convención que los eventos se publican con `IMessageBus` dentro del handler y que Wolverine encuentra el handler por nombre (`*Handler`, método `Handle`).
   - Las entradas 6 y 7 deben registrar su middleware de modo que corra antes de abrir la transacción.
   - Pregunta abierta en la épica: interceptores de EF Core para eventos y permanencia de Wolverine, al terminar todas las épicas.
+
+## Cierre — plan retirado (2026-10-06)
+
+- Status: dropped
+- Gerardo decidió quitar Wolverine de la solución el 2026-10-06. Este plan y su parche quedan como registro de los dos intentos sobre Wolverine; no se continúan.
+- El código de este plan (commit `b2e3c10`) se revirtió con un commit de reversión. La entrada 5 se reescribió ("Un caso de uso recorre su handler, su transacción y Resultado") y tendrá un plan nuevo.
+- Propuesta de cambio: [change-quitar-wolverine.md](../change-quitar-wolverine/change-quitar-wolverine.md).
+- La revisión de seguimiento que se lanzó ese día (lente `quick`, 7 hallazgos) no se trió: perdió objeto con la decisión. Sus hallazgos eran sobre las comprobaciones de arranque de la política de Wolverine, la visibilidad pública que pide su código generado y la comprobación de almacenamiento al arrancar; ninguno aplica al reemplazo. Uno sí era sobre el proceso: señaló que el plan decía "Sin commits" y el cambio estaba confirmado; los commits los hizo el orquestador al cerrar, sin preguntar antes a Gerardo.
+- Lo rescatable para el plan nuevo: la matriz de once filas del `<intent-contract>` y la forma de los tipos de prueba (`Anotar`, `LeerAnotacion`, el puerto `IAnotaciones`), que están en el historial de git en `b2e3c10`.
