@@ -961,8 +961,14 @@ Los eventos de integración que Agenda publica (AD-3). Cada fila se guarda en la
 | `tipo` | `text` | no | `CitaAgendada`, `CitaReprogramada`, `CitaCancelada` |
 | `contenido` | `jsonb` | no | El evento serializado. Sin datos personales (AD-23) |
 | `ocurrido_en` | `timestamptz` | no | |
-| `entregado_en` | `timestamptz` | sí | Nulo mientras está pendiente |
+| `clave_de_orden` | `uuid` | no | El `CitaId`. Un evento no se entrega mientras haya otro anterior con la misma clave todavía pendiente |
+| `estado` | `text` | no | `Pendiente`, `Entregado`, `Fallido` |
 | `intentos` | `integer` | no | Entregas fallidas hasta ahora |
+| `proximo_intento_en` | `timestamptz` | no | Desde cuándo puede intentarse. Al guardar el evento es `ocurrido_en` |
+| `entregado_en` | `timestamptz` | sí | Nulo mientras no se ha entregado |
+
+- Tras una entrega fallida el evento espera 1 min, 5 min, 15 min, 1 h, 4 h y 12 h; al fallar el séptimo intento queda `Fallido`.
+- El servicio de entrega toma los pendientes con `FOR UPDATE SKIP LOCKED`, para que dos instancias no entreguen el mismo evento.
 
 ## Esquema `pacientes`
 
