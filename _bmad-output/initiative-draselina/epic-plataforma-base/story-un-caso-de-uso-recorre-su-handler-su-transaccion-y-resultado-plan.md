@@ -193,3 +193,9 @@ deferred:
   - No hay comprobación al arrancar de "un comando, un handler".
   - La regla "toda salida con fallo deshace antes de devolver" depende de cada handler; solo la red de seguridad (lo no confirmado no queda) es automática.
 - Sin commits: se pregunta a Gerardo antes de confirmar.
+- Decisiones de Gerardo después de la corrida (2026-10-10), registradas en las Notes de la épica:
+  - `HandleAsync` aprobado; deja de ser supuesto.
+  - El puerto de transacción se queda repetido por módulo; deja de ser supuesto.
+  - La limpieza del contexto al deshacer se queda.
+  - El diferido (dos comandos a la vez en el mismo ámbito) se decide con la primera pantalla de administración; quedó como Open question en la épica.
+  - "Un comando, un handler" se hará cumplir con una prueba de integración, en la entrada 6; sin comprobación al arrancar.
