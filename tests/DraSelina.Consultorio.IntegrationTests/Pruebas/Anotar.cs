@@ -4,8 +4,8 @@ using DraSelina.Consultorio.Kernel;
 namespace DraSelina.Consultorio.IntegrationTests.Pruebas;
 
 /// <summary>
-/// Comando de prueba: guarda una <see cref="Anotacion"/> y devuelve su id. Como todo comando, es una clase con
-/// propiedades <c>set</c>.
+/// Comando de prueba: guarda una <see cref="Anotacion"/>, publica <see cref="AnotacionHecha"/> y devuelve el id de
+/// la anotación. Como todo comando, es una clase con propiedades <c>set</c>.
 /// </summary>
 public sealed class Anotar : ICommand<Guid>
 {
@@ -22,16 +22,16 @@ public enum Desenlace
     /// <summary>Guarda, confirma y devuelve éxito.</summary>
     Exito,
 
-    /// <summary>Guarda y después descubre un fallo esperado: deshace y lo devuelve.</summary>
+    /// <summary>Guarda, publica y después descubre un fallo esperado: deshace y lo devuelve.</summary>
     FalloAlFinal,
 
     /// <summary>Agrega la anotación, descubre un fallo esperado antes de guardar: deshace y lo devuelve.</summary>
     FalloSinGuardar,
 
-    /// <summary>Guarda y después lanza: el fallo que nadie espera.</summary>
+    /// <summary>Guarda, publica y después lanza: el fallo que nadie espera.</summary>
     LanzarAlFinal,
 
-    /// <summary>Guarda, no confirma y devuelve éxito: un handler mal escrito.</summary>
+    /// <summary>Guarda, publica, no confirma y devuelve éxito: un handler mal escrito.</summary>
     ExitoSinConfirmar,
 }
 
@@ -48,9 +48,14 @@ public sealed class FalloInesperadoDePrueba(Guid anotacionId) : Exception($"Fall
 
 /// <summary>
 /// Un handler por comando. Abre la transacción por su puerto, llega a la base por otro puerto, guarda de forma
-/// explícita y confirma. Toda salida con un <c>Resultado</c> no exitoso deshace antes de devolver.
+/// explícita, publica su evento por el outbox y confirma: la anotación y el evento quedan juntos, o ninguno. Toda
+/// salida con un <c>Resultado</c> no exitoso deshace antes de devolver.
 /// </summary>
-public sealed class AnotarHandler(ITransaccionDePruebas transaccion, IAnotaciones anotaciones) : ICommandHandler<Anotar, Guid>
+public sealed class AnotarHandler(
+    ITransaccionDePruebas transaccion,
+    IAnotaciones anotaciones,
+    IOutboxDePruebas outbox,
+    IClock reloj) : ICommandHandler<Anotar, Guid>
 {
     public async Task<Resultado<Guid>> HandleAsync(Anotar comando, CancellationToken cancellationToken)
     {
@@ -71,6 +76,12 @@ public sealed class AnotarHandler(ITransaccionDePruebas transaccion, IAnotacione
         }
 
         await anotaciones.GuardarAsync(cancellationToken);
+
+        // El evento se guarda en la misma transacción que la anotación.
+        var eventoId = Guid.CreateVersion7();
+        var ocurridoEn = reloj.UtcNow;
+        await outbox.PublicarAsync(
+            new AnotacionHecha(eventoId, ocurridoEn, comando.Id), eventoId, claveDeOrden: comando.Id, ocurridoEn, cancellationToken);
 
         switch (comando.Desenlace)
         {

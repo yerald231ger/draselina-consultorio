@@ -86,6 +86,8 @@ else
       falla "no existe $esquema.__EFMigrationsHistory"
     fi
   done
+  N="$(sql "select count(*) from information_schema.tables where table_schema='agenda' and table_name='outbox'")"
+  [ "$N" = "1" ] && ok "agenda.outbox existe" || falla "no existe agenda.outbox"
   N="$(sql "select count(*) from information_schema.tables where table_schema='public' and table_name='__EFMigrationsHistory'")"
   [ "$N" = "0" ] && ok "ningún historial de migraciones en public" || falla "hay un historial de migraciones en public"
 fi

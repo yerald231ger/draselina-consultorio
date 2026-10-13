@@ -1,5 +1,6 @@
 using DraSelina.Consultorio.IntegrationTests;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
+using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -7,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 using Testcontainers.PostgreSql;
 
@@ -64,7 +67,10 @@ public sealed class Arnes : IAsyncLifetime
     }
 
     /// <summary>Un contexto nuevo sobre el esquema <c>pruebas</c> de la base de la corrida.</summary>
-    public PruebasDbContext CrearContextoDePruebas() => new(PruebasDbContext.Opciones(CadenaDeConexion));
+    public PruebasDbContext CrearContextoDePruebas() => CrearContextoDePruebas(CadenaDeConexion);
+
+    /// <summary>Un contexto nuevo sobre el esquema <c>pruebas</c> de otra base, creada con <see cref="CrearBaseMigradaAsync"/>.</summary>
+    public PruebasDbContext CrearContextoDePruebas(string cadenaDeConexion) => new(PruebasDbContext.Opciones(cadenaDeConexion));
 
     /// <summary>
     /// Crea una base vacía, sin migrar, en el mismo servidor y devuelve su cadena de conexión.
@@ -83,24 +89,78 @@ public sealed class Arnes : IAsyncLifetime
     }
 
     /// <summary>
+    /// Crea una base propia, igual a la de la corrida: migrada por el <c>MigrationService</c> y con el esquema
+    /// <c>pruebas</c>. Es para la prueba que necesita que nadie más toque sus datos: las webs de las demás pruebas
+    /// entregan los eventos de la base de la corrida, cada una con su reloj.
+    /// </summary>
+    public async Task<string> CrearBaseMigradaAsync(CancellationToken cancelacion = default)
+    {
+        var cadena = await CrearBaseVaciaAsync(cancelacion);
+
+        await MigrationService.EjecutarAsync(cadena, cancelacion);
+        await CrearEsquemaDePruebasAsync(cadena);
+
+        return cadena;
+    }
+
+    /// <summary>
     /// Arranca la web en memoria, con su <c>Program</c> real, contra la base de <paramref name="cadenaDeConexion"/>.
     /// Quien la pide la desecha: <c>await using var web = arnes.ArrancarWeb(cadena);</c>
     /// </summary>
     public WebApplicationFactory<Program> ArrancarWeb(string cadenaDeConexion) =>
-        new Web(cadenaDeConexion);
+        new Web(cadenaDeConexion, reloj: null);
+
+    /// <summary>
+    /// Arranca la web en memoria sin el servicio que entrega eventos en segundo plano y con el reloj de la prueba.
+    /// La prueba da cada vuelta de entrega cuando quiere, con <see cref="DarUnaVueltaDeEntregaAsync"/>, y mueve el
+    /// tiempo con <paramref name="reloj"/>. Se usa contra una base propia (<see cref="CrearBaseMigradaAsync"/>).
+    /// </summary>
+    public WebApplicationFactory<Program> ArrancarWebSinEntregaAutomatica(string cadenaDeConexion, RelojDePrueba reloj) =>
+        new Web(cadenaDeConexion, reloj);
+
+    /// <summary>
+    /// Da una vuelta de entrega de eventos en esa web, la misma que da su servicio en segundo plano. Devuelve
+    /// cuántos eventos intentó entregar.
+    /// </summary>
+    public static Task<int> DarUnaVueltaDeEntregaAsync(WebApplicationFactory<Program> web, CancellationToken cancelacion = default) =>
+        web.Services.GetRequiredService<EntregaDeEventos>().DarUnaVueltaAsync(cancelacion);
+
+    /// <summary>Lo que esa web ha registrado (avisos, errores...) desde que arrancó.</summary>
+    public static IReadOnlyCollection<RegistroEscrito> Registros(WebApplicationFactory<Program> web) =>
+        web.Services.GetRequiredService<RegistrosDePrueba>().Escritos;
 
     /// <summary>Arranca la web en memoria contra la base migrada de la corrida.</summary>
     public WebApplicationFactory<Program> ArrancarWeb() => ArrancarWeb(CadenaDeConexion);
 
     // Una sola fábrica por llamada, que desecha quien la pidió.
-    private sealed class Web(string cadenaDeConexion) : WebApplicationFactory<Program>
+    // Con reloj de prueba, la web no entrega eventos por su cuenta: las vueltas las da la prueba.
+    private sealed class Web(string cadenaDeConexion, RelojDePrueba? reloj) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseSetting($"ConnectionStrings:{BaseDeDatos.Nombre}", cadenaDeConexion);
 
-            // Los tipos de prueba entran a la web en memoria como entra un módulo: con su registro (AddPruebas).
-            builder.ConfigureServices(servicios => servicios.AddPruebas(cadenaDeConexion));
+            builder.ConfigureServices(servicios =>
+            {
+                // Los tipos de prueba entran a la web en memoria como entra un módulo: con su registro (AddPruebas)
+                // y, como publican eventos, con el alta de su outbox, igual que Program.cs da de alta el de Agenda.
+                servicios
+                    .AddPruebas(cadenaDeConexion)
+                    .AddOutbox<PruebasDbContext>();
+
+                servicios
+                    .AddSingleton<RegistrosDePrueba>()
+                    .AddSingleton<ILoggerProvider>(proveedor => proveedor.GetRequiredService<RegistrosDePrueba>());
+
+                if (reloj is not null)
+                {
+                    servicios.AddSingleton<IClock>(reloj);
+
+                    var servicio = servicios.Single(s =>
+                        s.ServiceType == typeof(IHostedService) && s.ImplementationType == typeof(ServicioDeEntregaDeEventos));
+                    servicios.Remove(servicio);
+                }
+            });
         }
     }
 

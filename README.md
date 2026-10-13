@@ -71,7 +71,11 @@ Lo que da el arnés:
 | `CadenaDeConexion` | La base migrada: esquemas `agenda`, `pacientes`, `notificaciones` y `pruebas`. |
 | `ArrancarWeb()` / `ArrancarWeb(cadena)` | La web con su `Program` real, en memoria, contra la base migrada o contra la que se indique. Lleva además los tipos de prueba, dados de alta con `AddPruebas`. |
 | `CrearBaseVaciaAsync()` | Una base nueva sin migrar en el mismo servidor; devuelve su cadena de conexión. |
-| `CrearContextoDePruebas()` | Un `PruebasDbContext` sobre el esquema `pruebas`. |
+| `CrearContextoDePruebas()` / `CrearContextoDePruebas(cadena)` | Un `PruebasDbContext` sobre el esquema `pruebas` de la base de la corrida, o de otra. |
+| `CrearBaseMigradaAsync()` | Una base nueva, propia de la prueba, igual a la de la corrida: migrada y con el esquema `pruebas`. |
+| `ArrancarWebSinEntregaAutomatica(cadena, reloj)` | La web sin el servicio que entrega eventos y con un `RelojDePrueba`: la prueba da cada vuelta y mueve el tiempo. |
+| `Arnes.DarUnaVueltaDeEntregaAsync(web)` | Da una vuelta de entrega de eventos en esa web; devuelve cuántos eventos intentó. |
+| `Arnes.Registros(web)` | Lo que esa web ha registrado (avisos, errores), para afirmar que algo se registró. |
 
 **Dónde poner un tipo de prueba.** Un tipo que solo existe para probar (una entidad, un comando, una consulta o
 un handler de prueba) vive en `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/`. Si tiene tabla, se agrega
@@ -80,6 +84,26 @@ sin migraciones. Ningún esquema de producción recibe tablas de prueba. `Apunte
 de prueba se escribe como dice "Casos de uso".
 
 Para migrar otra base por el mismo camino: `await MigrationService.EjecutarAsync(cadena)`.
+
+**Probar la entrega de eventos.** Todas las webs en memoria de la corrida entregan los eventos de la base de la
+corrida, cada una por su cuenta: una prueba no puede afirmar ahí cuántas veces ni cuándo llegó un evento. La que
+lo necesita (reintentos, orden, dos instancias) usa `EscenarioDeEntrega`: una base propia, una web sin entrega
+automática y un reloj que solo ella mueve. Ninguna prueba espera minutos reales.
+
+```csharp
+await using var escenario = await EscenarioDeEntrega.CrearAsync(arnes);
+var eventoId = await escenario.PublicarAsync(id => new EventoDePrueba(id, FallasAntesDeEntregar: 1), claveDeOrden: Guid.CreateVersion7());
+
+await escenario.VueltaAsync();                          // el handler falla
+escenario.Reloj.Avanzar(TimeSpan.FromMinutes(1));
+await escenario.VueltaAsync();                          // ahora llega
+
+var fila = await escenario.EventoAsync(eventoId);       // la fila de pruebas.outbox
+var rastro = await escenario.EntregasAsync(eventoId);   // lo que dejó cada handler, en orden
+```
+
+Lo que una prueba afirma sale de la base: la fila del outbox y el rastro (`EntregaRecibida`) que cada handler de
+prueba deja al recibir un evento.
 
 ## Casos de uso
 
@@ -157,14 +181,21 @@ public static IServiceCollection AddPruebas(this IServiceCollection servicios, s
     servicios
         .AddDbContext<PruebasDbContext>(opciones => opciones.UseNpgsql(cadenaDeConexion))
         .AddScoped<ITransaccionDePruebas, TransaccionDePruebas>()
+        .AddScoped<IOutboxDePruebas, OutboxDePruebas>()
         .AddScoped<IAnotaciones, Anotaciones>()
+        .AddScoped<IEntregasRecibidas, EntregasRecibidas>()
         .AddScoped<ICommandHandler<Anotar, Guid>, AnotarHandler>()
-        .AddScoped<IQueryHandler<LeerAnotacion, AnotacionLeida>, LeerAnotacionHandler>();
+        .AddScoped<IQueryHandler<LeerAnotacion, AnotacionLeida>, LeerAnotacionHandler>()
+        .AddScoped<IEventHandler<AnotacionHecha>, AlHacerseUnaAnotacion>()
+        .AddScoped<IEventHandler<EventoDePrueba>, EscuchaDePrueba>()
+        .AddScoped<IEventHandler<EventoConDosHandlers>, PrimeraEscucha>()
+        .AddScoped<IEventHandler<EventoConDosHandlers>, SegundaEscucha>();
 ```
 
 **En un módulo:** las líneas `AddScoped` de sus handlers y de sus puertos van en su
 `Modules/<Módulo>/Infrastructure/Registro.cs`, dentro de `AddAgenda`, `AddPacientes` o `AddNotificaciones`, que ya
-registran el contexto y el puerto de transacción. El host solo llama a esos tres métodos.
+registran el contexto y el puerto de transacción. El host solo llama a esos tres métodos. Los handlers de evento
+(`IEventHandler<TEvento>`) se registran igual; ver "Eventos entre módulos".
 
 ### La regla de la transacción
 
@@ -173,10 +204,10 @@ guarda de forma explícita y la confirma. Toda salida con un `Resultado` no exit
 Quien llama al handler nunca abre, confirma ni guarda. Una consulta corre sin transacción y nunca guarda.
 
 El handler del comando de prueba, en `Pruebas/Anotar.cs` (aquí sin las ramas de `Desenlace`, que solo sirven a
-las pruebas):
+las pruebas, y sin el evento que publica antes de confirmar, que está en "Eventos entre módulos"):
 
 ```csharp
-public sealed class AnotarHandler(ITransaccionDePruebas transaccion, IAnotaciones anotaciones) : ICommandHandler<Anotar, Guid>
+public sealed class AnotarHandler(ITransaccionDePruebas transaccion, IAnotaciones anotaciones, ...) : ICommandHandler<Anotar, Guid>
 {
     public async Task<Resultado<Guid>> HandleAsync(Anotar comando, CancellationToken cancellationToken)
     {
@@ -225,6 +256,133 @@ ejemplo completo.
 4. La prueba pide el handler al contenedor de la web en memoria, dentro de un ámbito, como en "Cómo se pide un
    handler"; nunca crea la clase.
 
+Un evento de prueba y su handler también viven en `Pruebas/` (`Pruebas/Eventos.cs`), se publican por
+`IOutboxDePruebas` y se guardan en `pruebas.outbox`, que el arnés da de alta en la web en memoria con
+`AddOutbox<PruebasDbContext>()`.
+
+## Eventos entre módulos
+
+Un módulo le avisa a otro con un evento de integración (AD-3). No hay librería de mensajería: el módulo que
+publica guarda el evento en la tabla `outbox` de su propio esquema, en la misma transacción que el cambio, y un
+servicio del host lo entrega después a sus handlers. Quien publica no sabe quién escucha.
+
+Hoy solo Agenda tiene outbox (`agenda.outbox`) y todavía no hay eventos de negocio en `src/`. Los ejemplos son
+el código real de los tipos de prueba, en `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/`.
+
+### Publicar desde un handler
+
+El handler del comando publica por el puerto de outbox de su módulo (`IOutboxDeAgenda`, en `Features`), con la
+transacción ya abierta y antes de confirmar. El evento y el cambio quedan juntos, o ninguno: si el handler
+deshace, lanza o no confirma, el evento no queda. Publicar sin una transacción abierta lanza.
+
+```csharp
+await using var tx = await transaccion.AbrirAsync(cancellationToken);
+
+anotaciones.Agregar(new Anotacion { Id = comando.Id, Texto = comando.Texto });
+await anotaciones.GuardarAsync(cancellationToken);
+
+var eventoId = Guid.CreateVersion7();
+var ocurridoEn = reloj.UtcNow;                       // IClock inyectado, nunca la hora del sistema
+await outbox.PublicarAsync(
+    new AnotacionHecha(eventoId, ocurridoEn, comando.Id), eventoId, claveDeOrden: comando.Id, ocurridoEn, cancellationToken);
+
+await tx.ConfirmarAsync(cancellationToken);
+```
+
+Publicar pide cuatro cosas: el evento, su `EventoId` (será el `id` de la fila), su clave de orden y cuándo
+ocurrió. El evento es un `record` de `Modules/<Módulo>/Contracts/`, se guarda serializado como JSON y no lleva
+datos personales (AD-23). La columna `tipo` guarda el nombre de su clase (`AnotacionHecha`): **el nombre de un
+tipo de evento debe ser único en toda la aplicación**. Si dos tipos de evento que tienen handler se llaman
+igual, la web no arranca: el catálogo de eventos lanza al arrancar el host. Esa comprobación solo ve los tipos de
+evento con algún handler registrado, así que cuidar que los nombres sean únicos le toca a quien escribe el evento.
+Si un tipo se renombra, las filas pendientes con el nombre anterior ya no encuentran handler.
+
+### Escribir y registrar un handler de evento
+
+El módulo que escucha implementa `IEventHandler<TEvento>` (en `BuildingBlocks/Contracts/`) en su carpeta
+`Features`, y lo registra en su `Registro.cs`, uno por línea y por su interfaz:
+
+```csharp
+public sealed class AlHacerseUnaAnotacion(IAnotaciones anotaciones, IEntregasRecibidas entregas) : IEventHandler<AnotacionHecha>
+{
+    public async Task HandleAsync(AnotacionHecha evento, CancellationToken cancellationToken)
+    {
+        // ...
+    }
+}
+
+// en el registro del módulo
+.AddScoped<IEventHandler<AnotacionHecha>, AlHacerseUnaAnotacion>()
+```
+
+- **Debe tolerar recibir el mismo evento más de una vez.** La entrega es "al menos una vez": si otro handler del
+  mismo evento falla, o la web se apaga a media entrega, el evento se entrega de nuevo a todos sus handlers. El
+  handler deduplica por `EventoId` (AD-3) o hace algo que repetido da el mismo resultado.
+- Un evento puede tener varios handlers; se llaman uno tras otro, cada uno en su propio ámbito del contenedor. Si
+  el `HandleAsync` de uno lanza, los demás lo reciben igual, y el evento se reintenta. Si un handler no se puede
+  construir (su constructor o una dependencia falla), ningún handler de ese evento lo recibe, y el evento se
+  reintenta.
+- Un handler que cambia datos abre la transacción de su módulo por su puerto, como el handler de un comando. La
+  transacción del outbox no es la suya.
+- Fallar es lanzar. Un handler que termina sin lanzar cuenta como entregado.
+- Un evento sin ningún handler registrado queda `Entregado` y se registra un aviso.
+
+### Dar de alta el outbox de un módulo
+
+Para que un módulo nuevo publique hacen falta cuatro cosas, las mismas que tiene Agenda:
+
+1. El puerto en `Features` (`IOutboxDe<Módulo>`) y su implementación en `Infrastructure`, sobre el contexto del
+   módulo. No hay un tipo compartido entre módulos: cada uno declara lo suyo, como con la transacción.
+2. La fila (`FilaDeOutbox`) mapeada en su `DbContext` a la tabla `outbox`, con las nueve columnas de
+   `agenda.outbox`, y una migración del módulo que la crea ("Crear una migración").
+3. El registro del puerto en su `Registro.cs`.
+4. El alta en `Program.cs`, que es lo que le dice al host que ese outbox existe:
+
+```csharp
+builder.Services
+    .AddSingleton<IClock, RelojDelSistema>()
+    .AddEntregaDeEventos()
+    .AddOutbox<AgendaDbContext>();
+```
+
+El host lee y actualiza el outbox por el contexto de ese módulo, en el esquema por defecto del contexto. El
+módulo no usa ningún tipo del host.
+
+### La entrega
+
+`ServicioDeEntregaDeEventos` (host) da una vuelta al arrancar y después una cada 5 segundos. En cada vuelta
+entrega todo lo que ya puede entregarse de cada outbox, del más antiguo al más nuevo. Cada evento se entrega en su
+propia transacción: aparta la fila con `FOR UPDATE SKIP LOCKED`, llama a los handlers y la marca.
+
+- **Dos instancias.** Dos webs sobre la misma base nunca entregan el mismo evento a la vez.
+- **Caídas.** Un evento que quedó `Pendiente` se entrega cuando la web vuelve a arrancar.
+- **El servicio nunca tumba la web.** Si no puede leer un outbox (por ejemplo, con la base sin migrar) registra
+  el error y lo intenta en la siguiente vuelta.
+- **Reintentos.** Si un handler lanza, el evento sigue `Pendiente`, suma un intento y espera: 1 min, 5 min,
+  15 min, 1 h, 4 h y 12 h después de cada falla. Al fallar el séptimo intento queda `Fallido`. El calendario está
+  en un solo lugar: `CalendarioDeReintentos.cs`.
+- **Orden por clave.** Un evento no se entrega mientras haya otro anterior (por `ocurrido_en`) con la misma
+  `clave_de_orden` todavía `Pendiente`: los eventos de una misma Cita llegan en el orden en que ocurrieron, aunque
+  uno esté esperando un reintento. Los de otras claves siguen su camino.
+- **El tiempo** se lee de `IClock`, nunca de la hora del sistema ni de `now()` de la base.
+- La fila queda apartada mientras corren sus handlers: un handler lento alarga esa transacción.
+
+### Qué significa `Fallido` y cómo se ve en la tabla
+
+| `estado` | Significa | `intentos` | `proximo_intento_en` | `entregado_en` |
+| --- | --- | --- | --- | --- |
+| `Pendiente` | Falta entregarlo: es nuevo, o falló y espera su siguiente intento | 0 a 6 | Desde cuándo puede intentarse | nulo |
+| `Entregado` | Todos sus handlers terminaron sin lanzar | Los que fallaron antes | El del último intento | Cuándo se entregó |
+| `Fallido` | Falló siete veces: nadie lo vuelve a intentar | 7 | El del séptimo intento | nulo |
+
+Un evento `Fallido` es un aviso que no llegó (por ejemplo, un correo de confirmación que no salió). Al quedar
+así se registra un error que nombra su `EventoId` y su tipo. Ya no detiene a los siguientes de su clave. Las
+filas entregadas y las fallidas se quedan en la tabla. Para verlos:
+
+```sql
+select id, tipo, ocurrido_en, intentos from agenda.outbox where estado = 'Fallido' order by ocurrido_en;
+```
+
 ## Arrancar
 
 Hace falta Docker en ejecución. Un solo comando levanta todo:
@@ -257,7 +415,7 @@ scripts/verificar-arranque.sh   # sale con 0 si las tres filas pasan
 ```
 
 Comprueba: los tres recursos en su estado y `GET /` con 200; un historial de migraciones en cada esquema
-(`agenda`, `pacientes`, `notificaciones`) y ninguno en `public`; y el punto de salud `/health` con 200. Necesita
+(`agenda`, `pacientes`, `notificaciones`), la tabla `agenda.outbox` y ningún historial en `public`; y el punto de salud `/health` con 200. Necesita
 `docker`, `curl` y `kubectl`: con `kubectl` le pregunta al orquestador de Aspire el estado y el código de salida
 de cada recurso (no hace falta ningún clúster).
 
