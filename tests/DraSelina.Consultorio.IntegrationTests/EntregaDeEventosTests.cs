@@ -115,7 +115,7 @@ public sealed class EntregaDeEventosTests(Arnes arnes)
         await using var otraWeb = escenario.OtraWeb();
 
         // El handler deja su rastro y tarda: la fila sigue apartada mientras la otra instancia da su vuelta.
-        var eventoId = await escenario.PublicarAsync(id => new EventoDePrueba(id, DemoraMs: 1500), claveDeOrden: Guid.CreateVersion7());
+        var eventoId = await escenario.PublicarAsync(id => new EventoDePrueba(id, DemoraMs: 3000), claveDeOrden: Guid.CreateVersion7());
 
         // Las dos webs ya arrancadas antes de la primera vuelta: la segunda no gasta su vuelta en arrancar.
         _ = escenario.Web.Services;
@@ -127,6 +127,12 @@ public sealed class EntregaDeEventosTests(Arnes arnes)
             "La primera instancia no llegó a llamar al handler.");
 
         var intentadosPorLaOtra = await Arnes.DarUnaVueltaDeEntregaAsync(otraWeb, Cancelacion);
+
+        // La otra terminó su vuelta con la primera todavía dentro del handler: se saltó la fila apartada en vez
+        // de esperarla. Sin esto la prueba pasaría también si las vueltas no se solaparan.
+        Assert.False(primera.IsCompleted, "La otra instancia esperó a la primera en vez de saltarse la fila apartada.");
+        Assert.Equal("Pendiente", (await escenario.EventoAsync(eventoId)).Estado);
+
         var intentadosPorLaPrimera = await primera;
 
         Assert.Equal(1, intentadosPorLaPrimera);

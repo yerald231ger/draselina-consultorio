@@ -73,7 +73,8 @@ public sealed class OutboxTests(Arnes arnes)
 
         await using (var tx = await transaccion.AbrirAsync(Cancelacion))
         {
-            await outbox.PublicarAsync(confirmado, confirmado.EventoId, clave, ocurridoEn, Cancelacion);
+            // Publicado como object: se guarda con el tipo real del evento, no con el de la variable.
+            await outbox.PublicarAsync((object)confirmado, confirmado.EventoId, clave, ocurridoEn, Cancelacion);
             await tx.ConfirmarAsync(Cancelacion);
         }
 

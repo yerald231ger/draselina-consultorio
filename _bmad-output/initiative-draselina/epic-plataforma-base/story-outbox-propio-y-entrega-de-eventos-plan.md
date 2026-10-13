@@ -12,7 +12,7 @@ review: 'quick' # none | quick | thorough — set by step-04
 review_source: 'pinned' # pinned | auto — set with review by step-04
 lenses_ran: ['quick'] # ids of the lenses launched, set by step-04
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
-followup_review_recommended: true # set by step-04 at Finalize — true if the LLM decided another review pass is worthwhile
+followup_review_recommended: false # set by step-04 at Finalize — true if the LLM decided another review pass is worthwhile
 context:
   - '{project-root}/_bmad-output/initiative-draselina/architecture-appointment-booking/architecture-appointment-booking.md'
   - '{project-root}/README.md'
@@ -142,6 +142,16 @@ deferred:
   - `[maybe-false]` `[defer]` `DarUnaVueltaAsync`: un handler que nunca termina detiene toda la entrega y nunca suma intentos — cierto por lectura; no se sabe si ocurrirá, porque no hay handlers de negocio. Lo zanjaría un handler de prueba que no regrese. Si fuera cierto sería `medium`. Diferido: el límite de tiempo por handler es decisión de Gerardo.
   - `[medium]` `[patch]` `EntregaDeEventosTests`, las dos pruebas de "Dos instancias": la segunda web arrancaba dentro de su propia vuelta, así que la primera podía terminar sola y las afirmaciones pasaban sin solape — ahora las dos webs están construidas y arrancadas antes de que empiece cualquiera de las vueltas.
   - `[low]` `[patch]` Criterio de aceptación 4: el script de arranque no miraba `agenda.outbox` — se agregó la comprobación dentro de la fila "Historial por esquema"; siguen siendo tres filas. Corrida por el orquestador: `PASA agenda.outbox existe`.
+
+### 2026-10-13 — Revisión de seguimiento (sobre el commit 5b272ae)
+
+Tres hallazgos, ninguno alto. Los cuatro parches de la primera pasada están bien en el código de producción; sin regresiones.
+
+- **patch (medio)** — La prueba de "dos instancias a la vez" pasaba también sin `skip locked` (la otra instancia esperaba a la primera y devolvía 0) y no afirmaba el solape. Ahora afirma que la otra terminó su vuelta con la primera todavía dentro del handler y con la fila `Pendiente`; la demora del handler sube de 1500 a 3000 ms para que una máquina cargada no la haga fallar. Comprobado quitando `skip locked`: la prueba falla.
+- **patch (bajo)** — El tipo en ejecución en `OutboxDeAgenda` no lo cubría ninguna prueba (la prueba nueva usaba la copia de pruebas). `OutboxTests` ahora publica el evento como `object`. Comprobado volviendo a `typeof(TEvento).Name`: la prueba falla.
+- **patch (bajo)** — Un evento de un tipo derivado del que escucha el handler queda sin handler: el README dice ahora que el handler se registra para el tipo concreto que se publica. El mensaje de error de publicar sin transacción nombra el tipo real del evento.
+
+Verificación tras los parches: build con 0 advertencias; 86 de 86 tres veces seguidas.
 
 ## Design Notes
 

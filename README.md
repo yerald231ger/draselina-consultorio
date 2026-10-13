@@ -296,6 +296,8 @@ tipo de evento debe ser único en toda la aplicación**. Si dos tipos de evento 
 igual, la web no arranca: el catálogo de eventos lanza al arrancar el host. Esa comprobación solo ve los tipos de
 evento con algún handler registrado, así que cuidar que los nombres sean únicos le toca a quien escribe el evento.
 Si un tipo se renombra, las filas pendientes con el nombre anterior ya no encuentran handler.
+Ese nombre es el de la clase concreta del evento, no el de un tipo base ni el de una interfaz: el handler se
+registra para el mismo tipo concreto que se publica. Por eso los eventos son `sealed record`.
 
 ### Escribir y registrar un handler de evento
 

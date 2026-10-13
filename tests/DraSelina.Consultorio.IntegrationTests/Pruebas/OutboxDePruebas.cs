@@ -53,7 +53,7 @@ public sealed class OutboxDePruebas(PruebasDbContext db) : IOutboxDePruebas
     {
         if (db.Database.CurrentTransaction is null)
         {
-            throw new InvalidOperationException($"Publicar '{typeof(TEvento).Name}' exige la transacción abierta del handler.");
+            throw new InvalidOperationException($"Publicar '{evento.GetType().Name}' exige la transacción abierta del handler.");
         }
 
         // El tipo real del evento, no el de la variable de quien llama: con un evento guardado como object o como
