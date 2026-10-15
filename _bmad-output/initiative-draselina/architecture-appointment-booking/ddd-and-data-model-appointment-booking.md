@@ -969,6 +969,7 @@ Los eventos de integración que Agenda publica (AD-3). Cada fila se guarda en la
 
 - Tras una entrega fallida el evento espera 1 min, 5 min, 15 min, 1 h, 4 h y 12 h; al fallar el séptimo intento queda `Fallido`.
 - El servicio de entrega toma los pendientes con `FOR UPDATE SKIP LOCKED`, para que dos instancias no entreguen el mismo evento.
+- Un handler de evento tiene 30 segundos para terminar; si no termina se cancela y la entrega cuenta como un intento fallido.
 
 ## Esquema `pacientes`
 

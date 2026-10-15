@@ -17,14 +17,7 @@ context:
   - '{project-root}/_bmad-output/initiative-draselina/architecture-appointment-booking/architecture-appointment-booking.md'
   - '{project-root}/README.md'
 warnings: ['oversized'] # optional: machine-readable warnings for orchestration, e.g. oversized, multiple-goals
-deferred:
-  - summary: >-
-      Un handler de evento que nunca termina detiene toda la entrega: el servicio entrega de uno en uno, sin límite de tiempo por handler, y mientras uno está colgado ningún otro evento de ningún outbox se entrega; la fila sigue apartada y nunca suma intentos ni llega a Fallido.
-    evidence: |-
-      EntregaDeEventos.DarUnaVueltaAsync recorre los outbox en un solo bucle secuencial y el único token que recibe un handler es el de apagado. Cierto por lectura; no se sabe si algún handler llegará a colgarse, porque todavía no existe ninguno de negocio (el primero enviará correo). Lo zanjaría un handler de prueba que no regrese. La salida es un límite de tiempo por handler: cuánto dura y qué pasa al vencerse (¿cuenta como intento fallido?) es decisión de Gerardo, antes del primer handler que llame a un servicio externo.
-    location: >-
-      src/DraSelina.Consultorio.Web/EntregaDeEventos.cs (DarUnaVueltaAsync, EntregarAsync)
-    severity: medium (unverified)
+deferred: []
 ---
 
 <intent-contract>
@@ -48,9 +41,9 @@ deferred:
 - **El tiempo** se lee del reloj inyectado (`IClock`), nunca de la hora del sistema ni de `now()` de la base.
 - **El servicio nunca tumba la web.** Si una vuelta falla (por ejemplo, la tabla no existe porque la base está sin migrar), registra el error y sigue; la web arranca y atiende igual (AD-25).
 - El host lee y actualiza el outbox de un módulo a través del contexto de ese módulo. El host conoce los outbox porque `Program.cs` los da de alta; un módulo no usa tipos del host.
-- `[ASSUMPTION]` `IEventHandler<TEvento>` vive en `BuildingBlocks.Contracts`, sin paquetes, junto a las interfaces de handler: es la única capa que ven tanto el módulo que consume como el host.
-- `[ASSUMPTION]` El servicio da una vuelta cada 5 segundos. Los eventos entregados se quedan en la tabla.
-- `[ASSUMPTION]` Un evento sin ningún handler registrado para su tipo queda `Entregado` y se registra un aviso: quien publica no sabe quién escucha (E-14).
+- `IEventHandler<TEvento>` vive en `BuildingBlocks.Contracts`, sin paquetes, junto a las interfaces de handler: es la única capa que ven tanto el módulo que consume como el host.
+- El servicio da una vuelta cada 5 segundos. Los eventos entregados se quedan en la tabla. Cada handler de evento tiene 30 segundos; al vencerse se cancela y cuenta como intento fallido.
+- Un evento sin ningún handler registrado para su tipo queda `Entregado` y se registra un aviso: quien publica no sabe quién escucha (E-14).
 - Los tipos de prueba viven en `tests/DraSelina.Consultorio.IntegrationTests/Pruebas/` y sus tablas en el esquema `pruebas`. Las pruebas no dependen del orden ni de lo que otra dejó, aunque corran en paralelo sobre la misma base.
 - Las pruebas de arquitectura y del Kernel siguen pasando; build con 0 advertencias.
 
@@ -152,6 +145,14 @@ Tres hallazgos, ninguno alto. Los cuatro parches de la primera pasada están bie
 - **patch (bajo)** — Un evento de un tipo derivado del que escucha el handler queda sin handler: el README dice ahora que el handler se registra para el tipo concreto que se publica. El mensaje de error de publicar sin transacción nombra el tipo real del evento.
 
 Verificación tras los parches: build con 0 advertencias; 86 de 86 tres veces seguidas.
+
+### 2026-10-14 — Decisiones de Gerardo sobre lo que dejó la entrada
+
+Gerardo confirmó las tres suposiciones (`IEventHandler` en `BuildingBlocks.Contracts`, ya agregado a "Contratos base"; vuelta cada 5 s y filas entregadas conservadas; evento sin handler queda `Entregado` con aviso) y que `tipo` guarda el nombre de la clase. Decidió el diferido: límite de 30 s por handler, que al vencerse cuenta como intento fallido.
+
+- **patch** — `OpcionesDeEntrega.LimitePorHandler` (30 s, en `Outbox.cs`); `EntregaDeEventos` cancela el token del handler al vencerse, registra un aviso y cuenta la entrega como fallida. Prueba: un handler que tardaría un minuto se cancela, el evento queda `Pendiente` con un intento y su reintento a 1 min, y otro evento de la misma vuelta se entrega. Comprobado quitando el límite: la prueba falla.
+- Verificación: build con 0 advertencias; 88 de 88 tres veces seguidas.
+- Límite conocido: el límite depende de que el handler respete su `CancellationToken`, como lo hacen las llamadas de red.
 
 ## Design Notes
 

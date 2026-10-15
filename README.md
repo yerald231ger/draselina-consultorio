@@ -328,6 +328,9 @@ public sealed class AlHacerseUnaAnotacion(IAnotaciones anotaciones, IEntregasRec
   transacción del outbox no es la suya.
 - Fallar es lanzar. Un handler que termina sin lanzar cuenta como entregado.
 - Un evento sin ningún handler registrado queda `Entregado` y se registra un aviso.
+- Un handler tiene 30 segundos (`OpcionesDeEntrega.LimitePorHandler`) para terminar. Al vencerse se cancela su
+  `CancellationToken` y la entrega cuenta como fallida: el evento se reintenta según el calendario y la vuelta
+  sigue con los demás. Por eso todo handler pasa el `CancellationToken` a lo que llama (correo, base, red).
 
 ### Dar de alta el outbox de un módulo
 

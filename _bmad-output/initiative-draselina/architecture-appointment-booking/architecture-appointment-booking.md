@@ -7,7 +7,7 @@ paradigm: 'Monolito modular con contextos delimitados (DDD), puertos hexagonales
 scope: 'Todo el sistema del piloto: sitio del consultorio, reserva pública, administración, notificaciones'
 status: final
 created: '2026-10-04'
-updated: '2026-10-06'
+updated: '2026-10-13'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, FR-30]
 sources:
   - ../prd-appointment-booking/prd-appointment-booking.md
@@ -33,7 +33,7 @@ Todo el código de la aplicación vive en un solo proyecto, `DraSelina.Consultor
 | Capa | Namespace | Carpeta dentro de `Web` | Contiene |
 | --- | --- | --- | --- |
 | Kernel | `DraSelina.Consultorio.Kernel` | `Kernel/` | Ids tipados, `IClock`, `Resultado`, `Actor` |
-| Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | `ICommand<T>`, `IQuery<T>`, `ICommandHandler<TComando, T>`, `IQueryHandler<TConsulta, T>`, marcadores de autorización |
+| Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | `ICommand<T>`, `IQuery<T>`, `ICommandHandler<TComando, T>`, `IQueryHandler<TConsulta, T>`, `IEventHandler<TEvento>`, marcadores de autorización |
 | Contratos | `DraSelina.Consultorio.<Módulo>.Contracts` | `Modules/<Módulo>/Contracts/` | Comandos, consultas, DTOs, eventos de integración, API entre módulos |
 | Dominio | `DraSelina.Consultorio.<Módulo>.Domain` | `Modules/<Módulo>/Domain/` | Agregados, objetos de valor, servicios de dominio, puertos de escritura |
 | Casos de uso | `DraSelina.Consultorio.<Módulo>.Features` | `Modules/<Módulo>/Features/` | Un handler por comando o consulta; puertos de lectura |

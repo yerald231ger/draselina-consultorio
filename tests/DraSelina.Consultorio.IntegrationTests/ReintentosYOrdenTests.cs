@@ -26,6 +26,36 @@ public sealed class ReintentosYOrdenTests(Arnes arnes)
     }
 
     [Fact]
+    public void El_limite_de_un_handler_de_evento_es_de_30_segundos()
+    {
+        Assert.Equal(TimeSpan.FromSeconds(30), OpcionesDeEntrega.Predeterminadas.LimitePorHandler);
+    }
+
+    [Fact]
+    public async Task Un_handler_que_no_termina_a_tiempo_se_cancela_cuenta_como_fallido_y_no_detiene_a_los_demas()
+    {
+        // Límite corto para la prueba; el handler tardaría un minuto si nadie lo cancelara.
+        await using var escenario = await EscenarioDeEntrega.CrearAsync(arnes, limitePorHandler: TimeSpan.FromMilliseconds(300));
+        var publicadoEn = escenario.Reloj.UtcNow;
+        var colgado = await escenario.PublicarAsync(id => new EventoDePrueba(id, DemoraMs: 60_000), claveDeOrden: Guid.CreateVersion7());
+        var siguiente = await escenario.PublicarAsync(id => new EventoDePrueba(id), claveDeOrden: Guid.CreateVersion7());
+
+        var cronometro = System.Diagnostics.Stopwatch.StartNew();
+        Assert.Equal(2, await escenario.VueltaAsync());
+        Assert.True(cronometro.Elapsed < TimeSpan.FromSeconds(20), $"La vuelta esperó al handler colgado: {cronometro.Elapsed}.");
+
+        var fila = await escenario.EventoAsync(colgado);
+        Assert.Equal("Pendiente", fila.Estado);
+        Assert.Equal(1, fila.Intentos);
+        Assert.Equal(publicadoEn + TimeSpan.FromMinutes(1), fila.ProximoIntentoEn);
+
+        Assert.Equal("Entregado", (await escenario.EventoAsync(siguiente)).Estado);
+
+        Assert.Contains(Arnes.Registros(escenario.Web), r =>
+            r.Nivel == LogLevel.Warning && r.Mensaje.Contains(colgado.ToString()) && r.Mensaje.Contains("se canceló"));
+    }
+
+    [Fact]
     public async Task Un_handler_que_falla_la_primera_vez_recibe_el_evento_otra_vez_un_minuto_despues()
     {
         await using var escenario = await EscenarioDeEntrega.CrearAsync(arnes);

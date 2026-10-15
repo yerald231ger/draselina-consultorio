@@ -23,6 +23,7 @@ public sealed class EntregaDeEventos(
     IServiceScopeFactory ambitos,
     IEnumerable<OutboxRegistrado> outboxes,
     CatalogoDeEventos catalogo,
+    OpcionesDeEntrega opciones,
     IClock reloj,
     ILogger<EntregaDeEventos> registro)
 {
@@ -153,7 +154,8 @@ public sealed class EntregaDeEventos(
 
     // Llama a todos los handlers del evento, cada uno en su propio ámbito: no comparten contexto entre ellos ni
     // con la transacción que tiene apartada la fila. Verdadero si ninguno lanzó. Si uno lanza, los demás lo
-    // reciben igual; en el reintento lo reciben todos otra vez.
+    // reciben igual; en el reintento lo reciben todos otra vez. Un handler que no termina dentro del límite se
+    // cancela y cuenta como fallido: así uno colgado no detiene la entrega de todos los demás.
     private async Task<bool> EntregarAsync(EventoApartado evento, CancellationToken cancellationToken)
     {
         if (!catalogo.TryBuscar(evento.Tipo, out var tipo, out var handlers))
@@ -167,15 +169,25 @@ public sealed class EntregaDeEventos(
 
         for (var indice = 0; indice < handlers; indice++)
         {
+            using var limite = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            limite.CancelAfter(opciones.LimitePorHandler);
+
             try
             {
                 await using var ambito = ambitos.CreateAsyncScope();
-                await despacho.LlamarAsync(ambito.ServiceProvider, indice, evento.Contenido, cancellationToken);
+                await despacho.LlamarAsync(ambito.ServiceProvider, indice, evento.Contenido, limite.Token);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 // La web se está apagando: no es una entrega fallida. La fila sigue como estaba.
                 throw;
+            }
+            catch (OperationCanceledException) when (limite.IsCancellationRequested)
+            {
+                todos = false;
+                registro.LogWarning(
+                    "Un handler del evento {EventoId} ({Tipo}) no terminó en {Limite} y se canceló; cuenta como fallido en el intento {Intento} de {Maximo}",
+                    evento.Id, evento.Tipo, opciones.LimitePorHandler, evento.Intentos + 1, CalendarioDeReintentos.IntentosMaximos);
             }
             catch (Exception error)
             {

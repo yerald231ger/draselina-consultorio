@@ -10,6 +10,15 @@ namespace DraSelina.Consultorio.Web;
 /// </summary>
 public sealed record OutboxRegistrado(Type Contexto);
 
+/// <summary>
+/// Cuánto puede tardar un handler de evento. Al vencerse se cancela su <see cref="CancellationToken"/> y la entrega
+/// cuenta como fallida: el evento se reintenta según el calendario y la vuelta sigue con los demás.
+/// </summary>
+public sealed record OpcionesDeEntrega(TimeSpan LimitePorHandler)
+{
+    public static readonly OpcionesDeEntrega Predeterminadas = new(TimeSpan.FromSeconds(30));
+}
+
 /// <summary>El alta de la entrega de eventos y de cada outbox. La llama <c>Program.cs</c>.</summary>
 public static class Outbox
 {
@@ -27,6 +36,7 @@ public static class Outbox
     public static IServiceCollection AddEntregaDeEventos(this IServiceCollection servicios) =>
         servicios
             .AddSingleton(_ => new CatalogoDeEventos(servicios))
+            .AddSingleton(OpcionesDeEntrega.Predeterminadas)
             .AddSingleton<EntregaDeEventos>()
             .AddHostedService<ServicioDeEntregaDeEventos>();
 

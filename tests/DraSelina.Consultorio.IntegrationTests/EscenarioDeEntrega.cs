@@ -14,11 +14,14 @@ internal sealed class EscenarioDeEntrega : IAsyncDisposable
 {
     private readonly Arnes _arnes;
 
-    private EscenarioDeEntrega(Arnes arnes, string cadena)
+    private readonly TimeSpan? _limitePorHandler;
+
+    private EscenarioDeEntrega(Arnes arnes, string cadena, TimeSpan? limitePorHandler)
     {
         _arnes = arnes;
+        _limitePorHandler = limitePorHandler;
         Cadena = cadena;
-        Web = arnes.ArrancarWebSinEntregaAutomatica(cadena, Reloj);
+        Web = arnes.ArrancarWebSinEntregaAutomatica(cadena, Reloj, limitePorHandler);
     }
 
     /// <summary>La base propia del escenario.</summary>
@@ -31,11 +34,12 @@ internal sealed class EscenarioDeEntrega : IAsyncDisposable
 
     private static CancellationToken Cancelacion => TestContext.Current.CancellationToken;
 
-    public static async Task<EscenarioDeEntrega> CrearAsync(Arnes arnes) =>
-        new(arnes, await arnes.CrearBaseMigradaAsync(Cancelacion));
+    /// <param name="limitePorHandler">Cuánto puede tardar un handler; sin indicarlo, el de la web.</param>
+    public static async Task<EscenarioDeEntrega> CrearAsync(Arnes arnes, TimeSpan? limitePorHandler = null) =>
+        new(arnes, await arnes.CrearBaseMigradaAsync(Cancelacion), limitePorHandler);
 
     /// <summary>Otra web sin entrega automática sobre la misma base y con el mismo reloj: una segunda instancia.</summary>
-    public WebApplicationFactory<Program> OtraWeb() => _arnes.ArrancarWebSinEntregaAutomatica(Cadena, Reloj);
+    public WebApplicationFactory<Program> OtraWeb() => _arnes.ArrancarWebSinEntregaAutomatica(Cadena, Reloj, _limitePorHandler);
 
     /// <summary>
     /// Publica un evento por el puerto de outbox de los tipos de prueba, dentro de una transacción que confirma.

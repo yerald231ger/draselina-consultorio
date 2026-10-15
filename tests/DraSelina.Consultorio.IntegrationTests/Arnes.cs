@@ -115,8 +115,9 @@ public sealed class Arnes : IAsyncLifetime
     /// La prueba da cada vuelta de entrega cuando quiere, con <see cref="DarUnaVueltaDeEntregaAsync"/>, y mueve el
     /// tiempo con <paramref name="reloj"/>. Se usa contra una base propia (<see cref="CrearBaseMigradaAsync"/>).
     /// </summary>
-    public WebApplicationFactory<Program> ArrancarWebSinEntregaAutomatica(string cadenaDeConexion, RelojDePrueba reloj) =>
-        new Web(cadenaDeConexion, reloj);
+    public WebApplicationFactory<Program> ArrancarWebSinEntregaAutomatica(
+        string cadenaDeConexion, RelojDePrueba reloj, TimeSpan? limitePorHandler = null) =>
+        new Web(cadenaDeConexion, reloj, limitePorHandler);
 
     /// <summary>
     /// Da una vuelta de entrega de eventos en esa web, la misma que da su servicio en segundo plano. Devuelve
@@ -134,7 +135,7 @@ public sealed class Arnes : IAsyncLifetime
 
     // Una sola fábrica por llamada, que desecha quien la pidió.
     // Con reloj de prueba, la web no entrega eventos por su cuenta: las vueltas las da la prueba.
-    private sealed class Web(string cadenaDeConexion, RelojDePrueba? reloj) : WebApplicationFactory<Program>
+    private sealed class Web(string cadenaDeConexion, RelojDePrueba? reloj, TimeSpan? limitePorHandler = null) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -159,6 +160,11 @@ public sealed class Arnes : IAsyncLifetime
                     var servicio = servicios.Single(s =>
                         s.ServiceType == typeof(IHostedService) && s.ImplementationType == typeof(ServicioDeEntregaDeEventos));
                     servicios.Remove(servicio);
+                }
+
+                if (limitePorHandler is { } limite)
+                {
+                    servicios.AddSingleton(new OpcionesDeEntrega(limite));
                 }
             });
         }
