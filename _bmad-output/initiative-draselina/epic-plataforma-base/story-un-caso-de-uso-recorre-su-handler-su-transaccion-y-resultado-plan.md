@@ -3,7 +3,7 @@ title: 'Un caso de uso recorre su handler, su transacción y Resultado'
 type: 'feature' # feature | bugfix | refactor | chore
 ticket: '5' # the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
 created: '2026-10-07'
-status: 'built' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
+status: done
 baseline_revision: '9693f7017af0b2e6aab48887b51bf4d3f0244776' # the commit the work starts from, set before any code change
 route: 'full' # oneshot | full — set by step-02
 route_source: 'auto' # pinned | auto — set with route by step-02

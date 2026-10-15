@@ -16,6 +16,8 @@
     <!-- Solo en tiempo de diseño, para `dotnet ef migrations add`. No llega a quien referencia a Web. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Solo para el host: aplica los decoradores de los handlers (DecoradoresDeHandlers.cs). -->
+    <PackageReference Include="Scrutor" />
   </ItemGroup>
 
   <ItemGroup>

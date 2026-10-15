@@ -31,6 +31,10 @@ builder.Services
 
 builder.Services.AddRazorComponents();
 
+// Los decoradores de los handlers (la validación de forma de AD-12) se aplican al construir el contenedor, sobre
+// todo lo registrado hasta entonces. La lista está en DecoradoresDeHandlers.cs.
+builder.Host.UseServiceProviderFactory(contexto => DecoradoresDeHandlers.Fabrica(contexto.HostingEnvironment));
+
 var app = builder.Build();
 
 app.UseAntiforgery();

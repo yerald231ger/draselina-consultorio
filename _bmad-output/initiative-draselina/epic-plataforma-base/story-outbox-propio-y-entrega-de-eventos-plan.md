@@ -3,7 +3,7 @@ title: 'Outbox propio y entrega de eventos'
 type: 'feature' # feature | bugfix | refactor | chore
 ticket: '11' # the entry id from the ticket tree, or the story file's stem when the entry has no id; empty outside it
 created: '2026-10-13'
-status: 'built' # draft | ready-for-dev | in-progress | in-review | built | done | blocked | dropped
+status: done
 baseline_revision: 'f7921bb9df09d3c6098146aab002049a60a0f4d7' # the commit the work starts from, set before any code change
 route: 'full' # oneshot | full — set by step-02
 route_source: 'auto' # pinned | auto — set with route by step-02

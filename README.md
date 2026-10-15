@@ -169,7 +169,8 @@ var resultado = await handler.HandleAsync(comando, TestContext.Current.Cancellat
 
 Pedir el handler de un comando que no tiene lanza la excepción del contenedor
 (`InvalidOperationException: No service for type '...ICommandHandler`2[...]' has been registered`), que nombra el
-tipo del comando. No hay ninguna comprobación al arrancar de "un comando, un handler".
+tipo del comando. La web no comprueba al arrancar "un caso de uso, un handler": lo comprueba una prueba (ver
+"Un handler por caso de uso").
 
 ### Cómo registra un módulo sus handlers
 
@@ -184,7 +185,9 @@ public static IServiceCollection AddPruebas(this IServiceCollection servicios, s
         .AddScoped<IOutboxDePruebas, OutboxDePruebas>()
         .AddScoped<IAnotaciones, Anotaciones>()
         .AddScoped<IEntregasRecibidas, EntregasRecibidas>()
+        .AddSingleton<LlamadasDeInscribir>()
         .AddScoped<ICommandHandler<Anotar, Guid>, AnotarHandler>()
+        .AddScoped<ICommandHandler<Inscribir, Guid>, InscribirHandler>()
         .AddScoped<IQueryHandler<LeerAnotacion, AnotacionLeida>, LeerAnotacionHandler>()
         .AddScoped<IEventHandler<AnotacionHecha>, AlHacerseUnaAnotacion>()
         .AddScoped<IEventHandler<EventoDePrueba>, EscuchaDePrueba>()
@@ -196,6 +199,70 @@ public static IServiceCollection AddPruebas(this IServiceCollection servicios, s
 `Modules/<Módulo>/Infrastructure/Registro.cs`, dentro de `AddAgenda`, `AddPacientes` o `AddNotificaciones`, que ya
 registran el contexto y el puerto de transacción. El host solo llama a esos tres métodos. Los handlers de evento
 (`IEventHandler<TEvento>`) se registran igual; ver "Eventos entre módulos".
+
+### La validación de forma
+
+La forma de la entrada se declara con DataAnnotations sobre el comando (AD-12): `[Required]`, `[StringLength]`,
+`[EmailAddress]`, `[Range]`... y, para una regla que cruza campos, `IValidatableObject`. El mensaje que ve el
+usuario lo pone el atributo (`ErrorMessage`), en español; nadie lo traduce después. Los atributos no llevan
+reglas de negocio: esas viven en el agregado. El comando de prueba `Inscribir`, en `Pruebas/Inscribir.cs`:
+
+```csharp
+public sealed class Inscribir : ICommand<Guid>, IValidatableObject
+{
+    [Required(ErrorMessage = MensajeNombreRequerido)]
+    [StringLength(50, ErrorMessage = MensajeNombreLargo)]
+    public string Nombre { get; set; } = "";
+
+    [Required(ErrorMessage = MensajeCorreoRequerido)]
+    [EmailAddress(ErrorMessage = MensajeCorreoMalFormado)]
+    [StringLength(40, ErrorMessage = MensajeCorreoLargo)]
+    public string Correo { get; set; } = "";
+
+    [Range(18, 120, ErrorMessage = MensajeEdadFueraDeRango)]
+    public int Edad { get; set; }
+    // ...
+}
+```
+
+El handler no valida nada de esto: un decorador del host (`ValidacionDeComandos.cs`) envuelve a todo handler de
+comando y valida antes de llamarlo.
+
+- **Si el comando no pasa**, el handler no se ejecuta y vuelve `Resultado` con `Forma = Invalido`. `Errores`
+  lleva cada mensaje bajo el nombre de su propiedad, tal cual lo da el atributo; un campo que rompe dos atributos
+  lleva los dos mensajes. No hay excepción. Por ejemplo, con `Nombre = ""`, `Correo = "no-es-correo"` y
+  `Edad = 5`:
+
+  ```text
+  Errores["Nombre"] = ["El nombre es obligatorio."]
+  Errores["Correo"] = ["El correo no tiene la forma de un correo."]
+  Errores["Edad"]   = ["La edad va de 18 a 120."]
+  ```
+
+- **Un error del objeto** (de `IValidatableObject.Validate`, sin nombre de propiedad) va bajo la propiedad `""`,
+  la misma convención que Blazor usa para los errores del modelo. `Validate` solo corre si todos los atributos
+  pasaron. Un error sin mensaje lleva "El valor no es válido.".
+- **Si pasa**, el decorador llama al handler y devuelve su `Resultado` sin tocarlo. Un comando sin atributos
+  ni `IValidatableObject` siempre pasa.
+- **Las consultas no se validan**, ni los eventos.
+- **Límite conocido:** DataAnnotations valida las propiedades del comando, no las de un objeto anidado ni los
+  elementos de una colección. Un `[Required]` dentro de una clase que el comando lleva como propiedad no se revisa.
+- **Límite conocido:** el `ValidationContext` se crea sin proveedor de servicios: un atributo o un `Validate` que
+  llama a `validationContext.GetService(...)` recibe `null`. La validación de forma no consulta servicios.
+
+**Dónde se agregan decoradores.** La lista está en un solo lugar, `DecoradoresDeHandlers.Aplicar`
+(`DecoradoresDeHandlers.cs`, raíz de `Web`), con Scrutor. Se aplica al construir el contenedor
+(`builder.Host.UseServiceProviderFactory` en `Program.cs`), no con un `Decorate` suelto en `Program.cs`: así
+alcanza a todo handler registrado, también a los que el arnés de pruebas registra después de `Program.cs`, y cada
+decorador envuelve una sola vez. Un módulo registra sus handlers como siempre; no hace nada para quedar envuelto.
+
+### Un handler por caso de uso
+
+`UnHandlerPorCasoDeUsoTests` recorre todas las clases que implementan `ICommand<T>` o `IQuery<T>`, en `Web` y en
+los tipos de prueba, y pide al contenedor de la web del arnés todos sus handlers: cada caso de uso debe tener
+exactamente uno. Si alguno tiene cero o más de uno, la prueba falla y nombra el tipo y cuántos encontró. Un
+comando nuevo en un módulo queda cubierto sin tocar la prueba. `ComandoSinHandler` es la única excepción, a
+propósito: existe para probar qué pasa al pedir un handler que no existe.
 
 ### La regla de la transacción
 
