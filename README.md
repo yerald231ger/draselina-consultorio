@@ -204,7 +204,9 @@ registran el contexto y el puerto de transacción. El host solo llama a esos tre
 
 La forma de la entrada se declara con DataAnnotations sobre el comando (AD-12): `[Required]`, `[StringLength]`,
 `[EmailAddress]`, `[Range]`... y, para una regla que cruza campos, `IValidatableObject`. El mensaje que ve el
-usuario lo pone el atributo (`ErrorMessage`), en español; nadie lo traduce después. Los atributos no llevan
+usuario lo pone el atributo (`ErrorMessage`), en español; nadie lo traduce después. **Todo atributo de
+validación de un comando lleva su `ErrorMessage`**: sin él, .NET da su mensaje en inglés ("The Nombre field is
+required."). Lo hace cumplir `MensajesDeValidacionTests`, que recorre todos los comandos. Los atributos no llevan
 reglas de negocio: esas viven en el agregado. El comando de prueba `Inscribir`, en `Pruebas/Inscribir.cs`:
 
 ```csharp

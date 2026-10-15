@@ -7,7 +7,7 @@ paradigm: 'Monolito modular con contextos delimitados (DDD), puertos hexagonales
 scope: 'Todo el sistema del piloto: sitio del consultorio, reserva pública, administración, notificaciones'
 status: final
 created: '2026-10-04'
-updated: '2026-10-13'
+updated: '2026-10-15'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, FR-30]
 sources:
   - ../prd-appointment-booking/prd-appointment-booking.md
@@ -313,7 +313,7 @@ Versiones verificadas en la web el 2026-10-04.
 | bUnit | 2.11.3 |
 | Testcontainers.PostgreSql | 4.15.0 |
 | Microsoft.AspNetCore.Mvc.Testing (solo en pruebas) | la misma que ASP.NET Core |
-| Scrutor | 6.1.x `[ASSUMPTION: la versión que usa Cypma.Cop; se confirma que corre sobre .NET 11 al agregarla]` |
+| Scrutor | 6.1.0 (la versión de Cypma.Cop; corre sobre .NET 11 rc.1, entrada 1.6) |
 | libphonenumber-csharp | última estable al crear la solución |
 | Correo: Azure Communication Services Email | servicio |
 | Anti-bots: Cloudflare Turnstile | servicio |

@@ -99,3 +99,8 @@ La plataforma: host, composición, proyectos base y arnés de pruebas. No contie
 - Decision (entrada 11): un evento sin ningún handler registrado queda `Entregado` y se registra un aviso (Gerardo, 2026-10-14).
 - Decision (entrada 11): cada handler de evento tiene 30 segundos para terminar. Al vencerse se cancela su `CancellationToken`, la entrega cuenta como intento fallido según el calendario y la vuelta sigue con los demás eventos (Gerardo, 2026-10-14).
 - Decision (entrada 11): la columna `tipo` del outbox guarda el nombre de la clase del evento. Los nombres de evento son únicos en toda la aplicación y no se renombra un evento con filas pendientes (Gerardo, 2026-10-14).
+- Decision (entrada 6): un error de validación que no es de ningún campo (de `IValidatableObject`, sin miembros) va bajo la propiedad `""`, la convención de Blazor; un error sin mensaje lleva "El valor no es válido." (Gerardo, 2026-10-15).
+- Decision (entrada 6): todo atributo de validación de un comando lleva su `ErrorMessage` en español; el decorador no traduce. Lo hace cumplir una prueba que recorre todos los comandos (Gerardo, 2026-10-15).
+- Decision (entrada 6): `ComandoSinHandler`, de prueba y sin handler a propósito, queda fuera de la prueba de un handler por caso de uso en una lista explícita; en esa lista solo entran tipos de prueba (Gerardo, 2026-10-15).
+- Decision (entrada 6): `ValidacionDeComandos.Siguiente` se queda pública aunque solo la usen las pruebas (Gerardo, 2026-10-15).
+- Decision (entrada 6): Scrutor 6.1.0 corre sobre .NET 11 rc.1; la fila del Stack de la arquitectura deja su `[ASSUMPTION]` (Gerardo, 2026-10-15).

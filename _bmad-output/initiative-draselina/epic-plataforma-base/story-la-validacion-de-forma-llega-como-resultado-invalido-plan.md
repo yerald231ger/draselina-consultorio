@@ -3,7 +3,7 @@ title: 'La validación de forma llega como Resultado inválido'
 type: 'feature'
 ticket: '6'
 created: '2026-10-15'
-status: 'built'
+status: done
 baseline_revision: '24d3d705000f59320a364035be2fc8d02bddcf79'
 route: 'full'
 route_source: 'auto'
@@ -116,6 +116,14 @@ deferred: []
   - `[low]` `[patch]` El descubrimiento de casos de uso filtraba `IsClass` y saltaba en silencio un `struct` — se quitó la condición; el descubrimiento vive en `CasosDeUso.cs`, compartido.
   - `[low]` `[patch]` El README decía que un comando sin atributos siempre pasa, pero `IValidatableObject` se ejecuta igual — dice "sin atributos ni `IValidatableObject`".
   - `[low]` `[patch]` `ValidationContext` se arma sin proveedor de servicios y eso no estaba dicho — una línea en los límites conocidos del README; el código no cambia.
+
+### 2026-10-15 — Decisiones de Gerardo sobre lo que dejó la entrada
+
+Gerardo confirmó las tres suposiciones (error de objeto bajo `""`; `ComandoSinHandler` en lista explícita; `Siguiente` pública) y decidió que todo atributo de validación de un comando lleva `ErrorMessage`, con una prueba que lo hace cumplir. Aprobó cambiar la fila de Scrutor en el Stack.
+
+- **patch** — `tests/.../MensajesDeValidacionTests.cs`: recorre los comandos de Web y de prueba y falla por cada atributo de validación sin `ErrorMessage` (o `ErrorMessageResourceName`) escrito; se lee de `GetCustomAttributesData`, porque `[EmailAddress]` trae su propiedad `ErrorMessage` llena en inglés aunque nadie la escriba. Prueba del verificador con un tipo que no es comando. Comprobado quitando un `ErrorMessage` de `Inscribir`: la prueba falla.
+- README: la regla, en "La validación de forma". Arquitectura: fila Scrutor sin `[ASSUMPTION]`.
+- Verificación: build con 0 advertencias; 99 de 99 tres veces seguidas.
 
 ## Design Notes
 
