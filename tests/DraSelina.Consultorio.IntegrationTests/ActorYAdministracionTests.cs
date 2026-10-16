@@ -12,7 +12,7 @@ namespace DraSelina.Consultorio.IntegrationTests;
 /// <summary>
 /// Quién actúa y el rechazo de administración sin sesión (AD-22), contra la web real del arnés. El usuario del
 /// ámbito se fija como lo fija el renderizador de Blazor: por <see cref="IHostEnvironmentAuthenticationStateProvider"/>.
-/// <c>Sistema</c>, como lo declara un trabajo programado: por <see cref="ActorDelHost.DeclararSistema"/>.
+/// <c>Sistema</c>, como lo declara quien crea el ámbito desde el host: por <see cref="ActorDelHost.DeclararSistema"/>.
 /// </summary>
 public sealed class ActorYAdministracionTests(Arnes arnes)
 {

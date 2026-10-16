@@ -48,7 +48,7 @@ public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IA
         {
             throw new InvalidOperationException(
                 "Este ámbito no tiene actor: no viene de una petición ni de un circuito, y no se declaró Sistema "
-                + $"({nameof(ActorDelHost)}.{nameof(DeclararSistema)}). Un trabajo programado lo declara al crear su ámbito.",
+                + $"({nameof(ActorDelHost)}.{nameof(DeclararSistema)}). Quien crea el ámbito lo declara, desde el host.",
                 error);
         }
 

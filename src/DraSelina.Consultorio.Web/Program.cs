@@ -29,8 +29,8 @@ builder.Services
     .AddEntregaDeEventos()
     .AddOutbox<AgendaDbContext>();
 
-// Quién actúa (AD-22): un servicio por ámbito, el mismo como sí mismo (para que un trabajo programado declare
-// Sistema) y como IActorActual (lo que piden los handlers). Lee el AuthenticationStateProvider que registra
+// Quién actúa (AD-22): un servicio por ámbito, el mismo como sí mismo (para que quien crea el ámbito, desde el host,
+// declare Sistema) y como IActorActual (lo que piden los handlers). Lee el AuthenticationStateProvider que registra
 // AddRazorComponents.
 builder.Services
     .AddScoped<ActorDelHost>()

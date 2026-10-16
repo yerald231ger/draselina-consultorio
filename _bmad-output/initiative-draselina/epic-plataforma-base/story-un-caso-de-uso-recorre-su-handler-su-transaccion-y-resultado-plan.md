@@ -22,6 +22,7 @@ deferred:
       Dos comandos del mismo módulo en curso a la vez dentro del mismo ámbito del contenedor chocan: el segundo AbrirAsync lanza InvalidOperationException, y si el primero termina sin confirmar, su limpieza del contexto borra también lo que el otro tenía en seguimiento.
     evidence: |-
       El contexto, el puerto de transacción y los handlers son uno por ámbito (Registro.cs de cada módulo), y en administración (Interactive Server) el ámbito dura lo que el circuito. Por lectura es cierto; no se pudo decidir si ocurre en la práctica porque todavía no hay páginas de administración. Lo zanjaría una página Interactive Server que dispare dos comandos del mismo módulo cuyos await se crucen. La salida habitual es un ámbito por comando o una fábrica de contextos, y eso toca cómo las páginas piden sus handlers (AD-10): decisión de Gerardo antes de la primera pantalla de administración.
+      Registrado el 2026-10-16 (entrada 10) en la pregunta abierta de la épica sobre cuánto vive el contexto en las pantallas de administración; se decide ahí.
     location: >-
       src/DraSelina.Consultorio.Web/Modules/*/Infrastructure/TransaccionDe*.cs (AbrirAsync)
     severity: medium (unverified)

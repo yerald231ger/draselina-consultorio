@@ -3,7 +3,7 @@ title: "Diseño de dominio (DDD) y modelo de datos — Sistema de citas, Dra. Se
 status: final
 invariant: true
 created: 2026-10-04
-updated: 2026-10-06
+updated: 2026-10-16
 sources:
   - architecture-appointment-booking.md
   - ../brainstorm-agenda-horario-configuracion/brainstorm-agenda-horario-configuracion.md
@@ -169,7 +169,7 @@ La flecha apunta de quien provee (upstream) a quien consume (downstream). OHS = 
 | Agenda → Notificaciones | Published Language (eventos) más Open Host Service (`IAgendaApi`) | Notificaciones traduce los eventos a mensajes con una capa anticorrupción ligera |
 | Contenido → Notificaciones, Agenda e interfaz | Open Host Service (`IContenidoApi`) | Datos del consultorio. Agenda los pide solo para poner el lugar en el archivo de calendario `[ASSUMPTION]` |
 | Notificaciones → proveedor de correo | Anti-Corruption Layer (`INotificationChannel`) | Cambiar de proveedor toca una sola clase |
-| Todos | Shared Kernel | Solo ids tipados, `IClock`, `Resultado` y `Actor`. Nada de negocio |
+| Todos | Shared Kernel | Solo ids tipados, `IClock`, `Resultado`, `Actor` e `IActorActual`. Nada de negocio |
 
 - **E-13.** Entre contextos solo hay dos formas de hablar: llamada síncrona por una interfaz `I<Contexto>Api`, o evento de integración por el outbox. No hay una tercera.
 - **E-14.** Agenda nunca llama a Notificaciones. Publica eventos sin saber quién escucha.
@@ -579,7 +579,7 @@ classDiagram
 | Handlers, puertos de lectura | `<Contexto>.Features` |
 | Comandos, consultas, DTOs, eventos de integración, `I<Contexto>Api` | `<Contexto>.Contracts` |
 | Implementación de puertos, persistencia | `<Contexto>.Infrastructure` |
-| Ids tipados, `IClock`, `Resultado`, `Actor` | `Kernel` |
+| Ids tipados, `IClock`, `Resultado`, `Actor`, `IActorActual` | `Kernel` |
 
 - **T-28.** El namespace `Domain` de un contexto no usa nada salvo el `Kernel`. No conoce EF Core, ASP.NET ni otros contextos. Las capas son namespaces y carpetas dentro de un solo proyecto, no proyectos separados.
 

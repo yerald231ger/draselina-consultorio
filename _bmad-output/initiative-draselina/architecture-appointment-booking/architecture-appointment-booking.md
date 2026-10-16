@@ -7,7 +7,7 @@ paradigm: 'Monolito modular con contextos delimitados (DDD), puertos hexagonales
 scope: 'Todo el sistema del piloto: sitio del consultorio, reserva pública, administración, notificaciones'
 status: final
 created: '2026-10-04'
-updated: '2026-10-15'
+updated: '2026-10-16'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, FR-30]
 sources:
   - ../prd-appointment-booking/prd-appointment-booking.md
@@ -32,7 +32,7 @@ Todo el código de la aplicación vive en un solo proyecto, `DraSelina.Consultor
 
 | Capa | Namespace | Carpeta dentro de `Web` | Contiene |
 | --- | --- | --- | --- |
-| Kernel | `DraSelina.Consultorio.Kernel` | `Kernel/` | Ids tipados, `IClock`, `Resultado`, `Actor` |
+| Kernel | `DraSelina.Consultorio.Kernel` | `Kernel/` | Ids tipados, `IClock`, `Resultado`, `Actor`, `IActorActual` |
 | Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | `ICommand<T>`, `IQuery<T>`, `ICommandHandler<TComando, T>`, `IQueryHandler<TConsulta, T>`, `IEventHandler<TEvento>`, marcadores de autorización |
 | Contratos | `DraSelina.Consultorio.<Módulo>.Contracts` | `Modules/<Módulo>/Contracts/` | Comandos, consultas, DTOs, eventos de integración, API entre módulos |
 | Dominio | `DraSelina.Consultorio.<Módulo>.Domain` | `Modules/<Módulo>/Domain/` | Agregados, objetos de valor, servicios de dominio, puertos de escritura |
@@ -285,7 +285,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 | Concern | Convention |
 | --- | --- |
-| Naming | Términos de negocio en español (`Cita`, `AgendaAtencion`, `Tramo`); capas técnicas en inglés. Raíz `DraSelina.Consultorio`. Eventos en pasado. Un namespace plano por capa. |
+| Naming | Términos de negocio en español (`Cita`, `AgendaAtencion`, `Tramo`); capas técnicas en inglés. Raíz `DraSelina.Consultorio`. Eventos en pasado. Un namespace por capa; los sub-namespaces dentro de una capa (`Infrastructure.Migrations`, `UI.Layout`) son de esa capa y no tienen reglas propias. |
 | Vocabulario | El Glosario del PRD manda. "Horario de atención" y "Bloqueo" no existen en código ni en pantallas. |
 | Ids y datos | Guid v7 tipado. Teléfono en E.164. Instantes en UTC (`timestamptz`). Tramos como hora local sin zona. Rangos semiabiertos. |
 | Resultados | Todo comando y consulta devuelve `Resultado`. Los fallos esperados llevan un código de un conjunto cerrado por módulo, definido en `Contracts`; nunca se lanzan como excepción ni se comunican con texto. |
@@ -359,7 +359,7 @@ src/
   DraSelina.Consultorio.ServiceDefaults/    # OpenTelemetry, salud
   DraSelina.Consultorio.MigrationService/   # migraciones y datos iniciales
   DraSelina.Consultorio.Web/                # todo el código de la aplicación
-    Kernel/                                 # ids, IClock, Resultado, Actor
+    Kernel/                                 # ids, IClock, Resultado, Actor, IActorActual
     BuildingBlocks/Contracts/               # ICommand, IQuery, sus handlers, marcadores
     Modules/Agenda/{Contracts,Domain,Features,Infrastructure}/
     Modules/Pacientes/{Contracts,Domain,Features,Infrastructure}/
