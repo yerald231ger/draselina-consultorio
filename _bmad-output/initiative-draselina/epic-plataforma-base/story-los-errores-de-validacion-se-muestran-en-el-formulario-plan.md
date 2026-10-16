@@ -3,7 +3,7 @@ title: 'Los errores de validación se muestran en el formulario'
 type: 'feature'
 ticket: '9'
 created: '2026-10-16'
-status: 'built'
+status: done
 baseline_revision: '9b634373f8b06a7dbf25b6bbde4cdd42f6c8a074'
 route: 'full'
 route_source: 'auto'
