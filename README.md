@@ -189,6 +189,10 @@ public static IServiceCollection AddPruebas(this IServiceCollection servicios, s
         .AddScoped<ICommandHandler<Anotar, Guid>, AnotarHandler>()
         .AddScoped<ICommandHandler<Inscribir, Guid>, InscribirHandler>()
         .AddScoped<IQueryHandler<LeerAnotacion, AnotacionLeida>, LeerAnotacionHandler>()
+        .AddSingleton<LlamadasDeAdministracion>()
+        .AddScoped<ICommandHandler<Administrar, Actor>, AdministrarHandler>()
+        .AddScoped<IQueryHandler<LeerAdministracion, Actor>, LeerAdministracionHandler>()
+        .AddScoped<ICommandHandler<PreguntarActor, Actor>, PreguntarActorHandler>()
         .AddScoped<IEventHandler<AnotacionHecha>, AlHacerseUnaAnotacion>()
         .AddScoped<IEventHandler<EventoDePrueba>, EscuchaDePrueba>()
         .AddScoped<IEventHandler<EventoConDosHandlers>, PrimeraEscucha>()
@@ -257,6 +261,63 @@ comando y valida antes de llamarlo.
 (`builder.Host.UseServiceProviderFactory` en `Program.cs`), no con un `Decorate` suelto en `Program.cs`: así
 alcanza a todo handler registrado, también a los que el arnés de pruebas registra después de `Program.cs`, y cada
 decorador envuelve una sola vez. Un módulo registra sus handlers como siempre; no hace nada para quedar envuelto.
+Hoy son dos; de afuera hacia adentro, un comando pasa por el rechazo sin Administrador, la validación y el handler;
+una consulta, por el rechazo y el handler.
+
+### El actor y la administración
+
+**Quién actúa** (AD-22) lo dice un solo servicio del host, `IActorActual` (`Kernel/IActorActual.cs`), con uno de los
+tres valores de `Actor`. Un handler que necesita su actor (para la bitácora, por ejemplo) lo pide por su
+constructor; nunca lo averigua a su manera:
+
+```csharp
+public sealed class CancelarCitaHandler(IActorActual actor, ...) : ICommandHandler<CancelarCita, Guid>
+{
+    public async Task<Resultado<Guid>> HandleAsync(CancelarCita comando, CancellationToken cancellationToken)
+    {
+        var quien = await actor.ObtenerAsync();   // Administrador, Paciente o Sistema
+        // ...
+```
+
+La implementación es `ActorDelHost.cs` (raíz de `Web`), una por ámbito: el de la petición en SSR estático o el del
+circuito en Interactive Server. Lee el usuario del `AuthenticationStateProvider` estándar de Blazor de ese ámbito.
+
+| Ámbito | Actor |
+| --- | --- |
+| Usuario autenticado (`Identity.IsAuthenticated`) | `Administrador`: no hay registro público, así que quien tiene sesión es la administradora |
+| Página Blazor (SSR) o circuito sin usuario | `Paciente` |
+| Declarado `Sistema` por quien creó el ámbito | `Sistema` |
+| Ninguno de los anteriores | No hay actor: `ObtenerAsync` lanza `InvalidOperationException` |
+
+- **`Sistema` se declara, no se deduce.** Lo declara quien crea el ámbito, desde el host: pide `ActorDelHost` al
+  contenedor y llama a `DeclararSistema()` antes de pedir el handler. No está en `IActorActual`: un handler no puede
+  declararse `Sistema`. Un módulo no ve `ActorDelHost` (es de la raíz de `Web`, que las reglas de dependencia le
+  prohíben); cómo obtiene un ámbito `Sistema` el trabajo programado de un módulo (Recordatorio y Agenda del día, en
+  Notificaciones según AD-20) se decide con el primer trabajo programado. Hoy no hay ninguno; solo lo usan las
+  pruebas.
+- **La entrega de eventos no declara `Sistema`.** Una política que reacciona a un evento usa el actor que viene en
+  el evento: las cancelaciones elegidas al guardar o borrar una custom quedan a nombre del `Administrador`.
+- **Un ámbito sin actor** (creado a mano, que no viene de una página Blazor ni de un circuito y no se declaró
+  `Sistema`) lanza al pedir el actor. Es un error de programación, no un `Resultado`. Un endpoint de Minimal API
+  no fija el estado de autenticación, así que pedir el actor ahí lanza (y una consulta marcada lanza en vez de
+  volver `NoAutorizado`); cómo obtiene su actor un endpoint así se decide con el primer endpoint.
+
+**Un caso de uso de administración** se marca con `IRequiereAdministrador` (`BuildingBlocks/Contracts/`), en su
+clase de `Contracts`:
+
+```csharp
+public sealed class GuardarAgendaCustom : ICommand<Guid>, IRequiereAdministrador { ... }
+```
+
+Un decorador del host (`RechazoSinAdministrador.cs`) envuelve a todo handler de comando y de consulta. Si el caso
+de uso está marcado y el actor no es `Administrador` (también si es `Sistema`), devuelve `Resultado` con
+`Forma = NoAutorizado`, sin errores ni código, y el handler no corre. Va por fuera de la validación: un comando
+marcado e inválido sin sesión vuelve `NoAutorizado`, no `Invalido`. Un caso de uso sin marca pasa directo, sin
+pedir el actor. No se confía en que la página esté protegida. Las pruebas fijan el usuario del ámbito como lo fija
+Blazor, por `IHostEnvironmentAuthenticationStateProvider.SetAuthenticationState` (`ActorYAdministracionTests`).
+
+Todavía no hay inicio de sesión (ASP.NET Core Identity llega con la épica 5) ni actor `Paciente` por enlace de
+gestión.
 
 ### Un handler por caso de uso
 

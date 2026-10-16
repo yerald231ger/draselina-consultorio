@@ -29,10 +29,18 @@ builder.Services
     .AddEntregaDeEventos()
     .AddOutbox<AgendaDbContext>();
 
+// Quién actúa (AD-22): un servicio por ámbito, el mismo como sí mismo (para que un trabajo programado declare
+// Sistema) y como IActorActual (lo que piden los handlers). Lee el AuthenticationStateProvider que registra
+// AddRazorComponents.
+builder.Services
+    .AddScoped<ActorDelHost>()
+    .AddScoped<IActorActual>(servicios => servicios.GetRequiredService<ActorDelHost>());
+
 builder.Services.AddRazorComponents();
 
-// Los decoradores de los handlers (la validación de forma de AD-12) se aplican al construir el contenedor, sobre
-// todo lo registrado hasta entonces. La lista está en DecoradoresDeHandlers.cs.
+// Los decoradores de los handlers (la validación de forma de AD-12 y el rechazo sin Administrador de AD-22) se
+// aplican al construir el contenedor, sobre todo lo registrado hasta entonces. La lista está en
+// DecoradoresDeHandlers.cs.
 builder.Host.UseServiceProviderFactory(contexto => DecoradoresDeHandlers.Fabrica(contexto.HostingEnvironment));
 
 var app = builder.Build();

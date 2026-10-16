@@ -20,6 +20,11 @@ public static class DecoradoresDeHandlers
     {
         // Validación de forma de todo comando, antes de su handler (AD-12).
         servicios.TryDecorate(typeof(ICommandHandler<,>), typeof(ValidacionDeComandos<,>));
+
+        // Rechazo de lo marcado IRequiereAdministrador sin Administrador, por fuera de la validación: un no
+        // autorizado no aprende nada de la forma (AD-22).
+        servicios.TryDecorate(typeof(ICommandHandler<,>), typeof(RechazoSinAdministradorDeComandos<,>));
+        servicios.TryDecorate(typeof(IQueryHandler<,>), typeof(RechazoSinAdministradorDeConsultas<,>));
     }
 
     /// <summary>

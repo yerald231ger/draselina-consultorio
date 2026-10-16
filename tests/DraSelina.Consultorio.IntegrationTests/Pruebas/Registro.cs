@@ -1,4 +1,5 @@
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,6 +23,10 @@ public static class Registro
             .AddScoped<ICommandHandler<Anotar, Guid>, AnotarHandler>()
             .AddScoped<ICommandHandler<Inscribir, Guid>, InscribirHandler>()
             .AddScoped<IQueryHandler<LeerAnotacion, AnotacionLeida>, LeerAnotacionHandler>()
+            .AddSingleton<LlamadasDeAdministracion>()
+            .AddScoped<ICommandHandler<Administrar, Actor>, AdministrarHandler>()
+            .AddScoped<IQueryHandler<LeerAdministracion, Actor>, LeerAdministracionHandler>()
+            .AddScoped<ICommandHandler<PreguntarActor, Actor>, PreguntarActorHandler>()
             .AddScoped<IEventHandler<AnotacionHecha>, AlHacerseUnaAnotacion>()
             .AddScoped<IEventHandler<EventoDePrueba>, EscuchaDePrueba>()
             .AddScoped<IEventHandler<EventoConDosHandlers>, PrimeraEscucha>()

@@ -105,36 +105,77 @@ public sealed class ValidacionDeFormaTests(Arnes arnes)
 
         var handler = ambito.ServiceProvider.GetRequiredService<IQueryHandler<LeerAnotacion, AnotacionLeida>>();
 
-        Assert.IsType<LeerAnotacionHandler>(handler);
+        // Solo la envuelve el rechazo sin Administrador (AD-22); debajo está el handler real.
+        var rechazo = Assert.IsType<RechazoSinAdministradorDeConsultas<LeerAnotacion, AnotacionLeida>>(handler);
+        Assert.IsType<LeerAnotacionHandler>(rechazo.Siguiente);
     }
 
     [Fact]
-    public async Task El_validador_envuelve_una_sola_vez_al_handler_real_de_cada_comando()
+    public async Task Cada_decorador_envuelve_una_sola_vez_al_handler_real_de_cada_comando_y_consulta()
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
 
-        var interfaces = CasosDeUso.HandlersDeComando(CasosDeUso.DeLaWebYDePrueba()).ToList();
-        Assert.Contains(typeof(ICommandHandler<Anotar, Guid>), interfaces);
-        Assert.Contains(typeof(ICommandHandler<Inscribir, Guid>), interfaces);
+        var casos = CasosDeUso.DeLaWebYDePrueba();
+        var deComando = CasosDeUso.HandlersDeComando(casos).ToList();
+        var deConsulta = casos.SelectMany(CasosDeUso.Handlers).Except(deComando).ToList();
+        Assert.Contains(typeof(ICommandHandler<Anotar, Guid>), deComando);
+        Assert.Contains(typeof(ICommandHandler<Inscribir, Guid>), deComando);
+        Assert.Contains(typeof(IQueryHandler<LeerAnotacion, AnotacionLeida>), deConsulta);
 
-        foreach (var interfaz in interfaces)
+        // Comando: rechazo → validador → real. Consulta: rechazo → real. Cada uno una vez.
+        foreach (var interfaz in deComando)
         {
-            var handler = Assert.Single(ambito.ServiceProvider.GetServices(interfaz));
-            Assert.True(EsValidador(handler), $"{interfaz} no lo envuelve el validador: es {handler!.GetType()}.");
-
-            var siguiente = handler!.GetType().GetProperty(nameof(ValidacionDeComandos<Anotar, Guid>.Siguiente))!.GetValue(handler);
-            Assert.False(EsValidador(siguiente), $"{interfaz} está envuelto más de una vez por el validador.");
+            var cadena = Cadena(Assert.Single(ambito.ServiceProvider.GetServices(interfaz))!);
+            Assert.True(
+                cadena.Count == 3
+                && EsDe(cadena[0], typeof(RechazoSinAdministradorDeComandos<,>))
+                && EsDe(cadena[1], typeof(ValidacionDeComandos<,>))
+                && !EsDecorador(cadena[2]),
+                $"{interfaz} no tiene la cadena rechazo → validador → real: {Nombres(cadena)}.");
         }
 
-        // Y en un comando conocido, lo que queda directo bajo el validador es el handler real.
+        foreach (var interfaz in deConsulta)
+        {
+            var cadena = Cadena(Assert.Single(ambito.ServiceProvider.GetServices(interfaz))!);
+            Assert.True(
+                cadena.Count == 2
+                && EsDe(cadena[0], typeof(RechazoSinAdministradorDeConsultas<,>))
+                && !EsDecorador(cadena[1]),
+                $"{interfaz} no tiene la cadena rechazo → real: {Nombres(cadena)}.");
+        }
+
+        // Y en un comando conocido, lo que queda al fondo es el handler real.
         var anotar = ambito.ServiceProvider.GetRequiredService<ICommandHandler<Anotar, Guid>>();
-        Assert.IsType<AnotarHandler>(Assert.IsType<ValidacionDeComandos<Anotar, Guid>>(anotar).Siguiente);
+        var rechazo = Assert.IsType<RechazoSinAdministradorDeComandos<Anotar, Guid>>(anotar);
+        Assert.IsType<AnotarHandler>(Assert.IsType<ValidacionDeComandos<Anotar, Guid>>(rechazo.Siguiente).Siguiente);
     }
 
-    private static bool EsValidador(object? handler) =>
-        handler?.GetType() is { IsConstructedGenericType: true } tipo
-        && tipo.GetGenericTypeDefinition() == typeof(ValidacionDeComandos<,>);
+    private static readonly Type[] Decoradores =
+    [
+        typeof(ValidacionDeComandos<,>),
+        typeof(RechazoSinAdministradorDeComandos<,>),
+        typeof(RechazoSinAdministradorDeConsultas<,>),
+    ];
+
+    private static bool EsDe(object handler, Type decorador) =>
+        handler.GetType() is { IsConstructedGenericType: true } tipo && tipo.GetGenericTypeDefinition() == decorador;
+
+    private static bool EsDecorador(object handler) => Decoradores.Any(d => EsDe(handler, d));
+
+    /// <summary>Del de afuera al de adentro, siguiendo <c>Siguiente</c> de cada decorador.</summary>
+    private static List<object> Cadena(object handler)
+    {
+        var cadena = new List<object> { handler };
+        while (EsDecorador(cadena[^1]))
+        {
+            cadena.Add(cadena[^1].GetType().GetProperty(nameof(ValidacionDeComandos<Anotar, Guid>.Siguiente))!.GetValue(cadena[^1])!);
+        }
+
+        return cadena;
+    }
+
+    private static string Nombres(List<object> cadena) => string.Join(" → ", cadena.Select(h => h.GetType().Name));
 
     private static Inscribir Valido() => new()
     {
