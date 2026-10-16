@@ -280,3 +280,59 @@ a:hover {
     align-self: flex-start;
   }
 }
+
+/* Campo (UI/Componentes/Campo.razor): etiqueta en negritas arriba, control de 50 px, ayuda y errores debajo. */
+.dsm-campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-2);
+  margin-bottom: var(--dsm-spacing-8);
+}
+
+.dsm-campo__etiqueta {
+  font-size: var(--dsm-label-font-size);
+  font-weight: var(--dsm-label-font-weight);
+  color: var(--dsm-ink);
+}
+
+.dsm-campo__control {
+  width: 100%;
+  height: 50px;
+  padding-inline: var(--dsm-spacing-6);
+  font-family: var(--dsm-font-family);
+  font-size: var(--dsm-input-font-size);
+  font-weight: var(--dsm-input-font-weight);
+  color: var(--dsm-ink);
+  background: var(--dsm-surface);
+  border: 1.5px solid var(--dsm-border-input);
+  border-radius: var(--dsm-rounded-md);
+}
+
+.dsm-campo__ayuda {
+  font-size: var(--dsm-help-font-size);
+  font-weight: var(--dsm-help-font-weight);
+  line-height: var(--dsm-help-line-height);
+  color: var(--dsm-muted);
+}
+
+/* Con error: borde de 2 px en vino y el mensaje en vino, tipografía help en negritas. Nunca danger. */
+.dsm-campo__control[aria-invalid="true"] {
+  border: 2px solid var(--dsm-primary);
+}
+
+.dsm-campo__error,
+.dsm-errores-del-objeto {
+  font-size: var(--dsm-help-font-size);
+  font-weight: 700;
+  line-height: var(--dsm-help-line-height);
+  color: var(--dsm-primary);
+}
+
+/* Errores del objeto (propiedad ""), arriba de los campos (UI/Componentes/ErroresDelResultado.razor). */
+.dsm-errores-del-objeto {
+  margin-bottom: var(--dsm-spacing-8);
+}
+
+.dsm-errores-del-objeto__mensaje {
+  margin: 0;
+}

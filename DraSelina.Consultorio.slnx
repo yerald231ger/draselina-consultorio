@@ -9,5 +9,6 @@
     <Project Path="tests/DraSelina.Consultorio.ArchitectureTests/DraSelina.Consultorio.ArchitectureTests.csproj" />
     <Project Path="tests/DraSelina.Consultorio.IntegrationTests/DraSelina.Consultorio.IntegrationTests.csproj" />
     <Project Path="tests/DraSelina.Consultorio.Kernel.Tests/DraSelina.Consultorio.Kernel.Tests.csproj" />
+    <Project Path="tests/DraSelina.Consultorio.UI.Tests/DraSelina.Consultorio.UI.Tests.csproj" />
   </Folder>
 </Solution>

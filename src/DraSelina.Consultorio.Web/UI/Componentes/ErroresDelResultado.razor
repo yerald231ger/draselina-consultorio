@@ -1,0 +1,157 @@
+@using DraSelina.Consultorio.Kernel
+@implements IDisposable
+
+@*
+    Los errores de un Resultado inválido, dentro de un EditForm. Pasa los errores en cascada a cada Campo, pinta
+    arriba los errores del objeto (propiedad "") y decide quién lleva el foco: el primer error en orden de lectura.
+    En SSR estático ese Campo lleva autofocus; en interactivo, al llegar un Resultado inválido nuevo, se enfoca una
+    vez después de pintar.
+
+    Los errores de cada campo se copian también al EditContext del EditForm: así el InputText de cada Campo pinta
+    aria-invalid por su cuenta (InputBase quita un aria-invalid que le llegue de fuera si su EditContext no tiene
+    mensajes para él). Se borran al pedir validación, que es lo primero que hace el EditForm al enviarse: sin
+    validador en el formulario, OnValidSubmit se dispara siempre y los errores vienen solo del Resultado (AD-12).
+*@
+
+<CascadingValue Value="this" IsFixed="true">
+    @if (_erroresDelObjeto.Count > 0)
+    {
+        <div @ref="_mensajeDelObjeto" id="errores-del-objeto" class="dsm-errores-del-objeto" tabindex="-1"
+             autofocus="@(LlevaAutofocus(this))">
+            @foreach (var mensaje in _erroresDelObjeto)
+            {
+                <p class="dsm-errores-del-objeto__mensaje">@mensaje</p>
+            }
+        </div>
+    }
+
+    @ChildContent
+</CascadingValue>
+
+@code {
+    private static readonly IReadOnlyList<string> SinMensajes = [];
+
+    private IReadOnlyList<string> _erroresDelObjeto = SinMensajes;
+    private ElementReference _mensajeDelObjeto;
+    private Resultado? _anterior;
+    private object? _duenoDelFoco;
+    private bool _enfocarAlPintar;
+    private EditContext? _contexto;
+    private ValidationMessageStore? _mensajesDelContexto;
+
+    [CascadingParameter]
+    private EditContext? EditContext { get; set; }
+
+    /// <summary>El Resultado del último envío; nulo si todavía no se envía.</summary>
+    [Parameter]
+    public Resultado? Resultado { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (EditContext is null)
+        {
+            throw new InvalidOperationException($"{nameof(ErroresDelResultado)} va dentro de un EditForm.");
+        }
+
+        var otroContexto = !ReferenceEquals(EditContext, _contexto);
+        if (otroContexto)
+        {
+            SoltarContexto();
+            _contexto = EditContext;
+            _mensajesDelContexto = new ValidationMessageStore(_contexto);
+            _contexto.OnValidationRequested += AlPedirValidacion;
+        }
+
+        // Cada pintada reparte el foco de nuevo: el primero que lo reclama se lo queda.
+        _duenoDelFoco = null;
+        _erroresDelObjeto = MensajesDe("");
+        if (_erroresDelObjeto.Count > 0)
+        {
+            _duenoDelFoco = this;
+        }
+
+        if (!ReferenceEquals(Resultado, _anterior))
+        {
+            _enfocarAlPintar = RendererInfo.IsInteractive && Resultado?.Forma == FormaDeResultado.Invalido;
+            _anterior = Resultado;
+        }
+
+        // En cada pintada, no solo con otro Resultado: un envío los borra del EditContext aunque no traiga otro.
+        CopiarAlContexto();
+    }
+
+    public void Dispose() => SoltarContexto();
+
+    // Los errores de campo (no los del objeto) quedan como mensajes del EditContext, bajo su propiedad del modelo.
+    private void CopiarAlContexto()
+    {
+        _mensajesDelContexto!.Clear();
+        if (Resultado is { Forma: FormaDeResultado.Invalido } invalido)
+        {
+            foreach (var (propiedad, mensajes) in invalido.Errores)
+            {
+                if (propiedad.Length > 0)
+                {
+                    _mensajesDelContexto.Add(_contexto!.Field(propiedad), mensajes);
+                }
+            }
+        }
+
+        _contexto!.NotifyValidationStateChanged();
+    }
+
+    private void AlPedirValidacion(object? remitente, ValidationRequestedEventArgs e) => _mensajesDelContexto?.Clear();
+
+    private void SoltarContexto()
+    {
+        if (_contexto is not null)
+        {
+            _contexto.OnValidationRequested -= AlPedirValidacion;
+            _mensajesDelContexto?.Clear();
+            _contexto = null;
+            _mensajesDelContexto = null;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_enfocarAlPintar)
+        {
+            return;
+        }
+
+        _enfocarAlPintar = false;
+        if (_duenoDelFoco is Campo campo)
+        {
+            await campo.EnfocarAsync();
+        }
+        else if (ReferenceEquals(_duenoDelFoco, this))
+        {
+            await _mensajeDelObjeto.FocusAsync();
+        }
+    }
+
+    /// <summary>Los mensajes de una propiedad, en orden; vacío si no tiene o si el Resultado no es inválido.</summary>
+    internal IReadOnlyList<string> MensajesDe(string propiedad) =>
+        Resultado is { Forma: FormaDeResultado.Invalido } invalido
+        && invalido.Errores.TryGetValue(propiedad, out var mensajes)
+            ? mensajes
+            : SinMensajes;
+
+    /// <summary>
+    /// Lo pide un Campo con error al pintarse. Devuelve verdadero si el foco es suyo: nadie lo había reclamado en
+    /// esta pintada, o ya era suyo.
+    /// </summary>
+    internal bool ReclamarFoco(Campo campo)
+    {
+        _duenoDelFoco ??= campo;
+        return ReferenceEquals(_duenoDelFoco, campo);
+    }
+
+    /// <summary>En SSR estático el dueño del foco lleva autofocus; en interactivo se enfoca con FocusAsync.</summary>
+    internal bool LlevaAutofocus(object quien) =>
+        !RendererInfo.IsInteractive && ReferenceEquals(_duenoDelFoco, quien);
+}

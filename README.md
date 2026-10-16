@@ -26,9 +26,9 @@ compila, pero las pruebas no arrancan porque el sistema no tiene el runtime 11.
 
 ## Pruebas
 
-`./dotnet.sh test` corre los tres proyectos de `tests/`. No hace falta el AppHost arriba ni ningún otro comando.
+`./dotnet.sh test` corre los cuatro proyectos de `tests/`. No hace falta el AppHost arriba ni ningún otro comando.
 
-- `Kernel.Tests` y `ArchitectureTests` no usan base de datos.
+- `Kernel.Tests`, `ArchitectureTests` y `UI.Tests` no usan base de datos ni Docker.
 - `IntegrationTests` corre contra PostgreSQL real y **necesita Docker en ejecución**. Sin Docker estas pruebas
   fallan con un mensaje que lo dice; no se omiten.
 
@@ -593,6 +593,68 @@ estático y cada página llega completa, sin conexión interactiva (AD-11). `Bas
 
 El layout público es `UI/Layout/LayoutPublico.razor`, el layout por defecto de `Routes.razor`.
 
+## Errores en el formulario
+
+Un comando inválido vuelve como `Resultado` con `Forma = Invalido` y sus mensajes por propiedad ("La validación de
+forma"). Dos componentes de `UI/Componentes/` los muestran; una página no pinta errores por su cuenta.
+
+- **`ErroresDelResultado`** va dentro del `EditForm` y recibe el `Resultado` del último envío. Pasa los errores en
+  cascada a cada `Campo`, pinta arriba de los campos los errores del objeto (propiedad `""`) y decide quién lleva el
+  foco: el primer error en orden de lectura (el del objeto, si lo hay; si no, el primer `Campo` con error).
+- **`Campo`** es el campo de texto de DESIGN.md: etiqueta en negritas, control de 50 px, ayuda opcional y cada
+  mensaje de su propiedad debajo del control, en vino. Con error, el control lleva `aria-invalid="true"` y
+  `aria-describedby` con los ids de la ayuda y de cada mensaje. El id del control es el nombre de la propiedad
+  (`Nombre`; la ayuda `Nombre-ayuda`, los mensajes `Nombre-error-1`, `Nombre-error-2`...). Parámetros: `Para`,
+  `Etiqueta`, `Ayuda`, `Tipo` (`text` por omisión, `email`, `tel`); cualquier otro atributo (`autocomplete`,
+  `inputmode`) pasa al control, pero no reemplaza los propios del `Campo` (`id`, `type`, `class`,
+  `aria-describedby`, `autofocus`). Solo texto: los controles de número, fecha, lista o área de texto llegan
+  con la historia que los necesite.
+
+Así arma una página su formulario:
+
+```razor
+<EditForm Model="Comando" FormName="datos" OnValidSubmit="EnviarAsync">
+    <ErroresDelResultado Resultado="resultado">
+        <Campo Para="() => Comando.Nombre" Etiqueta="Nombre completo" autocomplete="name" />
+        <Campo Para="() => Comando.Correo" Etiqueta="Correo" Tipo="email" Ayuda="Te enviamos la confirmación." />
+    </ErroresDelResultado>
+    <button type="submit" class="btn btn-primary">Continuar</button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    public DatosDelPaciente Comando { get; set; } = new();
+
+    private Resultado? resultado;
+}
+```
+
+El `EditForm` se liga al comando con `[SupplyParameterFromForm]`: en SSR estático es lo que llena `Comando` con lo
+que trae el POST; sin él, el comando llega vacío y todo campo sale "obligatorio". `EnviarAsync` pide el
+`ICommandHandler` del comando (con `@inject`) y guarda en `resultado` el `Resultado` que vuelve. Sin `DataAnnotationsValidator` ni ninguna otra validación en la página (AD-12): `OnValidSubmit` se dispara
+siempre y los errores vienen solo del `Resultado`.
+
+- **Toda propiedad validada necesita su `Campo`** para que su error se vea. Un error de una propiedad sin `Campo`
+  no se muestra en ningún lado.
+- **El foco.** En SSR estático el primer error lleva `autofocus`: la respuesta al envío es una página completa y el
+  navegador lo aplica al cargarla, sin script. En interactivo, al llegar un `Resultado` inválido nuevo, se enfoca
+  una vez después de pintar, con `FocusAsync`.
+- **`aria-invalid` lo pinta el `InputText`.** `ErroresDelResultado` copia los errores de campo al `EditContext`
+  del `EditForm` y los borra al enviarse el formulario; el `InputText` de cada `Campo` pinta `aria-invalid` (y su
+  clase `invalid`) con ellos.
+- **Fuera de su lugar lanza.** Un `Campo` fuera de `ErroresDelResultado`, o un `ErroresDelResultado` fuera de un
+  `EditForm`, lanza `InvalidOperationException` al pintarse: así no queda un campo cuyos errores nunca se ven.
+- **Estilos** en `css/consultorio.css` (`.dsm-campo*`, `.dsm-errores-del-objeto`), solo con tokens. El error va en
+  `--dsm-primary`, nunca en `--dsm-danger`.
+
+**Cómo se prueba.** `tests/DraSelina.Consultorio.UI.Tests` pinta los componentes con bUnit, sin navegador ni
+Docker. `FormularioDePrueba.razor` es un formulario armado como arriba sobre `ComandoDePrueba`, y el handler se pide
+envuelto en el `ValidacionDeComandos` real, así que los mensajes salen de DataAnnotations. Cada prueba fija el modo
+con `SetRendererInfo`: `new RendererInfo("Static", isInteractive: false)` para SSR estático (se afirma `autofocus`
+y que no hubo llamadas a JS) o `new RendererInfo("Server", isInteractive: true)` para interactivo (se afirma la
+llamada a enfocar con `JSInterop.VerifyFocusAsyncInvoke`). bUnit no hace un envío HTTP real: en el modo estático
+se pinta como en SSR, pero el envío es un evento, no un POST.
+
 ## Crear una migración
 
 Cada módulo con datos tiene su `DbContext` en `Modules/<Módulo>/Infrastructure/`, con su esquema y su historial
@@ -641,6 +703,7 @@ tests/
   DraSelina.Consultorio.Kernel.Tests/
   DraSelina.Consultorio.ArchitectureTests/
   DraSelina.Consultorio.IntegrationTests/   # arnés y pruebas contra PostgreSQL real (Docker)
+  DraSelina.Consultorio.UI.Tests/           # componentes de UI/ con bUnit, sin Docker
 scripts/
   verificar-arranque.sh # comprueba el arranque contra el AppHost levantado
 spikes/                 # prototipos desechables; no son parte de la solución

@@ -1,0 +1,33 @@
+@* Un formulario armado como lo hará una página: sin DataAnnotationsValidator, los errores salen del Resultado. *@
+@inject ICommandHandler<ComandoDePrueba, int> Handler
+
+<EditForm Model="Comando" FormName="prueba" OnValidSubmit="EnviarAsync">
+    <ErroresDelResultado Resultado="resultado">
+        <Campo Para="() => Comando.Nombre" Etiqueta="Nombre completo" autocomplete="name" @attributes="AtributosDelNombre" />
+        <Campo Para="() => Comando.Correo" Etiqueta="Correo" Tipo="email" Ayuda="Te enviamos la confirmación." />
+    </ErroresDelResultado>
+    <button type="submit" class="btn btn-primary">Continuar</button>
+</EditForm>
+
+@code {
+    private Resultado? resultado;
+
+    public ComandoDePrueba Comando { get; } = new();
+
+    /// <summary>Atributos extra para el Campo de Nombre, para probar que no reemplazan los propios.</summary>
+    [Parameter]
+    public IReadOnlyDictionary<string, object>? AtributosDelNombre { get; set; }
+
+    /// <summary>Si es verdadero, solo el primer envío guarda su Resultado: los siguientes dejan el mismo.</summary>
+    [Parameter]
+    public bool ConservarElPrimerResultado { get; set; }
+
+    private async Task EnviarAsync()
+    {
+        var nuevo = await Handler.HandleAsync(Comando, CancellationToken.None);
+        if (!ConservarElPrimerResultado || resultado is null)
+        {
+            resultado = nuevo;
+        }
+    }
+}

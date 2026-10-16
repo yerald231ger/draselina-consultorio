@@ -266,7 +266,7 @@ Iconos de línea, trazo 2–2.6 px, puntas redondeadas, en el color del texto qu
 - **Chip de día** (móvil) — día de la semana, número y "N libres". Seleccionado: vino sólido. Lleno: borde punteado, texto `{colors.disabled}`, etiqueta "Lleno".
 - **Celda de calendario** (escritorio) — número y un punto vino si hay horarios. Mismos estados que el chip; los días fuera de la ventana van en `{colors.past-day}` sin borde.
 - **Hora** — botón con la hora en negritas, dos columnas en móvil. Seleccionada: vino sólido con halo.
-- **Campo** — etiqueta en negritas arriba, campo de 50 px, ayuda debajo. El prefijo "+52" es un bloque fijo en `{colors.field-readonly}`.
+- **Campo** — etiqueta en negritas arriba, campo de 50 px, ayuda debajo. El prefijo "+52" es un bloque fijo en `{colors.field-readonly}`. Con error, el borde pasa a 2 px en `{colors.primary}` y el mensaje va debajo en `{colors.primary}`, con `{typography.help}` en negritas; el foco va al primer campo con error. Nunca `{colors.danger}` (Gerardo, 2026-10-16).
 - **Barra de progreso** — tres segmentos de 4 px; los cumplidos en vino. En escritorio, pasos numerados con su nombre.
 - **Tarjeta de cita** — día de la semana como rótulo vino, fecha y hora grandes, tipo y duración; debajo, tras un divisor, el lugar con icono y "Abrir en el mapa".
 - **Panel rosa** — resumen de la cita elegida con "Cambiar", o "Guarda este enlace".

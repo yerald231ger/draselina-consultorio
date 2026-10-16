@@ -1,0 +1,110 @@
+@using System.Linq.Expressions
+@using System.Reflection
+
+@*
+    El "Campo" de DESIGN.md: etiqueta en negritas, control de texto de 50 px, ayuda y, si su propiedad tiene
+    errores en el Resultado, cada mensaje debajo. Va dentro de ErroresDelResultado, que le da los errores y le dice
+    si lleva el foco. El aria-invalid del control lo pinta el propio InputText, con los mensajes que
+    ErroresDelResultado copia al EditContext. El id del control es el nombre de la propiedad.
+*@
+
+<div class="dsm-campo">
+    <label for="@Id" class="dsm-campo__etiqueta">@Etiqueta</label>
+    @* Los atributos de quien llama van primero: los propios del Campo (id, type, class, aria-*) no se reemplazan. *@
+    <InputText @ref="_control"
+               @attributes="AtributosAdicionales"
+               id="@Id"
+               type="@Tipo"
+               class="dsm-campo__control"
+               Value="@Valor"
+               ValueChanged="@CambiarValor"
+               ValueExpression="@Para"
+               aria-describedby="@DescritoPor()"
+               autofocus="@(_mensajes.Count > 0 && Errores.LlevaAutofocus(this))" />
+    @if (Ayuda is not null)
+    {
+        <div id="@IdDeAyuda" class="dsm-campo__ayuda">@Ayuda</div>
+    }
+    @for (var i = 0; i < _mensajes.Count; i++)
+    {
+        <div id="@IdDeError(i)" class="dsm-campo__error">@_mensajes[i]</div>
+    }
+</div>
+
+@code {
+    private InputText? _control;
+    private FieldIdentifier _campo;
+    private PropertyInfo _propiedad = null!;
+    private IReadOnlyList<string> _mensajes = [];
+
+    [CascadingParameter]
+    private ErroresDelResultado Errores { get; set; } = null!;
+
+    /// <summary>La propiedad del modelo que edita, como <c>() =&gt; Comando.Nombre</c>.</summary>
+    [Parameter, EditorRequired]
+    public Expression<Func<string>> Para { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Etiqueta { get; set; } = "";
+
+    [Parameter]
+    public string? Ayuda { get; set; }
+
+    /// <summary>El <c>type</c> del control: <c>text</c>, <c>email</c> o <c>tel</c>.</summary>
+    [Parameter]
+    public string Tipo { get; set; } = "text";
+
+    /// <summary>Atributos que pasan al control, como <c>autocomplete</c> o <c>inputmode</c>. No reemplazan los propios del Campo.</summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AtributosAdicionales { get; set; }
+
+    private string Id => _campo.FieldName;
+
+    private string IdDeAyuda => $"{Id}-ayuda";
+
+    private string IdDeError(int indice) => $"{Id}-error-{indice + 1}";
+
+    private string? Valor => (string?)_propiedad.GetValue(_campo.Model);
+
+    protected override void OnParametersSet()
+    {
+        if (Errores is null)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(Campo)} va dentro de {nameof(ErroresDelResultado)}: sin él no tiene de dónde leer sus errores.");
+        }
+
+        ArgumentNullException.ThrowIfNull(Para);
+        _campo = FieldIdentifier.Create(Para);
+        _propiedad = _campo.Model.GetType().GetProperty(_campo.FieldName)
+            ?? throw new InvalidOperationException($"{_campo.Model.GetType().Name} no tiene la propiedad {_campo.FieldName}.");
+
+        _mensajes = Errores.MensajesDe(_campo.FieldName);
+        if (_mensajes.Count > 0)
+        {
+            Errores.ReclamarFoco(this);
+        }
+    }
+
+    /// <summary>Lo llama ErroresDelResultado en interactivo, después de pintar, si este Campo lleva el foco.</summary>
+    internal ValueTask EnfocarAsync() =>
+        _control?.Element is { } elemento ? elemento.FocusAsync() : ValueTask.CompletedTask;
+
+    private void CambiarValor(string? valor) => _propiedad.SetValue(_campo.Model, valor);
+
+    private string? DescritoPor()
+    {
+        var ids = new List<string>();
+        if (Ayuda is not null)
+        {
+            ids.Add(IdDeAyuda);
+        }
+
+        for (var i = 0; i < _mensajes.Count; i++)
+        {
+            ids.Add(IdDeError(i));
+        }
+
+        return ids.Count > 0 ? string.Join(' ', ids) : null;
+    }
+}
