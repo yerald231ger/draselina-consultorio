@@ -3,7 +3,7 @@ title: 'Actor único y rechazo de administración sin sesión'
 type: 'feature'
 ticket: '7'
 created: '2026-10-15'
-status: built
+status: done
 baseline_revision: '5a25db2d07f4574c2f9093281f98da92be40fd88'
 route: 'full'
 route_source: 'auto'
@@ -118,6 +118,10 @@ deferred: []
   - `[low]` `[patch]` El README decía "al guardar una custom" y AD-22 dice "al guardar o borrar" — agregado "o borrar".
   - `[low]` `[reject]` `DeclararSistema` puede llamarse después de leer el actor y cambiarlo a mitad del ámbito — nadie lo llama fuera de las pruebas; impedirlo agrega un guardia y un estado.
   - `[low]` `[patch]` Comentario de `Program.cs` de ~155 caracteres — reacomodado a 120.
+
+### 2026-10-15 — Decisiones de Gerardo sobre lo que dejó la entrada
+
+Gerardo confirmó las cinco suposiciones tal como quedaron construidas: `IActorActual` en el Kernel; `Sistema` se declara; un ámbito sin actor lanza; el rechazo va por fuera de la validación; BL0013 suprimido en la línea. Los dos puntos abiertos (el trabajo programado de un módulo y el endpoint de Minimal API) se deciden con el primero de cada uno; quedan como Open question en la épica. Sin cambios de código.
 
 ## Design Notes
 
