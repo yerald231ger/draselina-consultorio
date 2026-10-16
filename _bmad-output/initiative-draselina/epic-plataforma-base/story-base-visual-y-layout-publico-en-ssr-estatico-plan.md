@@ -3,7 +3,7 @@ title: 'Base visual y layout público en SSR estático'
 type: 'feature'
 ticket: '8'
 created: '2026-10-15'
-status: built
+status: done
 baseline_revision: '4c28a4ce3b01d60fad14417bfe9fd4fa55504186'
 route: 'full'
 route_source: 'auto'
