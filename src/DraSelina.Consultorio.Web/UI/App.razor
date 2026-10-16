@@ -5,6 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+    @* Solo hojas propias, servidas por MapStaticAssets con su huella. Sin blazor.web.js ni ningún otro script: el
+       sitio y la reserva se entregan en SSR estático, cada página completa y sin conexión interactiva (AD-11). *@
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["css/consultorio.css"]" />
     <HeadOutlet />
 </head>
 

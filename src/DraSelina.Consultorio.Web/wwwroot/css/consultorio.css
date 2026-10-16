@@ -1,0 +1,282 @@
+/*
+ * Base visual del consultorio.
+ *
+ * Los tokens de DESIGN.md (_bmad-output/initiative-draselina/ux-appointment-booking/DESIGN.md) son la fuente:
+ * cada color, radio, espaciado y tipografía de su cabecera YAML es una variable --dsm-*, y Bootstrap se ajusta a
+ * ellas, no al revés. Si un valor cambia, cambia primero en DESIGN.md y después aquí.
+ *
+ * Nada se carga de terceros: la fuente y Bootstrap viven en wwwroot. Sin sombras ni degradados.
+ */
+
+/* Montserrat, latín, servida desde el propio sitio (OFL: fonts/montserrat/OFL.txt). */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(../fonts/montserrat/montserrat-latin-400-normal.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url(../fonts/montserrat/montserrat-latin-500-normal.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url(../fonts/montserrat/montserrat-latin-600-normal.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(../fonts/montserrat/montserrat-latin-700-normal.woff2) format('woff2');
+}
+
+/* Tokens de DESIGN.md. */
+:root {
+  /* colors */
+  --dsm-primary: #6B2A45;
+  --dsm-primary-hover: #4F1E33;
+  --dsm-primary-strong: #5A2339;
+  --dsm-on-primary: #FFFFFF;
+  --dsm-on-primary-muted: #F1DCE2;
+  --dsm-ink: #3A1F29;
+  --dsm-ink-soft: #4A3039;
+  --dsm-muted: #6E5560;
+  --dsm-eyebrow: #8A4F5A;
+  --dsm-disabled: #7E626C;
+  --dsm-past-day: #C4AEB3;
+  --dsm-ground: #FBF6F5;
+  --dsm-surface: #FFFFFF;
+  --dsm-tint: #F4E6E6;
+  --dsm-field-readonly: #F6ECEB;
+  --dsm-track: #E7D3D3;
+  --dsm-wave: #E6CDCD;
+  --dsm-border: #EADBD9;
+  --dsm-border-input: #CDB3B5;
+  --dsm-border-disabled: #D9C2C4;
+  --dsm-divider: #F0E4E3;
+  --dsm-danger: #8E2A1F;
+  --dsm-warning-bg: #FBEEDF;
+  --dsm-warning-border: #EBC9A3;
+  --dsm-warning-icon: #8A4210;
+  --dsm-warning-title: #6B320B;
+  --dsm-warning-text: #4A2810;
+
+  /* typography: una sola familia, con su respaldo */
+  --dsm-font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+
+  --dsm-display-font-size: 46px;
+  --dsm-display-font-weight: 600;
+  --dsm-display-line-height: 1.1;
+
+  --dsm-page-title-font-size: 34px;
+  --dsm-page-title-font-weight: 600;
+  --dsm-page-title-line-height: 1.15;
+
+  --dsm-step-title-font-size: 24px;
+  --dsm-step-title-font-weight: 600;
+
+  --dsm-status-title-font-size: 28px;
+  --dsm-status-title-font-weight: 700;
+  --dsm-status-title-line-height: 1.15;
+  --dsm-status-title-letter-spacing: -0.02em;
+
+  --dsm-question-font-size: 21px;
+  --dsm-question-font-weight: 700;
+  --dsm-question-letter-spacing: -0.01em;
+
+  --dsm-section-font-size: 17px;
+  --dsm-section-font-weight: 700;
+
+  --dsm-body-font-size: 15px;
+  --dsm-body-font-weight: 400;
+  --dsm-body-line-height: 1.5;
+
+  --dsm-body-small-font-size: 14px;
+  --dsm-body-small-font-weight: 400;
+  --dsm-body-small-line-height: 1.45;
+
+  --dsm-help-font-size: 13px;
+  --dsm-help-font-weight: 400;
+  --dsm-help-line-height: 1.45;
+
+  --dsm-label-font-size: 14px;
+  --dsm-label-font-weight: 700;
+
+  --dsm-input-font-size: 16px;
+  --dsm-input-font-weight: 400;
+
+  --dsm-button-font-size: 16px;
+  --dsm-button-font-weight: 700;
+
+  --dsm-eyebrow-font-size: 12px;
+  --dsm-eyebrow-font-weight: 600;
+  --dsm-eyebrow-letter-spacing: 0.14em;
+
+  /* rounded */
+  --dsm-rounded-xs: 2px;
+  --dsm-rounded-md: 12px;
+  --dsm-rounded-lg: 14px;
+  --dsm-rounded-xl: 16px;
+  --dsm-rounded-2xl: 18px;
+  --dsm-rounded-3xl: 20px;
+  --dsm-rounded-full: 9999px;
+
+  /* spacing */
+  --dsm-spacing-1: 4px;
+  --dsm-spacing-2: 6px;
+  --dsm-spacing-3: 8px;
+  --dsm-spacing-4: 10px;
+  --dsm-spacing-5: 12px;
+  --dsm-spacing-6: 14px;
+  --dsm-spacing-7: 16px;
+  --dsm-spacing-8: 18px;
+  --dsm-spacing-9: 20px;
+  --dsm-spacing-margin-mobile: 20px;
+  --dsm-spacing-container-max: 1160px;
+  --dsm-spacing-touch-min: 44px;
+
+  /* Bootstrap sobre los tokens. */
+  --bs-body-font-family: var(--dsm-font-family);
+  --bs-body-font-size: var(--dsm-body-font-size);
+  --bs-body-font-weight: var(--dsm-body-font-weight);
+  --bs-body-line-height: var(--dsm-body-line-height);
+  --bs-body-bg: var(--dsm-ground);
+  --bs-body-color: var(--dsm-ink);
+  --bs-emphasis-color: var(--dsm-ink);
+  --bs-secondary-color: var(--dsm-muted);
+  --bs-link-color: var(--dsm-primary);
+  --bs-link-hover-color: var(--dsm-primary-hover);
+  --bs-border-color: var(--dsm-border);
+  --bs-border-radius: var(--dsm-rounded-md);
+  --bs-border-radius-lg: var(--dsm-rounded-lg);
+  --bs-box-shadow: none;
+  --bs-box-shadow-sm: none;
+  --bs-box-shadow-lg: none;
+}
+
+/* Bootstrap 5.3 pinta los enlaces con --bs-link-color-rgb, que no puede salir de un token: el color va directo. */
+a {
+  color: var(--dsm-primary);
+}
+
+a:hover {
+  color: var(--dsm-primary-hover);
+}
+
+/* Botón principal: vino sólido, texto blanco, 54 px, radio lg, tipografía button. */
+.btn-primary {
+  --bs-btn-color: var(--dsm-on-primary);
+  --bs-btn-bg: var(--dsm-primary);
+  --bs-btn-border-color: var(--dsm-primary);
+  --bs-btn-hover-color: var(--dsm-on-primary);
+  --bs-btn-hover-bg: var(--dsm-primary-hover);
+  --bs-btn-hover-border-color: var(--dsm-primary-hover);
+  --bs-btn-active-color: var(--dsm-on-primary);
+  --bs-btn-active-bg: var(--dsm-primary-hover);
+  --bs-btn-active-border-color: var(--dsm-primary-hover);
+  --bs-btn-disabled-color: var(--dsm-on-primary);
+  --bs-btn-disabled-bg: var(--dsm-primary);
+  --bs-btn-disabled-border-color: var(--dsm-primary);
+  --bs-btn-focus-box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--dsm-primary) 50%, transparent);
+  --bs-btn-font-family: var(--dsm-font-family);
+  --bs-btn-font-size: var(--dsm-button-font-size);
+  --bs-btn-font-weight: var(--dsm-button-font-weight);
+  --bs-btn-border-radius: var(--dsm-rounded-lg);
+  --bs-btn-padding-x: 24px;
+  --bs-btn-padding-y: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+}
+
+/* Layout público: móvil primero, una columna, contenedor de 1160 px. */
+.dsm-contenedor {
+  width: 100%;
+  max-width: var(--dsm-spacing-container-max);
+  margin-inline: auto;
+  padding-inline: var(--dsm-spacing-margin-mobile);
+}
+
+.dsm-encabezado {
+  background: var(--dsm-surface);
+  border-bottom: 1px solid var(--dsm-border);
+}
+
+.dsm-encabezado__fila {
+  display: flex;
+  align-items: center;
+  padding-block: var(--dsm-spacing-6);
+}
+
+.dsm-marca {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--dsm-spacing-touch-min);
+  text-decoration: none;
+}
+
+.dsm-marca__nombre {
+  font-size: var(--dsm-body-font-size);
+  font-weight: 700;
+  color: var(--dsm-primary);
+}
+
+.dsm-rotulo {
+  font-size: var(--dsm-eyebrow-font-size);
+  font-weight: var(--dsm-eyebrow-font-weight);
+  letter-spacing: var(--dsm-eyebrow-letter-spacing);
+  text-transform: uppercase;
+  color: var(--dsm-eyebrow);
+}
+
+/* Inicio. */
+.dsm-inicio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-9);
+  padding-block: 56px;
+}
+
+.dsm-display {
+  margin: 0;
+  font-size: var(--dsm-display-font-size);
+  font-weight: var(--dsm-display-font-weight);
+  line-height: var(--dsm-display-line-height);
+  color: var(--dsm-primary);
+  text-wrap: balance;
+}
+
+.dsm-cuerpo {
+  margin: 0;
+  max-width: 540px;
+  font-size: var(--dsm-body-font-size);
+  font-weight: var(--dsm-body-font-weight);
+  line-height: var(--dsm-body-line-height);
+  color: var(--dsm-ink-soft);
+}
+
+/* La acción principal ocupa el ancho completo en el teléfono; desde 576 px, su propio ancho. */
+.dsm-accion-principal {
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .dsm-accion-principal {
+    width: auto;
+    align-self: flex-start;
+  }
+}

@@ -554,6 +554,45 @@ Comprueba: los tres recursos en su estado y `GET /` con 200; un historial de mig
 `docker`, `curl` y `kubectl`: con `kubectl` le pregunta al orquestador de Aspire el estado y el código de salida
 de cada recurso (no hace falta ningún clúster).
 
+## Base visual
+
+El sitio y la reserva se pintan con Bootstrap, Montserrat y los tokens de
+`_bmad-output/initiative-draselina/ux-appointment-booking/DESIGN.md`. Todo se sirve desde
+`src/DraSelina.Consultorio.Web/wwwroot/`, por `app.MapStaticAssets()`. Los archivos no se renombran: solo las URLs
+que se arman con `@Assets["…"]` (las dos hojas, en `App.razor`) llevan la huella. Las fuentes se piden desde la hoja
+con una URL relativa y se sirven sin huella.
+
+| Archivo | Qué es | De dónde sale | Licencia |
+| --- | --- | --- | --- |
+| `lib/bootstrap/bootstrap.min.css` | Bootstrap 5.3.8, solo el CSS (sin JS) | npm `bootstrap@5.3.8`, `dist/css/bootstrap.min.css`, vía jsDelivr | MIT, `lib/bootstrap/LICENSE` |
+| `fonts/montserrat/montserrat-latin-{400,500,600,700}-normal.woff2` | Montserrat, latín, los cuatro pesos de DESIGN.md | npm `@fontsource/montserrat@5.3.0`, `files/`, vía jsDelivr | OFL 1.1, `fonts/montserrat/OFL.txt` |
+| `css/consultorio.css` | La hoja propia: `@font-face`, tokens y estilos del layout público | Este repositorio | — |
+
+**Los tokens.** Los colores, tipografías, radios y espaciados de la cabecera YAML de DESIGN.md (`colors`,
+`typography`, `rounded`, `spacing`; el bloque `components` no) son variables CSS en `css/consultorio.css`, con
+prefijo `--dsm-` y el nombre de su clave: colores `--dsm-primary`, `--dsm-ground`...; tipografías
+`--dsm-display-font-size`, `--dsm-eyebrow-letter-spacing`...; radios `--dsm-rounded-lg`; espaciados
+`--dsm-spacing-touch-min`. Bootstrap se ajusta a ellos (`--bs-body-bg: var(--dsm-ground)`, `.btn-primary` en vino),
+no al revés. En un estilo nuevo, un color, radio, espaciado o valor tipográfico que tiene su `--dsm-*` se escribe con
+la variable, nunca con el valor; las medidas de layout sin token (el alto de 54 px del botón, un ancho máximo) pueden
+ir escritas:
+
+```css
+.mi-tarjeta { background: var(--dsm-surface); border: 1px solid var(--dsm-border); border-radius: var(--dsm-rounded-xl); }
+```
+
+Si un valor cambia, cambia primero en DESIGN.md y después en la hoja. `BaseVisualTests` compara cada color de
+DESIGN.md con su `--dsm-*` y falla nombrando el que falte o difiera.
+
+**Nada de terceros.** Ninguna página ni hoja pide nada a un CDN ni a Google Fonts: ni `<link>`, ni `<script>`, ni
+`url(...)` con `http(s)://`. Para actualizar Bootstrap o la fuente, se descarga la versión nueva de la distribución
+oficial, se reemplaza el archivo con su licencia y se actualiza esta tabla.
+
+**Sin script.** `App.razor` no carga `blazor.web.js` ni ningún otro script: el sitio y la reserva van en SSR
+estático y cada página llega completa, sin conexión interactiva (AD-11). `BaseVisualTests` lo comprueba.
+
+El layout público es `UI/Layout/LayoutPublico.razor`, el layout por defecto de `Routes.razor`.
+
 ## Crear una migración
 
 Cada módulo con datos tiene su `DbContext` en `Modules/<Módulo>/Infrastructure/`, con su esquema y su historial
