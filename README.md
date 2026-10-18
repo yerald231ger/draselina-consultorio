@@ -8,7 +8,7 @@ Monolito modular sobre .NET 11. La arquitectura está en
 El SDK se instala dentro del repositorio, en `.dotnet/` (ignorada por git). No toca la instalación del sistema.
 
 ```bash
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version 11.0.100-rc.1.26425.128 --install-dir .dotnet
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version 11.0.100-rc.2.26504.105 --install-dir .dotnet
 ```
 
 ## Compilar y probar
@@ -16,7 +16,7 @@ curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version 11.0.100-r
 Siempre con `./dotnet.sh`, que es `dotnet` con el SDK y el runtime de `.dotnet/`:
 
 ```bash
-./dotnet.sh --version   # 11.0.100-rc.1.26425.128
+./dotnet.sh --version   # 11.0.100-rc.2.26504.105
 ./dotnet.sh build       # 0 errores, 0 advertencias (las advertencias son errores)
 ./dotnet.sh test        # todas las pruebas; necesita Docker en ejecución
 ```

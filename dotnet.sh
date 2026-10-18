@@ -8,7 +8,7 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ ! -x "$RAIZ/.dotnet/dotnet" ]; then
   echo "Falta el SDK local de .NET 11 en $RAIZ/.dotnet. Instálalo con:" >&2
-  echo "  curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version 11.0.100-rc.1.26425.128 --install-dir \"$RAIZ/.dotnet\"" >&2
+  echo "  curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version 11.0.100-rc.2.26504.105 --install-dir \"$RAIZ/.dotnet\"" >&2
   exit 1
 fi
 export DOTNET_ROOT="$RAIZ/.dotnet"

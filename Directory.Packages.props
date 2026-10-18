@@ -20,7 +20,7 @@
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <!-- Solo en pruebas. La misma versión que ASP.NET Core: la del runtime de .dotnet/. -->
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0-rc.1.26425.128" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0-rc.2.26504.105" />
     <!-- Solo en pruebas: pinta los componentes de UI/ sin navegador, en SSR estático y en interactivo
          (UI.Tests). Agregado con la historia de errores en el formulario (épica plataforma base, entrada 9). -->
     <PackageVersion Include="bunit" Version="2.11.3" />
