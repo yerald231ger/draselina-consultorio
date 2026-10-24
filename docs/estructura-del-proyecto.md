@@ -163,10 +163,6 @@ draselina/
 ├── scripts/
 │   └── verificar-arranque.sh                     Con el AppHost arriba: comprueba que todo levantó
 │
-├── spikes/arranque/                              Entrada 1.1 (prueba de arranque, ya cerrada). Solo de registro
-│   ├── REGISTRO.md                               Lo que se probó y lo que salió
-│   └── Arranque.AppHost/, Arranque.Web/, Arranque.Contracts/, arrancar.sh, verificar.sh
-│
 ├── docs/
 │   ├── Appointment Booking System — Solution Plan.md   El plan de la solución vigente
 │   ├── archive/                                  El plan original del 2026-10-03

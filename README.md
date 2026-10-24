@@ -700,7 +700,6 @@ tests/
   DraSelina.Consultorio.UI.Tests/           # componentes de UI/ con bUnit, sin Docker
 scripts/
   verificar-arranque.sh # comprueba el arranque contra el AppHost levantado
-spikes/                 # prototipos desechables; no son parte de la solución
 ```
 
 ## Reglas de dependencia
