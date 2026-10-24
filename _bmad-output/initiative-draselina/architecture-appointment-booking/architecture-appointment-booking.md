@@ -179,7 +179,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** all
 - **Prevents:** reglas de forma duplicadas en dos librerías.
-- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos namespaces. Los atributos estándar que el navegador soporta se validan también ahí en las páginas estáticas; todo lo demás, incluidos los atributos propios, se valida solo en el servidor. El backend valida siempre, antes del handler, con un decorador que envuelve a todo handler de comando y aplica DataAnnotations; el fallo se entrega como `Resultado` inválido con errores por campo y el handler no se ejecuta. Las reglas de negocio viven en el agregado, nunca en atributos.
+- **Rule:** la forma de la entrada se declara con DataAnnotations sobre los comandos en `*.Contracts`, sin dependencias de ASP.NET en esos namespaces. En las páginas estáticas la forma se valida solo en el servidor. El backend valida siempre, antes del handler, con un decorador que envuelve a todo handler de comando y aplica DataAnnotations; el fallo se entrega como `Resultado` inválido con errores por campo y el handler no se ejecuta. Las reglas de negocio viven en el agregado, nunca en atributos.
 
 ### AD-13 — El tope semanal por teléfono lo decide Agenda
 
@@ -303,17 +303,17 @@ Versiones verificadas en la web el 2026-10-04.
 
 | Name | Version |
 | --- | --- |
-| .NET / ASP.NET Core / Blazor Web App | 11.0 (candidata vigente al crear la solución; definitiva en noviembre de 2026) |
+| .NET / ASP.NET Core / Blazor Web App | 10.0 (SDK 10.0.402 o una banda posterior de .NET 10; se pasó de 11.0 RC el 2026-10-23) |
 | Aspire (AppHost, ServiceDefaults) | 13.6.0 |
-| EF Core | 10.0.12, hasta que salga la 11.0 definitiva |
-| Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3, hasta que salga la 11.0 definitiva |
+| EF Core | 10.0.12 |
+| Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
 | PostgreSQL con `btree_gist` | 18.x `[ASSUMPTION: disponible en Azure Flexible Server; si no, 17.x]` |
 | Bootstrap + CSS propio con los tokens de `DESIGN.md` | 5.3.8 |
 | xunit.v3 | 4.0.1 |
 | bUnit | 2.11.3 |
 | Testcontainers.PostgreSql | 4.15.0 |
 | Microsoft.AspNetCore.Mvc.Testing (solo en pruebas) | la misma que ASP.NET Core |
-| Scrutor | 6.1.0 (la versión de Cypma.Cop; corre sobre .NET 11 rc.1, entrada 1.6) |
+| Scrutor | 6.1.0 (la versión de Cypma.Cop) |
 | libphonenumber-csharp | última estable al crear la solución |
 | Correo: Azure Communication Services Email | servicio |
 | Anti-bots: Cloudflare Turnstile | servicio |
@@ -403,7 +403,7 @@ tests/
 
 ## Open Questions
 
-1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Resuelta el 2026-10-05: arrancan juntos sobre .NET 11.0.0-rc.1 y se sigue con .NET 11. Wolverine 6 necesita el paquete `WolverineFx.RuntimeCompilation` para arrancar en modo dinámico. Registro: `spikes/arranque/REGISTRO.md`. Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12.
+1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Resuelta el 2026-10-05: arrancan juntos sobre .NET 11.0.0-rc.1 y se sigue con .NET 11. Wolverine 6 necesita el paquete `WolverineFx.RuntimeCompilation` para arrancar en modo dinámico. Registro: `spikes/arranque/REGISTRO.md`. Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12. El 2026-10-23 se pasó a .NET 10 por problemas para ejecutar .NET 11 RC (épica Plataforma base, Notes).
 2. **Fallo de validación como resultado.** Resuelta el 2026-10-05: el middleware de DataAnnotations de Wolverine, con su configuración por defecto, lanza `ValidationException`; se usa un middleware propio (AD-12). Registro: `spikes/arranque/REGISTRO.md`. Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12.
 3. **Formulario ligado al comando.** Resuelta el 2026-10-05: un `EditForm` se liga directo al comando con `[SupplyParameterFromForm]`; los comandos son clases con propiedades `set` (Consistency Conventions). Registro: `spikes/arranque/REGISTRO.md`.
 4. **Hora de la Agenda del día** cuando hay citas por la mañana.

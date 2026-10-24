@@ -45,7 +45,8 @@ Corte por resultado, no por módulo. Fuera: todo lo de la sección Non-goals del
 - Decision: siete épicas en este orden; Notificaciones antes que Administración, para probar pronto el recorrido completo del Paciente con correos (Gerardo, 2026-10-05).
 - Decision: "terminado" significa que corre en local con el AppHost y pasan sus pruebas de integración contra PostgreSQL real; no hay producción todavía (Gerardo, 2026-10-05).
 - Decision: la primera historia es la prueba de arranque de .NET 11 con Wolverine 6 y el AppHost de Aspire; si falla, se retrocede a .NET 10 (Gerardo).
-- Decision: la prueba de arranque pasó; la solución se crea sobre .NET 11 (Gerardo, 2026-10-05).
+- Reemplazada (2026-10-23, se pasa a .NET 10): la prueba de arranque pasó; la solución se crea sobre .NET 11 (Gerardo, 2026-10-05).
+- Decision: se pasa a .NET 10 (`net10.0`, SDK 10.0.402 del sistema). Razón: .NET 11 RC dio muchos problemas para ejecutar el proyecto. Reemplaza la decisión del 2026-10-05 de crear la solución sobre .NET 11 (Gerardo, 2026-10-23).
 - Decision: las decisiones que más de una épica adopta ya viven en la arquitectura (AD-3 eventos, AD-10 `Resultado`, AD-19 enlace de gestión, AD-22 actor); no hay historias de decisión.
 - Propiedad compartida — Bitácora (CAP-17): la épica 2 construye el mecanismo; cada épica escribe las entradas de sus cambios; la épica 5 la muestra.
 - Propiedad compartida — Configuración (CAP-16): la épica 2 crea y siembra `ReglasDeReserva` y `TipoDeVisita`; la épica 4, las horas de envío; la épica 6 entrega la pantalla y la edición.

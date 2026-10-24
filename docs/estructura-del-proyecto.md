@@ -8,13 +8,13 @@ Estado al 2026-10-18, en `main` (commit `8e51f39`), al cerrar la épica 1, **Pla
 |---|---|
 | Qué es | El sistema de citas del consultorio de la Dra. Selina Medina Castillo (Traumatología y Ortopedia) |
 | Forma | Monolito modular: una sola web (`DraSelina.Consultorio.Web`) con los módulos separados por namespace |
-| Stack | .NET 11 RC (SDK local en `.dotnet/`), Blazor (SSR estático), Aspire 13.6.0, EF Core 10, PostgreSQL 18, Scrutor 6.1 |
+| Stack | .NET 10 (SDK 10.0.402 del sistema), Blazor (SSR estático), Aspire 13.6.0, EF Core 10, PostgreSQL 18, Scrutor 6.1 |
 | Pruebas | xunit.v3, Testcontainers, `WebApplicationFactory`, bUnit. 128 pruebas en 4 proyectos |
 | Lo que se ve hoy | Solo la página Inicio. La reserva, la administración y el login todavía no existen |
 
 ## 2. Árbol de carpetas
 
-Solo lo que está en git. No se muestran `.dotnet/` (el SDK local), `bin/`, `obj/` ni `TestResults/`.
+Solo lo que está en git. No se muestran `bin/`, `obj/` ni `TestResults/`.
 
 ```
 draselina/
@@ -22,7 +22,7 @@ draselina/
 ├── DraSelina.Consultorio.slnx        La solución: 4 proyectos en src/ y 4 en tests/
 ├── Directory.Build.props             Propiedades comunes de compilación (gestión central de paquetes)
 ├── Directory.Packages.props          Las versiones de todos los paquetes, en un solo lugar
-├── global.json                       Fija el SDK 11.0.100-rc.2 en .dotnet/ y Microsoft.Testing.Platform
+├── global.json                       Fija el SDK 10.0.402 y Microsoft.Testing.Platform
 ├── dotnet.sh                         Llama al SDK local: usar ./dotnet.sh en vez de dotnet
 ├── dotnet-tools.json                 Herramientas locales de dotnet (dotnet-ef)
 ├── skills-lock.json                  Versiones de las skills de BMad instaladas

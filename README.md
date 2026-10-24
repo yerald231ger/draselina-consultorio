@@ -1,28 +1,22 @@
 # Sistema de citas — Dra. Selina Medina
 
-Monolito modular sobre .NET 11. La arquitectura está en
+Monolito modular sobre .NET 10. La arquitectura está en
 `_bmad-output/initiative-draselina/architecture-appointment-booking/architecture-appointment-booking.md`.
 
-## Requisito: el SDK local de .NET 11
+## Requisito: el SDK de .NET 10
 
-El SDK se instala dentro del repositorio, en `.dotnet/` (ignorada por git). No toca la instalación del sistema.
-
-```bash
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version 11.0.100-rc.2.26504.105 --install-dir .dotnet
-```
+`global.json` pide el SDK 10.0.402 o una banda posterior de .NET 10 (`rollForward: latestFeature`), instalado en el
+sistema. No hace falta un SDK local.
 
 ## Compilar y probar
 
-Siempre con `./dotnet.sh`, que es `dotnet` con el SDK y el runtime de `.dotnet/`:
-
 ```bash
-./dotnet.sh --version   # 11.0.100-rc.2.26504.105
+./dotnet.sh --version   # 10.0.402 o posterior
 ./dotnet.sh build       # 0 errores, 0 advertencias (las advertencias son errores)
 ./dotnet.sh test        # todas las pruebas; necesita Docker en ejecución
 ```
 
-Por qué la envoltura: `global.json` redirige el SDK pero no el runtime. Con el `dotnet` del sistema la solución
-compila, pero las pruebas no arrancan porque el sistema no tiene el runtime 11.
+`./dotnet.sh` es el `dotnet` del sistema; se conserva para que los comandos de este documento sigan funcionando.
 
 ## Pruebas
 

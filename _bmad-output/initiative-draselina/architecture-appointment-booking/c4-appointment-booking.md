@@ -52,8 +52,8 @@ C4Container
   Person(admin, "Administrador", "Administra la agenda")
 
   System_Boundary(citas, "Sistema de citas") {
-    Container(web, "Aplicación web", "Blazor Web App, .NET 11", "Sitio y reserva en SSR estático; administración en Interactive Server; módulos y mensajería en el mismo proceso")
-    Container(mig, "Servicio de migraciones", ".NET 11, EF Core", "Aplica migraciones y datos iniciales; corre antes que la aplicación")
+    Container(web, "Aplicación web", "Blazor Web App, .NET 10", "Sitio y reserva en SSR estático; administración en Interactive Server; módulos y mensajería en el mismo proceso")
+    Container(mig, "Servicio de migraciones", ".NET 10, EF Core", "Aplica migraciones y datos iniciales; corre antes que la aplicación")
     ContainerDb(db, "Base de datos", "PostgreSQL con btree_gist", "Esquemas agenda, pacientes, notificaciones e identidad")
   }
 

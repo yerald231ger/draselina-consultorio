@@ -177,7 +177,7 @@ public class VerificadorTests
     [Fact]
     public void Un_using_implicito_fuera_de_System_es_violacion()
     {
-        const string ruta = "obj/Debug/net11.0/DraSelina.Consultorio.Web.GlobalUsings.g.cs";
+        const string ruta = "obj/Debug/net10.0/DraSelina.Consultorio.Web.GlobalUsings.g.cs";
 
         // Lo que el SDK web genera si no se le quitan sus using implícitos.
         var violaciones = Verificador.VerificarUsingsImplicitos([Lector.LeerFuente(ruta, """

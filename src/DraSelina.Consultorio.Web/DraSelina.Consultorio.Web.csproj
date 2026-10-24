@@ -11,6 +11,12 @@
     <Using Remove="Microsoft.*" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <!-- El SDK Razor de .NET 10 agrega `global using Microsoft.Extensions.Validation.Embedded` dentro de un target,
+         después del Remove de arriba, así que el Remove no lo alcanza. Se apaga con su propiedad. -->
+    <IncludeEmbeddedValidationGlobalUsing>false</IncludeEmbeddedValidationGlobalUsing>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <!-- Solo en tiempo de diseño, para `dotnet ef migrations add`. No llega a quien referencia a Web. -->

@@ -1,10 +1,8 @@
 {
   "sdk": {
-    "version": "11.0.100-rc.2.26504.105",
-    "allowPrerelease": true,
-    "rollForward": "latestPatch",
-    "paths": [ ".dotnet" ],
-    "errorMessage": "Falta el SDK local de .NET 11. Instalalo desde la raiz del repositorio con: curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version 11.0.100-rc.2.26504.105 --install-dir .dotnet"
+    "version": "10.0.402",
+    "rollForward": "latestFeature",
+    "allowPrerelease": false
   },
   "test": {
     "runner": "Microsoft.Testing.Platform"

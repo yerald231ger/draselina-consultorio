@@ -6,7 +6,7 @@ Contenido que pertenece a arquitectura, diseño de solución o planeación, no a
 
 | Tema | Decisión | Sección del plan |
 | --- | --- | --- |
-| Forma del sistema | Monolito modular en .NET 11, un solo despliegue, una base PostgreSQL | Architecture |
+| Forma del sistema | Monolito modular en .NET 10, un solo despliegue, una base PostgreSQL | Architecture |
 | Contextos | Agenda (núcleo), Pacientes, Notificaciones, Contenido; Expediente clínico futuro | Dominio (DDD) → Contextos delimitados |
 | No doble reserva | Restricción de exclusión en PostgreSQL sobre el rango de tiempo de Citas no canceladas | Reglas de negocio; Agenda por dentro |
 | Disponibilidad | Función pura, sin base de datos ni reloj propio | Agenda por dentro |
