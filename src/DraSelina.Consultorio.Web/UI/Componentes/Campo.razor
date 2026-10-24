@@ -42,7 +42,7 @@
 
     /// <summary>La propiedad del modelo que edita, como <c>() =&gt; Comando.Nombre</c>.</summary>
     [Parameter, EditorRequired]
-    public Expression<Func<string>> Para { get; set; } = null!;
+    public Expression<Func<string?>> Para { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public string Etiqueta { get; set; } = "";
