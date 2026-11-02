@@ -1,0 +1,148 @@
+# Historias de epic-reserva-en-linea, en orden de construcción.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Una reserva en línea se guarda de punta a punta"
+description = "Camino trazador: la página Tus datos (nombre, celular válido para México, correo opcional, motivo y Consentimiento, con tipo, fecha y hora en la cadena de consulta como tipo=<TipoDeVisitaId>&fecha=AAAA-MM-DD&hora=HH:mm) envía AgendarCitaEnLinea, que reconoce o registra al Paciente con IPacientesApi.BuscarOCrear (índice único con collation ICU), guarda la Cita con su Consentimiento y la restricción de exclusión de PostgreSQL (traducida a conflicto), y muestra Cita confirmada con fecha, hora y dirección; crea tipo_de_visita con sus dos tipos sembrados e IContenidoApi con los datos del consultorio y la versión del aviso de privacidad, que usan las entradas 5 y 10; la migración comprueba si la restricción necesita btree_gist y lo anota como Decision en la épica."
+verify = "Con el AppHost arriba, abrir Tus datos con un tipo, fecha y hora, enviar y ver Cita confirmada; pruebas de integración comprueban que mismo teléfono y nombre (sin distinguir mayúsculas, acentos ni espacios) dan el mismo Paciente, otro nombre da otro, y que una segunda Cita traslapada vuelve como conflicto."
+covers = ["CAP-2", "CAP-3", "CAP-4"]
+after = ["1.3", "1.4", "1.5", "1.6", "1.9"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Agenda de atención y reglas de reserva sembradas"
+description = "AgendaAtencion (agenda base por día de la semana y agendas custom por fecha, con INV-B1 a B5, INV-A1 a A6 e INV-V1) y ReglasDeReserva, con sus tablas, sus puertos de escritura y sus datos iniciales (lunes a viernes 15:30 a 18:00 y los valores de reglas_de_reserva); los comandos que los cambian quedan para la épica 6."
+verify = "Pruebas de dominio comprueban INV-V1 (una fecha con custom usa sus tramos, una sin custom los de la base, un sábado sin custom no tiene tramos) y una prueba de integración lee la agenda sembrada desde la base migrada."
+covers = ["CAP-1"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Horarios libres calculados"
+description = "CalculadoraDeDisponibilidad como función pura (tramos vigentes por fecha, rejilla por duración, sin traslapes con Citas activas de cualquier origen, desde mañana y dentro de la ventana) y la consulta de Horarios libres por Tipo de visita que la usa; es la única implementación de la rejilla, que la entrada 4 reutiliza."
+verify = "Pruebas de la calculadora: con la base sembrada un día de atención ofrece como máximo 3:30, 4:00, 4:30, 5:00 y 5:30 pm, y no aparecen horarios de hoy, de fechas sin tramos, posteriores a la ventana ni traslapados con una Cita, incluida una manual fuera de horario."
+covers = ["CAP-1"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "La reserva valida tramos, rejilla y ventana"
+description = "AgendarCitaEnLinea toma el candado consultivo de la fecha local (AD-26), lee los tramos vigentes después de tomarlo, arma ReglasDeAgenda con ReglasDeReserva, y Cita.Agendar exige INV-C5 (cabe en un tramo, empieza en la rejilla de la entrada 3, dentro de la ventana)."
+verify = "Pruebas de integración: una reserva a las 3:45 pm, en sábado sin custom, hoy o después de la ventana se rechaza con su código; una a las 4:00 pm de un día de atención se guarda."
+covers = ["CAP-2", "CAP-3"]
+after = [3]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Pantallas Tipo de consulta, Día y hora y Aviso de privacidad"
+description = "Reserva 1 y 2 en móvil según los mockups Main y Horario, en SSR estático (día lleno, sin horarios en la ventana con el WhatsApp de IContenidoApi), que llevan a Tus datos con el formato de cadena de consulta de la entrada 1; la página del Aviso de privacidad con su versión de IContenidoApi; y el botón Agendar una cita de Inicio con destino."
+verify = "Desde Inicio a 390 px se elige Primera consulta, un día y una hora de la Agenda base sembrada y se llega a Tus datos con ese horario; la casilla de Consentimiento enlaza al Aviso de privacidad, que muestra su versión."
+covers = ["CAP-1", "CAP-2"]
+after = [3]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Bitácora y CitaAgendada con cada reserva"
+description = "El mecanismo de bitácora de Agenda (agenda.bitacora, solo inserción, con actor) y el evento de integración CitaAgendada en el outbox, escritos en la misma transacción que la Cita, sin nombre, teléfono, correo, motivo ni enlace."
+verify = "Una prueba de integración reserva y encuentra la entrada de bitácora con actor Paciente y el evento CitaAgendada pendiente en agenda.outbox; si la Cita no se confirma, no queda ninguno de los dos."
+covers = ["CAP-17"]
+after = [4, "1.7", "1.11"]
+hitl = false
+risk = "medium"
+unknown = "¿Qué guarda actor_id de la bitácora, si Actor es un enum sin id de usuario? (épica 1, pregunta abierta de la entrada 10)."
+
+[[entry]]
+id = 7
+type = "story"
+title = "Tope semanal por teléfono"
+description = "IPacientesApi entrega los PatientId que comparten un teléfono, AgendarCitaEnLinea cuenta sus Citas Agendadas de la semana de calendario local de la Cita y Cita.Agendar rechaza al alcanzar el tope de ReglasDeReserva (AD-13, RN-18); Tus datos explica el rechazo con el WhatsApp de IContenidoApi."
+verify = "Una prueba de integración agenda tres Citas en la misma semana con un teléfono (con nombres distintos) y la cuarta se rechaza con su código; en la semana siguiente se acepta."
+covers = ["CAP-5"]
+after = [6]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Horario tomado y doble envío"
+description = "Tus datos lleva un SolicitudId generado al pintarse que la Cita guarda, y un segundo envío con el mismo SolicitudId devuelve la Cita ya creada (AD-27); si el horario se ocupó al confirmar, la página vuelve a Día y hora con los datos conservados en el cuerpo del formulario, el aviso y los Horarios libres restantes, nunca un error."
+verify = "Pruebas de integración: dos reservas simultáneas del mismo horario dan exactamente una Cita y la otra recibe conflicto; enviar dos veces el mismo formulario devuelve la misma Cita; una prueba de componente muestra Día y hora con el aviso y los datos conservados."
+covers = ["CAP-3"]
+after = [5, 7]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Enlace de gestión en la confirmación"
+description = "El Enlace de gestión derivado con HMAC-SHA256 de la clave del host (fuera de la base, como parámetro del AppHost) y el CitaId, del que la Cita guarda solo el hash, servido por IAgendaApi.ObtenerEnlaceDeGestion; Cita confirmada lo muestra con \"Guarda este enlace\" y con los estados con correo y sin correo de EXPERIENCE.md."
+verify = "Una prueba comprueba que el enlace de una Cita es estable, que la base guarda solo su hash y que el de otra Cita es distinto; Cita confirmada muestra el enlace y cambia su texto según haya correo o no."
+covers = ["CAP-2"]
+after = [8]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 10
+type = "story"
+title = "Agregar a mi calendario"
+description = "El generador único del archivo de calendario en Agenda (fecha, hora, lugar de IContenidoApi y el Enlace de gestión de la entrada 9), servido por un endpoint que Cita confirmada enlaza como \"Agregar a mi calendario\"."
+verify = "Una prueba descarga el archivo de una Cita y encuentra su inicio y fin en hora de Ciudad de México, la dirección del consultorio y el Enlace de gestión; el archivo se importa en el calendario del teléfono."
+covers = ["CAP-2"]
+after = [9]
+hitl = false
+risk = "medium"
+unknown = "¿Cómo obtiene su actor un endpoint de Minimal API, donde Blazor no fija el estado de autenticación? (épica 1, pregunta abierta de la entrada 7)."
+
+[[entry]]
+id = 11
+type = "story"
+title = "Límite de frecuencia y verificación anti-bots"
+description = "Límite de frecuencia de ASP.NET Core en las páginas de reserva y una verificación anti-bots al confirmar en Tus datos, comprobada en el servidor antes del handler."
+verify = "Una prueba de integración supera el límite y recibe la respuesta de límite; un envío que no pasa la verificación anti-bots no crea Cita."
+covers = ["CAP-5"]
+after = [8]
+hitl = false
+risk = "medium"
+unknown = "¿Turnstile, con una excepción a \"sin scripts ni CDN\" solo en Tus datos, o una defensa sin scripts de terceros (campo trampa, tiempo mínimo de envío y límite de frecuencia)? ¿Y qué límite de frecuencia se usa?"
+
+[[entry]]
+id = 12
+type = "story"
+title = "Reserva en escritorio"
+description = "Las pantallas de reserva y confirmación en dos columnas según WebReserva, WebDatos y WebConfirmada, con los mismos pasos y estados que en móvil."
+verify = "Gerardo recorre UJ-1 completo en local desde su teléfono y desde el escritorio: tipo, día y hora, datos, confirmación con enlace y archivo de calendario."
+covers = ["CAP-1", "CAP-2"]
+after = [5, 8, 9, 10, 11]
+hitl = true
+risk = "low"
+unknown = "¿El calendario de escritorio muestra siete columnas siempre o solo los días con atención del mes?"
+
+[[entry]]
+id = 13
+type = "story"
+title = "Refactor sweep"
+description = "Limpieza de lo aplazado en los planes y revisiones de la épica; su alcance se fija al empezar."
+verify = "Las pruebas de la épica siguen pasando y los pendientes de revisión anotados quedan cerrados o registrados."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+hitl = false
+risk = "low"

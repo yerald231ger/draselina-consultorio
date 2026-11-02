@@ -51,3 +51,8 @@ La reserva pública y lo que necesita por primera vez: `Cita.Agendar`, `AgendaAt
 - Open question: qué límite de frecuencia se usa (spec, Open Questions).
 - Open question: si hace falta `btree_gist` con la restricción sobre un solo rango; se comprueba en la primera migración de Agenda.
 - Open question: siete columnas o solo días con atención en el calendario de escritorio (spec, Open Questions).
+- Source conflict: arquitectura, Stack — "Anti-bots: Cloudflare Turnstile" (y el addendum del PRD, FR-7) vs épica 1, entradas 1.8 y 8 — el sitio no carga scripts y ninguna visita pide nada a un CDN. Turnstile necesita cargar un script de Cloudflare en la página.
+- Decision: la elección entre Turnstile (con una excepción a "sin scripts ni CDN" solo en Tus datos) y una defensa sin scripts de terceros (campo trampa, tiempo mínimo de envío y límite de frecuencia) queda como pregunta abierta de la entrada 11, junto con el valor del límite de frecuencia (Gerardo, 2026-11-02).
+- Decision: desglose en trece entradas aprobado (Gerardo, 2026-11-02). Bala trazadora: la entrada 1, de Tus datos a Cita confirmada por Agenda, Pacientes, Contenido y PostgreSQL.
+- Decision: dos carriles después de la entrada 1. Disponibilidad: 2 → 3 → 5. Manejador de la reserva: 4 → 6 → 7 → 8 → 9 → 10, y después 11 y 12, porque todas cambian AgendarCitaEnLinea o la página Tus datos. La 4 espera a la 3 para que la rejilla tenga una sola implementación (T-21); la 11 espera a la 8 porque la verificación anti-bots va en el mismo formulario (2026-11-02).
+- Decision: el recorrido de UJ-1 desde un teléfono y desde el escritorio (Done when 1) lo verifica Gerardo en la entrada 12 (2026-11-02).
