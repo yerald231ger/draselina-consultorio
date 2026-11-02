@@ -120,6 +120,46 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DraSelina.Consultorio.Agenda.Domain.ReglasDeReserva", b =>
+                {
+                    b.Property<short>("Id")
+                        .HasColumnType("smallint")
+                        .HasColumnName("id");
+
+                    b.Property<short>("AnticipacionMinimaDias")
+                        .HasColumnType("smallint")
+                        .HasColumnName("anticipacion_minima_dias");
+
+                    b.Property<short>("TopeSemanalPorTelefono")
+                        .HasColumnType("smallint")
+                        .HasColumnName("tope_semanal_por_telefono");
+
+                    b.Property<short>("UmbralCancelacionTardiaMin")
+                        .HasColumnType("smallint")
+                        .HasColumnName("umbral_cancelacion_tardia_min");
+
+                    b.Property<short>("VentanaMeses")
+                        .HasColumnType("smallint")
+                        .HasColumnName("ventana_meses");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("reglas_de_reserva", "agenda", t =>
+                        {
+                            t.HasCheckConstraint("ck_reglas_de_reserva_id", "id = 1");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = (short)1,
+                            AnticipacionMinimaDias = (short)1,
+                            TopeSemanalPorTelefono = (short)3,
+                            UmbralCancelacionTardiaMin = (short)120,
+                            VentanaMeses = (short)2
+                        });
+                });
+
             modelBuilder.Entity("DraSelina.Consultorio.Agenda.Domain.TipoDeVisita", b =>
                 {
                     b.Property<Guid>("Id")
@@ -179,6 +219,30 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeAgendaCustom", b =>
+                {
+                    b.Property<DateOnly>("Fecha")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha");
+
+                    b.Property<DateTimeOffset>("ActualizadaEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("actualizada_en");
+
+                    b.Property<DateTimeOffset>("CreadaEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creada_en");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("motivo");
+
+                    b.HasKey("Fecha");
+
+                    b.ToTable("agenda_custom", "agenda");
+                });
+
             modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeOutbox", b =>
                 {
                     b.Property<Guid>("Id")
@@ -225,6 +289,105 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                     b.ToTable("outbox", "agenda");
                 });
 
+            modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeTramoBase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<short>("DiaDeLaSemana")
+                        .HasColumnType("smallint")
+                        .HasColumnName("dia_de_la_semana");
+
+                    b.Property<TimeOnly>("Fin")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("fin");
+
+                    b.Property<TimeOnly>("Inicio")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("inicio");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiaDeLaSemana", "Inicio")
+                        .IsUnique()
+                        .HasDatabaseName("ux_agenda_base_tramo_dia_inicio");
+
+                    b.ToTable("agenda_base_tramo", "agenda", t =>
+                        {
+                            t.HasCheckConstraint("ck_agenda_base_tramo_dia", "dia_de_la_semana BETWEEN 1 AND 7");
+
+                            t.HasCheckConstraint("ck_agenda_base_tramo_rango", "fin > inicio");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("01a19e61-3a10-7a01-8b10-6f2a3c4d5e01"),
+                            DiaDeLaSemana = (short)1,
+                            Fin = new TimeOnly(18, 0, 0),
+                            Inicio = new TimeOnly(15, 30, 0)
+                        },
+                        new
+                        {
+                            Id = new Guid("01a19e61-3a10-7a02-8b10-6f2a3c4d5e02"),
+                            DiaDeLaSemana = (short)2,
+                            Fin = new TimeOnly(18, 0, 0),
+                            Inicio = new TimeOnly(15, 30, 0)
+                        },
+                        new
+                        {
+                            Id = new Guid("01a19e61-3a10-7a03-8b10-6f2a3c4d5e03"),
+                            DiaDeLaSemana = (short)3,
+                            Fin = new TimeOnly(18, 0, 0),
+                            Inicio = new TimeOnly(15, 30, 0)
+                        },
+                        new
+                        {
+                            Id = new Guid("01a19e61-3a10-7a04-8b10-6f2a3c4d5e04"),
+                            DiaDeLaSemana = (short)4,
+                            Fin = new TimeOnly(18, 0, 0),
+                            Inicio = new TimeOnly(15, 30, 0)
+                        },
+                        new
+                        {
+                            Id = new Guid("01a19e61-3a10-7a05-8b10-6f2a3c4d5e05"),
+                            DiaDeLaSemana = (short)5,
+                            Fin = new TimeOnly(18, 0, 0),
+                            Inicio = new TimeOnly(15, 30, 0)
+                        });
+                });
+
+            modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeTramoCustom", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Fecha")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha");
+
+                    b.Property<TimeOnly>("Fin")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("fin");
+
+                    b.Property<TimeOnly>("Inicio")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("inicio");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Fecha", "Inicio")
+                        .IsUnique()
+                        .HasDatabaseName("ux_agenda_custom_tramo_fecha_inicio");
+
+                    b.ToTable("agenda_custom_tramo", "agenda", t =>
+                        {
+                            t.HasCheckConstraint("ck_agenda_custom_tramo_rango", "fin > inicio");
+                        });
+                });
+
             modelBuilder.Entity("DraSelina.Consultorio.Agenda.Domain.Cita", b =>
                 {
                     b.HasOne("DraSelina.Consultorio.Agenda.Domain.TipoDeVisita", null)
@@ -232,6 +395,20 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         .HasForeignKey("TipoDeVisitaId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeTramoCustom", b =>
+                {
+                    b.HasOne("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeAgendaCustom", null)
+                        .WithMany("Tramos")
+                        .HasForeignKey("Fecha")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeAgendaCustom", b =>
+                {
+                    b.Navigation("Tramos");
                 });
 #pragma warning restore 612, 618
         }

@@ -22,5 +22,7 @@ public static class Registro
             .AddScoped<IOutboxDeAgenda, OutboxDeAgenda>()
             .AddScoped<ICitas, Citas>()
             .AddScoped<ITiposDeVisita, TiposDeVisita>()
+            .AddScoped<IAgendaAtencion, AgendaAtencionPersistida>()
+            .AddScoped<IReglasDeReserva, ReglasDeReservaPersistidas>()
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>();
 }

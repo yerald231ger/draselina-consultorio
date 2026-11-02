@@ -1,6 +1,7 @@
 using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Kernel;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DraSelina.Consultorio.Agenda.Infrastructure;
 
@@ -22,6 +23,18 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
     internal DbSet<Cita> Citas => Set<Cita>();
 
     internal DbSet<TipoDeVisita> TiposDeVisita => Set<TipoDeVisita>();
+
+    internal DbSet<FilaDeTramoBase> TramosBase => Set<FilaDeTramoBase>();
+
+    internal DbSet<FilaDeAgendaCustom> AgendasCustom => Set<FilaDeAgendaCustom>();
+
+    internal DbSet<FilaDeTramoCustom> TramosCustom => Set<FilaDeTramoCustom>();
+
+    internal DbSet<ReglasDeReserva> ReglasDeReserva => Set<ReglasDeReserva>();
+
+    // int a smallint con verificación: un valor fuera de rango falla con OverflowException en lugar de guardarse
+    // truncado (40000 no se vuelve -25536).
+    private static readonly ValueConverter<int, short> ASmallint = new(v => Convert.ToInt16(v), v => v);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,6 +75,63 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
             tipo.Ignore(t => t.SeAgendaEnLinea);
 
             tipo.HasData(TiposDeVisitaSembrados.Filas);
+        });
+
+        // agenda.agenda_base_tramo: la semana tipo, sembrada de lunes a viernes (AD-25). Que los tramos de un día no se
+        // encimen (INV-B2) y que en cada uno quepa el tipo más corto (INV-B5) lo garantiza AgendaAtencion.
+        modelBuilder.Entity<FilaDeTramoBase>(tramo =>
+        {
+            tramo.ToTable(FilaDeTramoBase.Tabla, t =>
+            {
+                t.HasCheckConstraint("ck_agenda_base_tramo_rango", "fin > inicio");
+                t.HasCheckConstraint("ck_agenda_base_tramo_dia", "dia_de_la_semana BETWEEN 1 AND 7");
+            });
+            tramo.HasKey(t => t.Id);
+            tramo.Property(t => t.Id).HasColumnName("id").ValueGeneratedNever();
+            tramo.Property(t => t.DiaDeLaSemana).HasColumnName("dia_de_la_semana");
+            tramo.Property(t => t.Inicio).HasColumnName("inicio");
+            tramo.Property(t => t.Fin).HasColumnName("fin");
+            tramo.HasIndex(t => new { t.DiaDeLaSemana, t.Inicio }).IsUnique().HasDatabaseName("ux_agenda_base_tramo_dia_inicio");
+
+            tramo.HasData(AgendaDeAtencionSembrada.TramosBase);
+        });
+
+        // agenda.agenda_custom: a lo más una por fecha, porque la fecha es la llave (INV-A1, AD-5).
+        modelBuilder.Entity<FilaDeAgendaCustom>(custom =>
+        {
+            custom.ToTable(FilaDeAgendaCustom.Tabla);
+            custom.HasKey(c => c.Fecha);
+            custom.Property(c => c.Fecha).HasColumnName("fecha").ValueGeneratedNever();
+            custom.Property(c => c.Motivo).HasColumnName("motivo");
+            custom.Property(c => c.CreadaEn).HasColumnName("creada_en");
+            custom.Property(c => c.ActualizadaEn).HasColumnName("actualizada_en");
+            custom.HasMany(c => c.Tramos).WithOne().HasForeignKey(t => t.Fecha).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // agenda.agenda_custom_tramo: se borra con su custom. INV-A2 e INV-A6 los garantiza AgendaAtencion.
+        modelBuilder.Entity<FilaDeTramoCustom>(tramo =>
+        {
+            tramo.ToTable(FilaDeTramoCustom.Tabla, t => t.HasCheckConstraint("ck_agenda_custom_tramo_rango", "fin > inicio"));
+            tramo.HasKey(t => t.Id);
+            tramo.Property(t => t.Id).HasColumnName("id").ValueGeneratedNever();
+            tramo.Property(t => t.Fecha).HasColumnName("fecha");
+            tramo.Property(t => t.Inicio).HasColumnName("inicio");
+            tramo.Property(t => t.Fin).HasColumnName("fin");
+            tramo.HasIndex(t => new { t.Fecha, t.Inicio }).IsUnique().HasDatabaseName("ux_agenda_custom_tramo_fecha_inicio");
+        });
+
+        // agenda.reglas_de_reserva: una sola fila (AD-14), sembrada (AD-25). El id vive solo en la base.
+        modelBuilder.Entity<ReglasDeReserva>(reglas =>
+        {
+            reglas.ToTable("reglas_de_reserva", t => t.HasCheckConstraint("ck_reglas_de_reserva_id", "id = 1"));
+            reglas.Property<short>("Id").HasColumnName("id").ValueGeneratedNever();
+            reglas.HasKey("Id");
+            reglas.Property(r => r.AnticipacionMinimaDias).HasColumnName("anticipacion_minima_dias").HasConversion(ASmallint);
+            reglas.Property(r => r.VentanaMeses).HasColumnName("ventana_meses").HasConversion(ASmallint);
+            reglas.Property(r => r.UmbralCancelacionTardiaMin).HasColumnName("umbral_cancelacion_tardia_min").HasConversion(ASmallint);
+            reglas.Property(r => r.TopeSemanalPorTelefono).HasColumnName("tope_semanal_por_telefono").HasConversion(ASmallint);
+
+            reglas.HasData(AgendaDeAtencionSembrada.Reglas);
         });
 
         // agenda.cita, sin solicitud_id ni token_hash: llegan con sus historias. La restricción de exclusión la crea
