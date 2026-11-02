@@ -30,19 +30,14 @@ public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IA
     /// </summary>
     public async Task<Actor> ObtenerAsync()
     {
-        if (_esSistema)
-        {
-            return Actor.Sistema;
-        }
-
+        if (_esSistema) return Actor.Sistema;
+        
         AuthenticationState estado;
         try
         {
             // BL0013 avisa de un estado viejo cuando se guarda; aquí no se guarda: se pide de nuevo en cada llamada,
             // así que siempre es el vigente del ámbito y no hace falta escuchar AuthenticationStateChanged.
-#pragma warning disable BL0013
             estado = await autenticacion.GetAuthenticationStateAsync();
-#pragma warning restore BL0013
         }
         catch (InvalidOperationException error)
         {
@@ -53,5 +48,6 @@ public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IA
         }
 
         return estado.User.Identity?.IsAuthenticated == true ? Actor.Administrador : Actor.Paciente;
+
     }
 }

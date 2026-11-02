@@ -107,13 +107,11 @@
 
     private void SoltarContexto()
     {
-        if (_contexto is not null)
-        {
-            _contexto.OnValidationRequested -= AlPedirValidacion;
-            _mensajesDelContexto?.Clear();
-            _contexto = null;
-            _mensajesDelContexto = null;
-        }
+        if (_contexto is null) return;
+        _contexto.OnValidationRequested -= AlPedirValidacion;
+        _mensajesDelContexto?.Clear();
+        _contexto = null;
+        _mensajesDelContexto = null;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
