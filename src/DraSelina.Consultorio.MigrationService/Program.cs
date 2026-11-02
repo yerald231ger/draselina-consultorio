@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using DraSelina.Consultorio.Agenda.Infrastructure;
+using DraSelina.Consultorio.Contenido;
+using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
 using DraSelina.Consultorio.Web;
@@ -31,6 +33,12 @@ if (builder.Configuration.GetConnectionString(BaseDeDatos.Nombre) is { } cadena)
         .AddAgenda(cadena)
         .AddPacientes(cadena)
         .AddNotificaciones(cadena);
+
+    // Lo que los handlers y las API de los módulos piden al host. Aquí no se usan, pero en Development el host valida
+    // al construirse que todo lo registrado se pueda crear.
+    builder.Services
+        .AddContenido()
+        .AddSingleton<IClock, RelojDelSistema>();
 }
 
 // El host se construye pero no se arranca: solo hacen falta sus servicios.

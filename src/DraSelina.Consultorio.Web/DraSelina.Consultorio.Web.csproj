@@ -24,6 +24,8 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <!-- Solo para el host: aplica los decoradores de los handlers (DecoradoresDeHandlers.cs). -->
     <PackageReference Include="Scrutor" />
+    <!-- Celulares de México en E.164 (Pacientes.Features). -->
+    <PackageReference Include="libphonenumber-csharp" />
   </ItemGroup>
 
   <ItemGroup>

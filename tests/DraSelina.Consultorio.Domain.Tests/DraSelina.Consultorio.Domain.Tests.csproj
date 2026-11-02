@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pruebas del dominio de Agenda y Pacientes: agregados y objetos de valor, sin base de datos ni contenedor (2.7). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DraSelina.Consultorio.Web\DraSelina.Consultorio.Web.csproj" />
+  </ItemGroup>
+
+</Project>

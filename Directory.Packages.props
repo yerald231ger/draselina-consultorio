@@ -17,6 +17,9 @@
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <!-- Decoradores de los handlers en el host (AD-12, AD-22). La versión que usa Cypma.Cop. -->
     <PackageVersion Include="Scrutor" Version="6.1.0" />
+    <!-- Valida y normaliza a E.164 los celulares de México (fila del Stack). Lo usa Pacientes.Features: el dominio y
+         los contratos solo usan la biblioteca base (T-28, AD-12). -->
+    <PackageVersion Include="libphonenumber-csharp" Version="9.0.42" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <!-- Solo en pruebas. La misma línea que ASP.NET Core 10. -->

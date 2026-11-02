@@ -1,14 +1,16 @@
+using DraSelina.Consultorio.Agenda.Domain;
+using DraSelina.Consultorio.Kernel;
 using Microsoft.EntityFrameworkCore;
 
 namespace DraSelina.Consultorio.Agenda.Infrastructure;
 
-/// <summary>
-/// Los datos de Agenda viven en el esquema <c>agenda</c> y solo este contexto los toca (AD-2).
-/// Hoy solo tiene su outbox; las demás tablas llegan con las historias del módulo.
-/// </summary>
+/// <summary>Los datos de Agenda viven en el esquema <c>agenda</c> y solo este contexto los toca (AD-2).</summary>
 public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) : DbContext(options)
 {
     public const string Esquema = "agenda";
+
+    /// <summary>La restricción de exclusión que impide dos Citas no canceladas traslapadas (AD-8, RN-1).</summary>
+    public const string RestriccionSinTraslape = "ex_cita_sin_traslape";
 
     /// <summary>
     /// La única forma de configurar este contexto: la usan la aplicación, el MigrationService y las
@@ -16,6 +18,10 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
     /// </summary>
     public static void Configurar(DbContextOptionsBuilder opciones, string cadenaDeConexion) =>
         opciones.UseNpgsql(cadenaDeConexion, npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", Esquema));
+
+    internal DbSet<Cita> Citas => Set<Cita>();
+
+    internal DbSet<TipoDeVisita> TiposDeVisita => Set<TipoDeVisita>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +41,98 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
             fila.Property(f => f.Intentos).HasColumnName("intentos");
             fila.Property(f => f.ProximoIntentoEn).HasColumnName("proximo_intento_en");
             fila.Property(f => f.EntregadoEn).HasColumnName("entregado_en");
+        });
+
+        // agenda.tipo_de_visita, con los dos tipos sembrados (AD-25).
+        modelBuilder.Entity<TipoDeVisita>(tipo =>
+        {
+            tipo.ToTable("tipo_de_visita", t => t.HasCheckConstraint("ck_tipo_de_visita_duracion", "duracion_min > 0"));
+            tipo.HasKey(t => t.Id);
+            tipo.Property(t => t.Id)
+                .HasColumnName("id")
+                .HasConversion(id => id.Valor, valor => new TipoDeVisitaId(valor))
+                .ValueGeneratedNever();
+            tipo.Property(t => t.Nombre).HasColumnName("nombre");
+            tipo.Property(t => t.Descripcion).HasColumnName("descripcion");
+            tipo.Property(t => t.DuracionMin).HasColumnName("duracion_min");
+            tipo.Property(t => t.ReservableEnLinea).HasColumnName("reservable_en_linea");
+            tipo.Property(t => t.Orden).HasColumnName("orden");
+            tipo.Property(t => t.Activo).HasColumnName("activo");
+            tipo.Ignore(t => t.Duracion);
+            tipo.Ignore(t => t.SeAgendaEnLinea);
+
+            tipo.HasData(TiposDeVisitaSembrados.Filas);
+        });
+
+        // agenda.cita, sin solicitud_id ni token_hash: llegan con sus historias. La restricción de exclusión la crea
+        // la migración con SQL explícito (AD-25).
+        modelBuilder.Entity<Cita>(cita =>
+        {
+            cita.ToTable("cita", t =>
+            {
+                t.HasCheckConstraint("ck_cita_rango", "fin > inicio");
+                t.HasCheckConstraint("ck_cita_estado", "estado IN ('Agendada', 'NoSePresento', 'Cancelada')");
+                t.HasCheckConstraint("ck_cita_origen", "origen IN ('en_linea', 'consultorio')");
+                t.HasCheckConstraint("ck_cita_consentimiento_canal", "consentimiento_canal IN ('en_linea', 'externo')");
+                t.HasCheckConstraint(
+                    "ck_cita_motivo_de_cancelacion",
+                    "motivo_de_cancelacion IS NULL OR motivo_de_cancelacion IN ('paciente', 'tarde', 'consultorio')");
+
+                // INV-C8: motivo y fecha de cancelación si y solo si está cancelada.
+                t.HasCheckConstraint(
+                    "ck_cita_cancelacion",
+                    "(estado = 'Cancelada') = (motivo_de_cancelacion IS NOT NULL) "
+                    + "AND (estado = 'Cancelada') = (cancelada_en IS NOT NULL)");
+            });
+
+            cita.HasKey(c => c.Id);
+            cita.Property(c => c.Id)
+                .HasColumnName("id")
+                .HasConversion(id => id.Valor, valor => new CitaId(valor))
+                .ValueGeneratedNever();
+
+            // Sin llave foránea: el Paciente vive en otro esquema (AD-2).
+            cita.Property(c => c.PacienteId)
+                .HasColumnName("paciente_id")
+                .HasConversion(id => id.Valor, valor => new PatientId(valor));
+
+            cita.Property(c => c.TipoDeVisitaId)
+                .HasColumnName("tipo_de_visita_id")
+                .HasConversion(id => id.Valor, valor => new TipoDeVisitaId(valor));
+            cita.HasOne<TipoDeVisita>().WithMany().HasForeignKey(c => c.TipoDeVisitaId).OnDelete(DeleteBehavior.Restrict);
+
+            cita.ComplexProperty(c => c.Rango, rango =>
+            {
+                rango.Property(r => r.Inicio).HasColumnName("inicio");
+                rango.Property(r => r.Fin).HasColumnName("fin");
+            });
+
+            cita.Property(c => c.Estado)
+                .HasColumnName("estado")
+                .HasConversion(e => TextoDeEnumeraciones.Estado(e), texto => TextoDeEnumeraciones.Estado(texto));
+            cita.Property(c => c.MotivoDeCancelacion)
+                .HasColumnName("motivo_de_cancelacion")
+                .HasConversion(m => TextoDeEnumeraciones.Motivo(m!.Value), texto => TextoDeEnumeraciones.Motivo(texto));
+            cita.Property(c => c.CanceladaEn).HasColumnName("cancelada_en");
+            cita.Property(c => c.Origen)
+                .HasColumnName("origen")
+                .HasConversion(o => TextoDeEnumeraciones.Origen(o), texto => TextoDeEnumeraciones.Origen(texto));
+            cita.Property(c => c.Nota).HasColumnName("nota");
+            cita.Property(c => c.MotivoDeConsulta).HasColumnName("motivo_de_consulta");
+
+            cita.ComplexProperty(c => c.Consentimiento, consentimiento =>
+            {
+                consentimiento.Property(c => c.En).HasColumnName("consentimiento_en");
+                consentimiento.Property(c => c.VersionDelAviso).HasColumnName("consentimiento_version_aviso");
+                consentimiento.Property(c => c.Canal)
+                    .HasColumnName("consentimiento_canal")
+                    .HasConversion(c => TextoDeEnumeraciones.Canal(c), texto => TextoDeEnumeraciones.Canal(texto));
+            });
+
+            cita.Property(c => c.CreadaEn).HasColumnName("creada_en");
+
+            // Los índices (inicio) y (paciente_id, inicio) van sobre columnas del rango y los crea la migración con SQL
+            // explícito, como la restricción de exclusión.
         });
     }
 }

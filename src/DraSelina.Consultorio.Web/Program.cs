@@ -1,4 +1,5 @@
 using DraSelina.Consultorio.Agenda.Infrastructure;
+using DraSelina.Consultorio.Contenido;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
@@ -17,10 +18,12 @@ var cadena = BaseDeDatos.CadenaDeConexion(builder.Configuration);
 
 // Cada módulo registra lo suyo: su contexto, su puerto de transacción y sus handlers (AD-10). La web nunca crea
 // ni migra nada al arrancar (AD-25): eso lo hace el MigrationService, que termina antes de que la web arranque.
+// Contenido no tiene base: solo su API (AD-2).
 builder.Services
     .AddAgenda(cadena)
     .AddPacientes(cadena)
-    .AddNotificaciones(cadena);
+    .AddNotificaciones(cadena)
+    .AddContenido();
 
 // El reloj de la aplicación, y la entrega de eventos entre módulos (AD-3): un servicio en segundo plano entrega
 // los eventos de cada outbox dado de alta aquí. Hoy solo publica Agenda.

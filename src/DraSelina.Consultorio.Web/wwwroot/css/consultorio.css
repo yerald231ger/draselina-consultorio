@@ -336,3 +336,255 @@ a:hover {
 .dsm-errores-del-objeto__mensaje {
   margin: 0;
 }
+
+/* Reserva (UI/Pages/Reserva/): una columna en el teléfono, hasta 560 px en pantallas anchas. */
+.dsm-reserva,
+.dsm-confirmada {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  padding-block: var(--dsm-spacing-9);
+}
+
+.dsm-reserva > .dsm-rotulo {
+  margin-top: var(--dsm-spacing-2);
+}
+
+/* Indicador de paso: tres barras de 4 px. */
+.dsm-paso {
+  display: flex;
+  gap: var(--dsm-spacing-2);
+}
+
+.dsm-paso__barra {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--dsm-rounded-xs);
+  background: var(--dsm-track);
+}
+
+.dsm-paso__barra--hecha {
+  background: var(--dsm-primary);
+}
+
+.dsm-titulo-de-paso {
+  margin: var(--dsm-spacing-1) 0 0;
+  font-size: var(--dsm-step-title-font-size);
+  font-weight: var(--dsm-step-title-font-weight);
+  color: var(--dsm-primary);
+}
+
+/* El horario elegido, en una franja tinta. */
+.dsm-horario-elegido {
+  display: flex;
+  align-items: center;
+  gap: var(--dsm-spacing-4);
+  margin-top: var(--dsm-spacing-7);
+  padding: var(--dsm-spacing-5) var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-lg);
+  background: var(--dsm-tint);
+}
+
+.dsm-horario-elegido__icono {
+  flex: none;
+  color: var(--dsm-primary);
+}
+
+.dsm-horario-elegido__texto {
+  flex: 1;
+  font-size: var(--dsm-body-font-size);
+  font-weight: 700;
+}
+
+/* Un aviso sin error técnico: el horario se ocupó, ya pasó o no se encontró. En vino, nunca danger. */
+.dsm-aviso {
+  margin-top: var(--dsm-spacing-7);
+  padding: var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-lg);
+  background: var(--dsm-surface);
+  border: 2px solid var(--dsm-primary);
+}
+
+.dsm-aviso__mensaje {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 700;
+  line-height: var(--dsm-body-small-line-height);
+  color: var(--dsm-primary);
+}
+
+.dsm-formulario {
+  margin-top: var(--dsm-spacing-9);
+}
+
+/* El área del motivo: como el control del Campo, con alto por renglones. */
+.dsm-campo__control--area {
+  height: auto;
+  padding-block: var(--dsm-spacing-5);
+  line-height: 1.4;
+  resize: none;
+}
+
+/* La casilla del Consentimiento: una tarjeta que se toca completa. */
+.dsm-casilla {
+  display: flex;
+  gap: var(--dsm-spacing-5);
+  align-items: flex-start;
+  padding: var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-lg);
+  background: var(--dsm-surface);
+  border: 1.5px solid var(--dsm-border);
+  cursor: pointer;
+}
+
+.dsm-casilla__control {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--dsm-primary);
+}
+
+.dsm-casilla__control[aria-invalid="true"] {
+  outline: 2px solid var(--dsm-primary);
+  outline-offset: 2px;
+}
+
+.dsm-casilla__texto {
+  font-size: var(--dsm-body-small-font-size);
+  line-height: var(--dsm-body-line-height);
+}
+
+.dsm-barra-de-accion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  margin-top: var(--dsm-spacing-3);
+  padding-top: var(--dsm-spacing-7);
+  border-top: 1px solid var(--dsm-border);
+}
+
+.dsm-barra-de-accion__nota {
+  margin: 0;
+  font-size: var(--dsm-help-font-size);
+  line-height: var(--dsm-help-line-height);
+  color: var(--dsm-muted);
+  text-align: center;
+}
+
+.dsm-enlace-fuerte {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--dsm-spacing-touch-min);
+  font-size: var(--dsm-body-font-size);
+  font-weight: 700;
+}
+
+/* Cita confirmada. */
+.dsm-confirmada {
+  padding-top: 40px;
+}
+
+.dsm-confirmada__encabezado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--dsm-spacing-6);
+}
+
+.dsm-confirmada__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--dsm-rounded-full);
+  background: var(--dsm-primary);
+  color: var(--dsm-on-primary);
+}
+
+.dsm-titulo-de-estado {
+  margin: 0;
+  font-size: var(--dsm-status-title-font-size);
+  font-weight: var(--dsm-status-title-font-weight);
+  line-height: var(--dsm-status-title-line-height);
+  letter-spacing: var(--dsm-status-title-letter-spacing);
+}
+
+.dsm-tarjeta {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--dsm-spacing-9);
+  border-radius: var(--dsm-rounded-2xl);
+  background: var(--dsm-surface);
+  border: 1px solid var(--dsm-border);
+}
+
+.dsm-tarjeta__seccion {
+  padding: var(--dsm-spacing-8);
+}
+
+.dsm-tarjeta__seccion + .dsm-tarjeta__seccion {
+  border-top: 1px solid var(--dsm-divider);
+}
+
+.dsm-confirmada__cuando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+}
+
+.dsm-confirmada__dia {
+  font-size: var(--dsm-help-font-size);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dsm-primary);
+}
+
+.dsm-confirmada__fecha {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dsm-confirmada__tipo {
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-lugar {
+  display: flex;
+  gap: var(--dsm-spacing-5);
+  align-items: flex-start;
+}
+
+.dsm-lugar__icono {
+  flex: none;
+  margin-top: 2px;
+  color: var(--dsm-primary);
+}
+
+.dsm-lugar__texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+}
+
+.dsm-lugar__nombre {
+  font-size: var(--dsm-body-font-size);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.dsm-lugar__direccion {
+  font-size: var(--dsm-body-small-font-size);
+  line-height: 1.4;
+  color: var(--dsm-muted);
+}
+
+.dsm-confirmada__pie {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--dsm-spacing-9);
+}

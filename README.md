@@ -22,7 +22,7 @@ sistema. No hace falta un SDK local.
 
 `./dotnet.sh test` corre los cuatro proyectos de `tests/`. No hace falta el AppHost arriba ni ningún otro comando.
 
-- `Kernel.Tests`, `ArchitectureTests` y `UI.Tests` no usan base de datos ni Docker.
+- `Kernel.Tests`, `Domain.Tests`, `ArchitectureTests` y `UI.Tests` no usan base de datos ni Docker.
 - `IntegrationTests` corre contra PostgreSQL real y **necesita Docker en ejecución**. Sin Docker estas pruebas
   fallan con un mensaje que lo dice; no se omiten.
 
@@ -695,6 +695,7 @@ src/
     UI/                           # DraSelina.Consultorio.UI
 tests/
   DraSelina.Consultorio.Kernel.Tests/
+  DraSelina.Consultorio.Domain.Tests/       # agregados y objetos de valor de Agenda y Pacientes, sin base
   DraSelina.Consultorio.ArchitectureTests/
   DraSelina.Consultorio.IntegrationTests/   # arnés y pruebas contra PostgreSQL real (Docker)
   DraSelina.Consultorio.UI.Tests/           # componentes de UI/ con bUnit, sin Docker
