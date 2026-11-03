@@ -9,6 +9,9 @@ public sealed class Citas(AgendaDbContext db) : ICitas
 {
     public void Agregar(Cita cita) => db.Citas.Add(cita);
 
+    public Task<Cita?> ObtenerPorSolicitudAsync(Guid solicitudId, CancellationToken cancellationToken) =>
+        db.Citas.SingleOrDefaultAsync(c => c.SolicitudId == solicitudId, cancellationToken);
+
     public async Task<GuardadoDeCita> GuardarAsync(CancellationToken cancellationToken)
     {
         try
@@ -24,6 +27,15 @@ public sealed class Citas(AgendaDbContext db) : ICitas
         {
             // 23P01: el traslape vuelve como resultado, nunca como excepción (AD-8, T-22).
             return GuardadoDeCita.HorarioOcupado;
+        }
+        catch (DbUpdateException error) when (error.InnerException is PostgresException
+                                              {
+                                                  SqlState: PostgresErrorCodes.UniqueViolation,
+                                                  ConstraintName: AgendaDbContext.IndiceDeSolicitud,
+                                              })
+        {
+            // 23505: otro envío de la misma solicitud ya guardó su Cita (AD-27).
+            return GuardadoDeCita.SolicitudRepetida;
         }
     }
 }

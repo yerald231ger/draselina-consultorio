@@ -101,6 +101,33 @@ public sealed class BitacoraYCitaAgendadaTests(Arnes arnes)
         Assert.Equal(1, await OutboxAsync(escenario));
     }
 
+    [Fact]
+    public async Task Confirmar_dos_veces_la_misma_solicitud_deja_una_sola_entrada_y_un_solo_evento()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var solicitud = Guid.CreateVersion7();
+
+        Assert.True((await escenario.AgendarAsync(Comando(solicitud: solicitud))).EsExito);
+        Assert.True((await escenario.AgendarAsync(Comando(solicitud: solicitud))).EsExito);
+
+        var cita = Assert.Single(await escenario.CitasAsync());
+        Assert.Equal(cita.Id.ToString(), Assert.Single(await BitacoraAsync(escenario)).EntidadId);
+        Assert.Equal(1, await OutboxAsync(escenario));
+    }
+
+    [Fact]
+    public async Task Envios_simultaneos_de_la_misma_solicitud_dejan_una_sola_entrada_y_un_solo_evento()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var solicitud = Guid.CreateVersion7();
+
+        await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => escenario.AgendarAsync(Comando(solicitud: solicitud))));
+
+        var cita = Assert.Single(await escenario.CitasAsync());
+        Assert.Equal(cita.Id.ToString(), Assert.Single(await BitacoraAsync(escenario)).EntidadId);
+        Assert.Equal(1, await OutboxAsync(escenario));
+    }
+
     [Theory]
     [InlineData("2026-11-03", "15:45", CodigosDeAgenda.FueraDeHorario)]
     [InlineData("2026-11-02", "16:00", CodigosDeAgenda.FueraDeVentana)]

@@ -17,10 +17,11 @@ public class CitaTests
     [Fact]
     public void Agendar_crea_una_Cita_Agendada_en_linea_con_su_fin_fijado_por_la_duracion()
     {
+        var solicitud = Guid.CreateVersion7();
         var paciente = PatientId.Nuevo();
         var tipo = TipoDeVisita.Crear("Primera consulta", 30, reservableEnLinea: true, orden: 1);
 
-        var rechazo = Cita.Agendar(paciente, tipo, Manana16, "Dolor de rodilla", Consentimiento(), Reglas(Manana16), 0, Ahora, out var cita);
+        var rechazo = Cita.Agendar(solicitud, paciente, tipo, Manana16, "Dolor de rodilla", Consentimiento(), Reglas(Manana16), 0, Ahora, out var cita);
 
         Assert.Null(rechazo);
         Assert.NotNull(cita);
@@ -35,6 +36,7 @@ public class CitaTests
         Assert.Null(cita.CanceladaEn);
         Assert.Equal("Dolor de rodilla", cita.MotivoDeConsulta);
         Assert.Equal(Ahora, cita.CreadaEn);
+        Assert.Equal(solicitud, cita.SolicitudId);
     }
 
     [Fact]
@@ -42,7 +44,7 @@ public class CitaTests
     {
         var consentimiento = Consentimiento();
 
-        Cita.Agendar(PatientId.Nuevo(), Tipo(), Manana16, "Dolor", consentimiento, Reglas(Manana16), 0, Ahora, out var cita);
+        Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Manana16, "Dolor", consentimiento, Reglas(Manana16), 0, Ahora, out var cita);
 
         Assert.Same(consentimiento, cita!.Consentimiento);
         Assert.Equal(CanalDeConsentimiento.EnLinea, cita.Consentimiento.Canal);
@@ -55,7 +57,7 @@ public class CitaTests
     {
         var local = new DateTimeOffset(2026, 11, 3, 16, 0, 0, TimeSpan.FromHours(-6));
 
-        Cita.Agendar(PatientId.Nuevo(), Tipo(), local, "Dolor", Consentimiento(), Reglas(local), 0, Ahora, out var cita);
+        Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), local, "Dolor", Consentimiento(), Reglas(local), 0, Ahora, out var cita);
 
         Assert.Equal(TimeSpan.Zero, cita!.Rango.Inicio.Offset);
         Assert.Equal(Manana16, cita.Rango.Inicio);
@@ -66,7 +68,7 @@ public class CitaTests
     {
         var antes = Ahora.AddMinutes(-30);
 
-        var rechazo = Cita.Agendar(PatientId.Nuevo(), Tipo(), antes, "Dolor", Consentimiento(), Reglas(antes), 0, Ahora, out var cita);
+        var rechazo = Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), antes, "Dolor", Consentimiento(), Reglas(antes), 0, Ahora, out var cita);
 
         Assert.Equal(RechazoAlAgendar.EnElPasado, rechazo);
         Assert.Null(cita);
@@ -76,7 +78,7 @@ public class CitaTests
     public void Una_Cita_que_empieza_justo_ahora_ya_paso()
     {
         // RN-31: "ya pasó" se mide desde el inicio.
-        var rechazo = Cita.Agendar(PatientId.Nuevo(), Tipo(), Ahora, "Dolor", Consentimiento(), Reglas(Ahora), 0, Ahora, out _);
+        var rechazo = Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Ahora, "Dolor", Consentimiento(), Reglas(Ahora), 0, Ahora, out _);
 
         Assert.Equal(RechazoAlAgendar.EnElPasado, rechazo);
     }
@@ -86,7 +88,7 @@ public class CitaTests
     {
         var tipo = TipoDeVisita.Crear("Cirugía menor", 60, reservableEnLinea: false, orden: 3);
 
-        var rechazo = Cita.Agendar(PatientId.Nuevo(), tipo, Manana16, "Dolor", Consentimiento(), Reglas(Manana16), 0, Ahora, out var cita);
+        var rechazo = Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), tipo, Manana16, "Dolor", Consentimiento(), Reglas(Manana16), 0, Ahora, out var cita);
 
         Assert.Equal(RechazoAlAgendar.TipoNoReservable, rechazo);
         Assert.Null(cita);
@@ -98,21 +100,28 @@ public class CitaTests
     public void Sin_motivo_de_consulta_no_hay_Cita_en_linea(string motivo)
     {
         Assert.ThrowsAny<ArgumentException>(
-            () => Cita.Agendar(PatientId.Nuevo(), Tipo(), Manana16, motivo, Consentimiento(), Reglas(Manana16), 0, Ahora, out _));
+            () => Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Manana16, motivo, Consentimiento(), Reglas(Manana16), 0, Ahora, out _));
     }
 
     [Fact]
     public void Sin_paciente_no_hay_Cita()
     {
         Assert.Throws<ArgumentException>(
-            () => Cita.Agendar(default, Tipo(), Manana16, "Dolor", Consentimiento(), Reglas(Manana16), 0, Ahora, out _));
+            () => Cita.Agendar(Guid.CreateVersion7(), default, Tipo(), Manana16, "Dolor", Consentimiento(), Reglas(Manana16), 0, Ahora, out _));
+    }
+
+    [Fact]
+    public void Sin_solicitud_no_hay_Cita_en_linea()
+    {
+        Assert.Throws<ArgumentException>(
+            () => Cita.Agendar(Guid.Empty, PatientId.Nuevo(), Tipo(), Manana16, "Dolor", Consentimiento(), Reglas(Manana16), 0, Ahora, out _));
     }
 
     [Fact]
     public void Sin_Consentimiento_no_hay_Cita()
     {
         Assert.Throws<ArgumentNullException>(
-            () => Cita.Agendar(PatientId.Nuevo(), Tipo(), Manana16, "Dolor", null!, Reglas(Manana16), 0, Ahora, out _));
+            () => Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Manana16, "Dolor", null!, Reglas(Manana16), 0, Ahora, out _));
     }
 
     [Fact]
@@ -121,7 +130,7 @@ public class CitaTests
         var externo = Agenda.Domain.Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.Externo);
 
         Assert.Throws<ArgumentException>(
-            () => Cita.Agendar(PatientId.Nuevo(), Tipo(), Manana16, "Dolor", externo, Reglas(Manana16), 0, Ahora, out _));
+            () => Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Manana16, "Dolor", externo, Reglas(Manana16), 0, Ahora, out _));
     }
 
     [Fact]
@@ -347,7 +356,7 @@ public class CitaTests
     private static DateTimeOffset Local(DateOnly fecha, int hora, int minuto) => HoraLocal.AUtc(fecha, new TimeOnly(hora, minuto));
 
     private static RechazoAlAgendar? Agendar(DateTimeOffset inicio, ReglasDeAgenda reglas, out Cita? cita, int citasDeLaSemana = 0) =>
-        Cita.Agendar(PatientId.Nuevo(), Tipo(), inicio, "Dolor", Consentimiento(), reglas, citasDeLaSemana, Ahora, out cita);
+        Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), inicio, "Dolor", Consentimiento(), reglas, citasDeLaSemana, Ahora, out cita);
 
     /// <summary>
     /// Las reglas sembradas con los tramos vigentes de la fecha local de <paramref name="inicio"/>: los de la base

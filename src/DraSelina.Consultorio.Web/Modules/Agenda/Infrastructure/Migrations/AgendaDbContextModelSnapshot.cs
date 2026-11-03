@@ -64,6 +64,10 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("paciente_id");
 
+                    b.Property<Guid?>("SolicitudId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("solicitud_id");
+
                     b.Property<Guid>("TipoDeVisitaId")
                         .HasColumnType("uuid")
                         .HasColumnName("tipo_de_visita_id");
@@ -101,6 +105,10 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         });
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SolicitudId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cita_solicitud_id");
 
                     b.HasIndex("TipoDeVisitaId");
 

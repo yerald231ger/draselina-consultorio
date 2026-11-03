@@ -7,7 +7,8 @@ namespace DraSelina.Consultorio.Agenda.Contracts;
 /// <summary>
 /// El Paciente agenda una Cita desde el sitio (AD-7). Tipo, fecha y hora llegan de la cadena de consulta de Tus datos
 /// (<c>?tipo=&lt;TipoDeVisitaId&gt;&amp;fecha=AAAA-MM-DD&amp;hora=HH:mm</c>); nombre, teléfono, correo y motivo, solo del
-/// cuerpo del formulario (AD-11). Los datos de contacto no se guardan en Agenda: pasan a Pacientes (E-12).
+/// cuerpo del formulario (AD-11). Los datos de contacto no se guardan en Agenda: pasan a Pacientes (E-12). El
+/// <see cref="SolicitudId"/> viaja oculto en el cuerpo: dos envíos con el mismo dan una sola Cita (AD-27, RN-21).
 /// </summary>
 public sealed class AgendarCitaEnLinea : ICommand<CitaAgendadaEnLinea>
 {
@@ -15,6 +16,14 @@ public sealed class AgendarCitaEnLinea : ICommand<CitaAgendadaEnLinea>
     public const string MensajeDeTelefonoDeMexico = "Revisa tu número: no corresponde a un celular de México.";
     public const string MensajeDeNombre = "Escribe tu nombre completo.";
     public const string MensajeDeCorreo = "Revisa tu correo: debe ser como nombre@correo.com.";
+
+    /// <summary>
+    /// Se genera al pintar Tus datos (Guid v7) y se conserva mientras el Paciente reintenta tras un horario ocupado:
+    /// es la misma solicitud. Si ya tiene Cita, el comando devuelve esa Cita (AD-27).
+    /// </summary>
+    [Required(ErrorMessage = "Falta el identificador de la solicitud.")]
+    [GuidNoVacio(ErrorMessage = "Falta el identificador de la solicitud.")]
+    public Guid? SolicitudId { get; set; }
 
     [Required(ErrorMessage = "Falta el tipo de consulta.")]
     public TipoDeVisitaId? TipoDeVisitaId { get; set; }

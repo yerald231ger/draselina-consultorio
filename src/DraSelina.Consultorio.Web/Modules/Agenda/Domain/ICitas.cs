@@ -8,9 +8,13 @@ public interface ICitas
 {
     void Agregar(Cita cita);
 
+    /// <summary>La Cita creada por esa solicitud en línea; nulo si no hay (AD-27).</summary>
+    Task<Cita?> ObtenerPorSolicitudAsync(Guid solicitudId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Guarda lo agregado. Si una Cita choca con otra no cancelada en la restricción de exclusión, devuelve
-    /// <see cref="GuardadoDeCita.HorarioOcupado"/>: la transacción queda abortada y el handler la deshace.
+    /// <see cref="GuardadoDeCita.HorarioOcupado"/>; si otra ya lleva su solicitud, <see cref="GuardadoDeCita.SolicitudRepetida"/>.
+    /// En los dos casos la transacción queda abortada y el handler la deshace.
     /// </summary>
     Task<GuardadoDeCita> GuardarAsync(CancellationToken cancellationToken);
 }
@@ -22,4 +26,7 @@ public enum GuardadoDeCita
 
     /// <summary>Otra Cita no cancelada ya ocupa parte del rango (RN-1).</summary>
     HorarioOcupado = 2,
+
+    /// <summary>Otra Cita ya lleva el mismo <c>solicitud_id</c>: un envío repetido que llegó a la vez (AD-27).</summary>
+    SolicitudRepetida = 3,
 }

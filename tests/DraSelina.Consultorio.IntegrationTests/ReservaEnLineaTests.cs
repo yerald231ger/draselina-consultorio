@@ -637,6 +637,201 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         Assert.Empty(await api.ConTelefonoAsync("4447777777", Cancelacion));
     }
 
+    // AD-27 y RN-21: confirmar dos veces la misma solicitud no crea dos Citas.
+
+    [Fact]
+    public async Task La_Cita_guarda_su_solicitud()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var comando = Comando();
+
+        Assert.True((await escenario.AgendarAsync(comando)).EsExito);
+
+        Assert.Equal(comando.SolicitudId, await escenario.EscalarAsync<Guid>("select solicitud_id from agenda.cita"));
+    }
+
+    [Fact]
+    public async Task Confirmar_dos_veces_la_misma_solicitud_da_una_Cita_y_la_misma_confirmacion()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var solicitud = Guid.CreateVersion7();
+
+        var primera = await escenario.AgendarAsync(Comando(solicitud: solicitud));
+        var segunda = await escenario.AgendarAsync(Comando(solicitud: solicitud));
+
+        Assert.True(primera.EsExito, $"{primera.Forma} {primera.Codigo}");
+        Assert.True(segunda.EsExito, $"{segunda.Forma} {segunda.Codigo}");
+        Assert.Equal(primera.Valor, segunda.Valor);
+        Assert.Equal(primera.Valor.CitaId.Valor, Assert.Single(await escenario.CitasAsync()).Id);
+    }
+
+    [Fact]
+    public async Task Una_solicitud_que_ya_tiene_Cita_devuelve_esa_aunque_el_segundo_envio_traiga_otro_horario()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var solicitud = Guid.CreateVersion7();
+        var primera = await escenario.AgendarAsync(Comando(solicitud: solicitud));
+
+        var segunda = await escenario.AgendarAsync(Comando(hora: new TimeOnly(17, 0), solicitud: solicitud));
+
+        Assert.True(segunda.EsExito, $"{segunda.Forma} {segunda.Codigo}");
+        Assert.Equal(primera.Valor, segunda.Valor);
+        Assert.Equal(new TimeOnly(16, 0), segunda.Valor.Hora);
+        Assert.Single(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Envios_simultaneos_de_la_misma_solicitud_dan_una_Cita_y_todos_confirman()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var solicitud = Guid.CreateVersion7();
+
+        var resultados = await Task.WhenAll(
+            Enumerable.Range(0, 4).Select(_ => escenario.AgendarAsync(Comando(solicitud: solicitud))));
+
+        Assert.All(resultados, r => Assert.True(r.EsExito, $"{r.Forma} {r.Codigo}"));
+        Assert.Single(resultados.Select(r => r.Valor).Distinct());
+        Assert.Single(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Envios_simultaneos_de_la_misma_solicitud_con_fechas_distintas_dan_una_Cita_y_los_dos_confirman()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var solicitud = Guid.CreateVersion7();
+
+        // Fechas distintas: cada envío toma su propio candado y ninguno espera al otro; los separa el único.
+        var resultados = await Task.WhenAll(
+            escenario.AgendarAsync(Comando(solicitud: solicitud)),
+            escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 4), solicitud: solicitud)));
+
+        Assert.All(resultados, r => Assert.True(r.EsExito, $"{r.Forma} {r.Codigo}"));
+        Assert.Equal(resultados[0].Valor, resultados[1].Valor);
+        Assert.Equal(resultados[0].Valor.CitaId.Valor, Assert.Single(await escenario.CitasAsync()).Id);
+    }
+
+    [Fact]
+    public async Task Un_envio_repetido_que_espero_el_candado_devuelve_la_Cita_que_se_guardo_mientras()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var solicitud = Guid.CreateVersion7();
+
+        // Otra transacción tiene el candado de mañana: el envío pasa la primera búsqueda y hace fila.
+        await using var conexion = new NpgsqlConnection(escenario.Cadena);
+        await conexion.OpenAsync(Cancelacion);
+        await using var otra = await conexion.BeginTransactionAsync(Cancelacion);
+        await using (var candado = new NpgsqlCommand(
+            $"select pg_advisory_xact_lock({ClaseDeCandadoDeFecha}, {Manana.DayNumber})", conexion, otra))
+        {
+            await candado.ExecuteNonQueryAsync(Cancelacion);
+        }
+
+        var repetido = escenario.AgendarAsync(Comando(solicitud: solicitud));
+        await Task.Delay(TimeSpan.FromMilliseconds(500), Cancelacion);
+        Assert.False(repetido.IsCompleted);
+
+        // Mientras, el primer envío de la misma solicitud, de otra fecha, guarda su Cita.
+        var primero = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 5), solicitud: solicitud));
+        Assert.True(primero.EsExito, $"{primero.Forma} {primero.Codigo}");
+
+        await otra.CommitAsync(Cancelacion);
+        var resultado = await repetido;
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        Assert.Equal(primero.Valor, resultado.Valor);
+        Assert.Single(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Un_envio_repetido_no_cuenta_su_propia_Cita_para_el_tope()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 5), new TimeOnly(16, 0)))).EsExito);
+        Assert.True((await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 6), new TimeOnly(16, 0)))).EsExito);
+        var solicitud = Guid.CreateVersion7();
+
+        // La tercera de la semana llega dos veces: la segunda vez el teléfono ya tiene tres, pero son la misma.
+        var primera = await escenario.AgendarAsync(Comando(solicitud: solicitud));
+        var segunda = await escenario.AgendarAsync(Comando(solicitud: solicitud));
+
+        Assert.True(segunda.EsExito, $"{segunda.Forma} {segunda.Codigo}");
+        Assert.Equal(primera.Valor, segunda.Valor);
+        Assert.Equal(3, (await escenario.CitasAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Un_envio_repetido_de_otra_fecha_que_espero_el_candado_con_el_tope_lleno_devuelve_la_Cita_del_primero()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 5), new TimeOnly(16, 0)))).EsExito);
+        Assert.True((await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 6), new TimeOnly(16, 0)))).EsExito);
+        var solicitud = Guid.CreateVersion7();
+
+        // El repetido, de mañana, pasa la primera búsqueda y hace fila en el candado de su fecha.
+        await using var conexion = new NpgsqlConnection(escenario.Cadena);
+        await conexion.OpenAsync(Cancelacion);
+        await using var otra = await conexion.BeginTransactionAsync(Cancelacion);
+        await using (var candado = new NpgsqlCommand(
+            $"select pg_advisory_xact_lock({ClaseDeCandadoDeFecha}, {Manana.DayNumber})", conexion, otra))
+        {
+            await candado.ExecuteNonQueryAsync(Cancelacion);
+        }
+
+        var repetido = escenario.AgendarAsync(Comando(solicitud: solicitud));
+        await Task.Delay(TimeSpan.FromMilliseconds(500), Cancelacion);
+        Assert.False(repetido.IsCompleted);
+
+        // El primero, del miércoles de la misma semana, guarda la tercera Cita; el repetido verá el tope lleno.
+        var primero = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 4), solicitud: solicitud));
+        Assert.True(primero.EsExito, $"{primero.Forma} {primero.Codigo}");
+
+        await otra.CommitAsync(Cancelacion);
+        var resultado = await repetido;
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        Assert.Equal(primero.Valor, resultado.Valor);
+        Assert.Equal(3, (await escenario.CitasAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Tras_un_horario_ocupado_la_misma_solicitud_reserva_otra_hora()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(Comando())).EsExito);
+        var solicitud = Guid.CreateVersion7();
+        var otra = Comando(solicitud: solicitud);
+        otra.Nombre = "Mariana López";
+
+        var ocupado = await escenario.AgendarAsync(otra);
+        otra.Hora = new TimeOnly(16, 30);
+        var reintento = await escenario.AgendarAsync(otra);
+
+        Assert.Equal(CodigosDeAgenda.HorarioOcupado, ocupado.Codigo);
+        Assert.True(reintento.EsExito, $"{reintento.Forma} {reintento.Codigo}");
+        Assert.Equal(new TimeOnly(16, 30), reintento.Valor.Hora);
+        Assert.Equal(
+            solicitud,
+            await escenario.EscalarAsync<Guid>($"select solicitud_id from agenda.cita where id = '{reintento.Valor.CitaId}'"));
+        Assert.Equal(2, (await escenario.CitasAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Las_Citas_del_consultorio_sin_solicitud_no_chocan_por_el_unico_y_dos_iguales_si()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.InsertarCitaDelConsultorioAsync(Manana, new TimeOnly(9, 0), new TimeOnly(9, 30));
+        await escenario.InsertarCitaDelConsultorioAsync(Manana, new TimeOnly(10, 0), new TimeOnly(10, 30));
+        Assert.Equal(0, await escenario.EscalarAsync<long>("select count(solicitud_id) from agenda.cita"));
+
+        var solicitud = Guid.CreateVersion7();
+        await escenario.EjecutarAsync($"update agenda.cita set solicitud_id = '{solicitud}' where inicio = '{HoraLocal.AUtc(Manana, new TimeOnly(9, 0)):O}'");
+        var error = await Assert.ThrowsAsync<PostgresException>(() => escenario.EjecutarAsync(
+            $"update agenda.cita set solicitud_id = '{solicitud}' where inicio = '{HoraLocal.AUtc(Manana, new TimeOnly(10, 0)):O}'"));
+
+        Assert.Equal(PostgresErrorCodes.UniqueViolation, error.SqlState);
+        Assert.Equal(AgendaDbContext.IndiceDeSolicitud, error.ConstraintName);
+    }
+
     /// <summary>
     /// Fija un usuario anónimo en el ámbito, como lo fija el renderizador de Blazor en una petición sin sesión: el
     /// actor de <see cref="IActorActual"/> es el Paciente (AD-22).
@@ -647,9 +842,13 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         autenticacion.SetAuthenticationState(Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()))));
     }
 
-    /// <summary>Un comando válido: Primera consulta, mañana a las 16:00 (o lo que se pida), con Consentimiento.</summary>
-    public static AgendarCitaEnLinea Comando(DateOnly? fecha = null, TimeOnly? hora = null) => new()
+    /// <summary>
+    /// Un comando válido: Primera consulta, mañana a las 16:00 (o lo que se pida), con Consentimiento y una solicitud
+    /// nueva (o la que se pida).
+    /// </summary>
+    public static AgendarCitaEnLinea Comando(DateOnly? fecha = null, TimeOnly? hora = null, Guid? solicitud = null) => new()
     {
+        SolicitudId = solicitud ?? Guid.CreateVersion7(),
         TipoDeVisitaId = TiposDeVisitaSembrados.PrimeraConsulta,
         Fecha = fecha ?? Manana,
         Hora = hora ?? new TimeOnly(16, 0),

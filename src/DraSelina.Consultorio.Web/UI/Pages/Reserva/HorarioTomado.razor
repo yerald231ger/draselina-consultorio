@@ -1,0 +1,136 @@
+@using System.Globalization
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.Kernel
+@inject IContenidoApi Contenido
+
+@*
+    Horario tomado al confirmar (FR-4, UJ-1 Falla; EXPERIENCE.md). Otro Paciente reservó el horario un instante antes:
+    el aviso y los horarios libres restantes del tipo, de HorariosLibres (la misma calculadora de Día y hora; un día
+    con horarios del tipo y todos ocupados se ve "Lleno"). Nunca una pantalla de error.
+
+    Sin scripts (AD-11): cada hora es un botón de este formulario, que se envía por POST a Tus datos con
+    ?tipo=&fecha=&hora= de la hora elegida (formaction). Nombre, celular, correo, motivo, la casilla y el SolicitudId
+    viajan en campos ocultos del cuerpo, nunca en la dirección. Tus datos los pinta llenos y no reserva: el Paciente
+    confirma de nuevo con la misma solicitud. Los días van como <details> para no pintar todas las horas abiertas.
+*@
+
+<section class="dsm-contenedor dsm-reserva dsm-horario">
+    <div class="dsm-paso" aria-label="Paso 2 de 3">
+        <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
+        <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
+        <div class="dsm-paso__barra"></div>
+    </div>
+    <div class="dsm-rotulo">Paso 2 de 3</div>
+    <h1 class="dsm-titulo-de-paso">Elige otro horario</h1>
+
+    <div id="aviso" class="dsm-aviso" role="alert" tabindex="-1" autofocus>
+        <p class="dsm-aviso__mensaje">@Aviso</p>
+    </div>
+
+    <form method="post" @formname="@NombreDelFormulario" @onsubmit="AlElegir">
+        <AntiforgeryToken />
+        <input type="hidden" name="@CampoDeEleccion" value="true" />
+        <input type="hidden" name="Comando.SolicitudId" value="@Datos.SolicitudId" />
+        <input type="hidden" name="Comando.Nombre" value="@Datos.Nombre" />
+        <input type="hidden" name="Comando.Telefono" value="@Datos.Telefono" />
+        @if (Datos.Correo is { } correo)
+        {
+            <input type="hidden" name="Comando.Correo" value="@correo" />
+        }
+        <input type="hidden" name="Comando.Motivo" value="@Datos.Motivo" />
+        @if (Datos.Consentimiento)
+        {
+            <input type="hidden" name="Comando.Consentimiento" value="true" />
+        }
+
+        @if (!Dias.Any(d => d.Horas.Count > 0))
+        {
+            <div class="dsm-aviso" role="status">
+                <p class="dsm-aviso__mensaje">
+                    Por ahora no hay horarios libres para agendar en línea. <MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" />
+                </p>
+            </div>
+        }
+        else
+        {
+            var primero = Dias.First(d => d.Horas.Count > 0).Fecha;
+            <ul class="dsm-otros-dias" aria-label="Días">
+                @foreach (var dia in Dias)
+                {
+                    <li>
+                        @if (dia.Horas.Count == 0)
+                        {
+                            <div class="dsm-otro-dia dsm-otro-dia--lleno">
+                                <span class="dsm-otro-dia__fecha">@FormatoDeCita.Largo(dia.Fecha)</span>
+                                <span class="dsm-otro-dia__estado">Lleno</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <details class="dsm-otro-dia" open="@(dia.Fecha == primero)">
+                                <summary class="dsm-otro-dia__cabeza">
+                                    <span class="dsm-otro-dia__fecha">@FormatoDeCita.Largo(dia.Fecha)</span>
+                                    <span class="dsm-otro-dia__estado">@Libres(dia.Horas.Count)</span>
+                                </summary>
+                                <ul class="dsm-horas__rejilla" aria-label="@($"Horas del {FormatoDeCita.Largo(dia.Fecha)}")">
+                                    @foreach (var hora in dia.Horas)
+                                    {
+                                        <li>
+                                            <button type="submit" class="dsm-hora" formaction="@RutaDeDatos(Tipo, dia.Fecha, hora)"
+                                                    aria-label="@($"{FormatoDeCita.Largo(dia.Fecha)}, {FormatoDeCita.Hora(hora)}")">
+                                                @FormatoDeCita.Hora(hora)
+                                            </button>
+                                        </li>
+                                    }
+                                </ul>
+                            </details>
+                        }
+                    </li>
+                }
+            </ul>
+
+            <div class="dsm-nota dsm-otros-dias__nota">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 8h.01M11 12h1v4h1"></path>
+                </svg>
+                <span>Solo ves horarios libres. Hora del centro de México. Al elegir uno, revisas tus datos y confirmas.</span>
+            </div>
+        }
+    </form>
+</section>
+
+@code {
+    /// <summary>El nombre del formulario: distinto del de Tus datos, así elegir una hora nunca reserva.</summary>
+    public const string NombreDelFormulario = "otra-hora";
+
+    /// <summary>El campo oculto que dice a Tus datos que el envío viene de este formulario.</summary>
+    public const string CampoDeEleccion = "OtraHora";
+
+    /// <summary>El texto del aviso (EXPERIENCE.md, "Horario tomado al confirmar").</summary>
+    public const string Aviso = "Ese horario se acaba de ocupar. Elige otro; tus datos se conservan.";
+
+    /// <summary>El tipo de la Cita: las horas que se ofrecen son de este tipo.</summary>
+    [Parameter, EditorRequired]
+    public TipoDeVisitaId Tipo { get; set; }
+
+    /// <summary>Los días de la ventana, de <see cref="HorariosLibres"/>; vacía mientras no se han leído.</summary>
+    [Parameter]
+    public IReadOnlyList<DiaConHorarios> Dias { get; set; } = [];
+
+    /// <summary>Lo que el Paciente escribió, con su SolicitudId: viaja oculto en el cuerpo.</summary>
+    [Parameter, EditorRequired]
+    public AgendarCitaEnLinea Datos { get; set; } = null!;
+
+    /// <summary>Se elige una hora: Tus datos vuelve a pintar el formulario, sin reservar.</summary>
+    [Parameter]
+    public EventCallback AlElegir { get; set; }
+
+    private static string Libres(int cuantos) => cuantos == 1 ? "1 horario libre" : $"{cuantos} horarios libres";
+
+    // Fecha y hora en formato invariable, como en Día y hora: el separador ":" de la hora depende de la cultura.
+    private static string RutaDeDatos(TipoDeVisitaId tipo, DateOnly fecha, TimeOnly hora) =>
+        string.Create(CultureInfo.InvariantCulture, $"/reservar/datos?tipo={tipo}&fecha={fecha:yyyy-MM-dd}&hora={hora:HH:mm}");
+}

@@ -6,6 +6,7 @@
 @using DraSelina.Consultorio.Kernel
 @using Microsoft.AspNetCore.Http
 @inject ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea> Agendar
+@inject IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>> Horarios
 @inject IClock Reloj
 @inject IContenidoApi Contenido
 
@@ -14,6 +15,11 @@
     cadena de consulta (?tipo=<TipoDeVisitaId>&fecha=AAAA-MM-DD&hora=HH:mm); nombre, celular, correo y motivo viajan
     solo en el cuerpo del formulario (AD-11). El formulario se envía a la misma dirección, con la misma cadena de
     consulta. Al confirmar, la misma respuesta pinta Cita confirmada.
+
+    El formulario lleva oculto un SolicitudId (Guid v7) generado al pintarse: confirmar dos veces devuelve la misma Cita
+    (AD-27). Si el horario se ocupó al confirmar, la respuesta pinta HorarioTomado: el aviso y los horarios libres
+    restantes. Elegir uno envía el formulario "otra-hora" a esta página con la nueva cadena de consulta; ese envío no
+    reserva: vuelve a pintar Tus datos con los datos llenos y la misma solicitud.
 *@
 
 <PageTitle>Tus datos · Dra. Selina Medina Castillo</PageTitle>
@@ -21,6 +27,10 @@
 @if (_confirmada is not null)
 {
     <CitaConfirmada Cita="_confirmada" />
+}
+else if (_tomado)
+{
+    <HorarioTomado Tipo="_horarioTomado" Dias="_diasLibres" Datos="Comando!" AlElegir="VolverATusDatos" />
 }
 else if (_horario is not { } horario)
 {
@@ -66,6 +76,9 @@ else
         }
 
         <EditForm Model="Comando" FormName="datos" OnValidSubmit="EnviarAsync" class="dsm-formulario">
+            @* La misma solicitud en cada envío de este formulario (AD-27). *@
+            <input type="hidden" name="Comando.SolicitudId" value="@Comando!.SolicitudId" />
+
             <ErroresDelResultado Resultado="_resultado">
                 <Campo Para="() => Comando!.Nombre" Etiqueta="Nombre completo"
                        Ayuda="Si agendas para otra persona, escribe el nombre del paciente."
@@ -137,6 +150,9 @@ else
     private CitaAgendadaEnLinea? _confirmada;
     private string? _aviso;
     private bool _conWhatsApp;
+    private bool _tomado;
+    private TipoDeVisitaId _horarioTomado;
+    private IReadOnlyList<DiaConHorarios> _diasLibres = [];
 
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
@@ -150,10 +166,26 @@ else
     [SupplyParameterFromQuery(Name = "hora")]
     public string? Hora { get; set; }
 
+    // Sin nombre de formulario: se llena con el envío de "datos" y con el de "otra-hora" de HorarioTomado.
     [SupplyParameterFromForm]
     public AgendarCitaEnLinea? Comando { get; set; }
 
-    protected override void OnInitialized() => Comando ??= new();
+    /// <summary>Solo llega con el envío de <see cref="HorarioTomado"/>: el Paciente eligió otra hora.</summary>
+    [SupplyParameterFromForm(FormName = HorarioTomado.NombreDelFormulario, Name = HorarioTomado.CampoDeEleccion)]
+    public bool? OtraHora { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Comando ??= new();
+
+        // Al pintar el formulario por primera vez; en un envío llega en el cuerpo y se conserva. Uno con ceros, escrito
+        // a mano, no se cambia aquí: la validación lo rechaza sin reservar y EnviarAsync pone uno nuevo después.
+        Comando.SolicitudId ??= Guid.CreateVersion7();
+
+        // El envío de "otra-hora" se despacha al formulario que lo pintó: el primer pintado lo tiene que llevar.
+        // VolverATusDatos lo quita antes de responder, así la respuesta es Tus datos.
+        _tomado = OtraHora is true;
+    }
 
     protected override void OnParametersSet()
     {
@@ -190,6 +222,12 @@ else
         Comando.Hora = horario.Hora;
 
         var resultado = await Agendar.HandleAsync(Comando, HttpContext?.RequestAborted ?? CancellationToken.None);
+
+        // Guid.Empty cuenta como ausente: el formulario que se vuelve a pintar lleva una solicitud nueva.
+        if (Comando.SolicitudId == Guid.Empty)
+        {
+            Comando.SolicitudId = Guid.CreateVersion7();
+        }
         _resultado = resultado;
         _aviso = null;
         _conWhatsApp = false;
@@ -197,6 +235,14 @@ else
         if (resultado.EsExito)
         {
             _confirmada = resultado.Valor;
+        }
+        else if (resultado is { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.HorarioOcupado })
+        {
+            // FR-4: el aviso y los horarios libres restantes del tipo; los datos se conservan para la otra hora.
+            var dias = await Horarios.HandleAsync(new HorariosLibres(horario.Tipo), HttpContext?.RequestAborted ?? CancellationToken.None);
+            _diasLibres = dias.EsExito ? dias.Valor : [];
+            _horarioTomado = horario.Tipo;
+            _tomado = true;
         }
         else if (resultado.Forma == FormaDeResultado.Fallo)
         {
@@ -207,10 +253,13 @@ else
         }
     }
 
-    // Los textos que ve el Paciente viven aquí; el dominio devuelve códigos. Nunca un error técnico (AD-8).
+    // Se eligió otra hora en HorarioTomado: Tus datos con lo escrito y el nuevo horario, sin reservar.
+    private void VolverATusDatos() => _tomado = false;
+
+    // Los textos que ve el Paciente viven aquí; el dominio devuelve códigos. Nunca un error técnico (AD-8). El horario
+    // ocupado tiene su propia vista (HorarioTomado).
     private static string Aviso(string? codigo) => codigo switch
     {
-        CodigosDeAgenda.HorarioOcupado => "Ese horario se acaba de ocupar. Vuelve a elegir otro horario; tus datos se conservan.",
         CodigosDeAgenda.EnElPasado => "Ese horario ya pasó. Vuelve a elegir otro horario.",
         CodigosDeAgenda.FueraDeHorario or CodigosDeAgenda.FueraDeVentana =>
             "Ese horario ya no está disponible. Vuelve a elegir otro horario.",

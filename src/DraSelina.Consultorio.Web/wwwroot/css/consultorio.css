@@ -919,6 +919,70 @@ a.dsm-dia[aria-current="true"]:hover {
   margin-top: 2px;
 }
 
+/* Horario tomado al confirmar: los días como lista desplegable; cada hora es un botón del formulario. */
+.dsm-otros-dias {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  margin: var(--dsm-spacing-7) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsm-otro-dia {
+  padding: var(--dsm-spacing-5);
+  border-radius: var(--dsm-rounded-lg);
+  background: var(--dsm-surface);
+  border: 1.5px solid var(--dsm-border);
+}
+
+.dsm-otro-dia__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--dsm-spacing-3);
+  cursor: pointer;
+}
+
+.dsm-otro-dia[open] > .dsm-otro-dia__cabeza {
+  margin-bottom: var(--dsm-spacing-5);
+}
+
+.dsm-otro-dia__fecha {
+  font-weight: 700;
+}
+
+.dsm-otro-dia__estado {
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+  white-space: nowrap;
+}
+
+.dsm-otro-dia--lleno {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--dsm-spacing-3);
+  background: transparent;
+  border: 1.5px dashed var(--dsm-border-disabled);
+  color: var(--dsm-disabled);
+}
+
+.dsm-otro-dia--lleno .dsm-otro-dia__estado {
+  color: var(--dsm-disabled);
+  font-weight: 600;
+}
+
+.dsm-otros-dias__nota {
+  margin-top: var(--dsm-spacing-5);
+}
+
+button.dsm-hora {
+  width: 100%;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 /* Resumen de selección, al pie, sobre la acción "Continuar". */
 .dsm-resumen {
   margin-top: var(--dsm-spacing-9);

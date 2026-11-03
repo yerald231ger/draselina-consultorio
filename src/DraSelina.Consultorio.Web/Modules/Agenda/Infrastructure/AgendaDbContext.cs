@@ -13,6 +13,9 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
     /// <summary>La restricción de exclusión que impide dos Citas no canceladas traslapadas (AD-8, RN-1).</summary>
     public const string RestriccionSinTraslape = "ex_cita_sin_traslape";
 
+    /// <summary>El índice único de <c>agenda.cita.solicitud_id</c>; los nulos, de las Citas del consultorio, no chocan (AD-27).</summary>
+    public const string IndiceDeSolicitud = "ux_cita_solicitud_id";
+
     /// <summary>
     /// La única forma de configurar este contexto: la usan la aplicación, el MigrationService y las
     /// herramientas de EF Core, para que el historial de migraciones quede siempre en el esquema del módulo (AD-25).
@@ -160,7 +163,7 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
             reglas.HasData(AgendaDeAtencionSembrada.Reglas);
         });
 
-        // agenda.cita, sin solicitud_id ni token_hash: llegan con sus historias. La restricción de exclusión la crea
+        // agenda.cita, sin token_hash: llega con su historia. La restricción de exclusión la crea
         // la migración con SQL explícito (AD-25).
         modelBuilder.Entity<Cita>(cita =>
         {
@@ -226,6 +229,10 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
             });
 
             cita.Property(c => c.CreadaEn).HasColumnName("creada_en");
+
+            // AD-27: nulo en las del consultorio; en PostgreSQL los nulos no chocan en un índice único.
+            cita.Property(c => c.SolicitudId).HasColumnName("solicitud_id");
+            cita.HasIndex(c => c.SolicitudId).IsUnique().HasDatabaseName(IndiceDeSolicitud);
 
             // Los índices (inicio) y (paciente_id, inicio) van sobre columnas del rango y los crea la migración con SQL
             // explícito, como la restricción de exclusión.

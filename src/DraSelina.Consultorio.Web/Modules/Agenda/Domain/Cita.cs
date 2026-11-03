@@ -47,10 +47,17 @@ public sealed class Cita
     public DateTimeOffset CreadaEn { get; private set; }
 
     /// <summary>
+    /// La solicitud del formulario que la creó; solo en una Cita en línea. Confirmar dos veces la misma solicitud no
+    /// crea otra Cita (AD-27, RN-21): lo garantiza el índice único de la base.
+    /// </summary>
+    public Guid? SolicitudId { get; private set; }
+
+    /// <summary>
     /// Agenda una Cita en línea: la crea el Paciente desde el sitio. Cumple INV-C1 a C5, C7, C9 a C11. La rejilla y la
     /// ventana son las de <see cref="CalculadoraDeDisponibilidad"/> (T-21). Rechaza también si el teléfono ya alcanzó el
     /// tope semanal (RN-18): el conteo lo hace el llamador; la Cita solo compara (T-1).
     /// </summary>
+    /// <param name="solicitud">La solicitud del formulario de Tus datos (AD-27).</param>
     /// <param name="paciente">El Paciente, ya reconocido o registrado por Pacientes.</param>
     /// <param name="tipo">El tipo de visita: fija la duración, y por lo tanto el fin (INV-C3).</param>
     /// <param name="inicio">El instante de inicio.</param>
@@ -66,6 +73,7 @@ public sealed class Cita
     /// <exception cref="ArgumentException">Si falta un dato que el llamador debía haber validado antes, o si los
     /// tramos vigentes no son de la fecha local de la Cita.</exception>
     public static RechazoAlAgendar? Agendar(
+        Guid solicitud,
         PatientId paciente,
         TipoDeVisita tipo,
         DateTimeOffset inicio,
@@ -82,6 +90,11 @@ public sealed class Cita
         ArgumentNullException.ThrowIfNull(reglas);
         ArgumentException.ThrowIfNullOrWhiteSpace(motivoDeConsulta);
         ArgumentOutOfRangeException.ThrowIfNegative(citasDeLaSemana);
+        if (solicitud == Guid.Empty)
+        {
+            throw new ArgumentException("La Cita en línea lleva su solicitud.", nameof(solicitud));
+        }
+
         if (paciente == default || paciente.Valor == Guid.Empty)
         {
             throw new ArgumentException("La Cita lleva un Paciente.", nameof(paciente));
@@ -143,6 +156,7 @@ public sealed class Cita
             MotivoDeConsulta = motivoDeConsulta.Trim(),
             Consentimiento = consentimiento,
             CreadaEn = now.ToUniversalTime(),
+            SolicitudId = solicitud,
         };
 
         return null;

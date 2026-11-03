@@ -33,6 +33,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
         Assert.Matches(Control("Comando.Motivo"), html);
         Assert.Matches(Control("Comando.Consentimiento"), html);
         Assert.Contains("Confirmar cita", html, StringComparison.Ordinal);
+        Assert.Equal(7, SolicitudDe(html).Version);
 
         Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("blazor.web.js", html, StringComparison.Ordinal);
@@ -98,21 +99,139 @@ public sealed partial class TusDatosTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task Un_horario_ocupado_muestra_el_aviso_sin_error_tecnico_y_conserva_los_datos()
+    public async Task Cada_vez_que_se_pinta_el_formulario_lleva_una_solicitud_nueva()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+
+        var primera = SolicitudDe(WebUtility.HtmlDecode(await cliente.GetStringAsync(Ruta(), Cancelacion)));
+        var segunda = SolicitudDe(WebUtility.HtmlDecode(await cliente.GetStringAsync(Ruta(), Cancelacion)));
+
+        Assert.NotEqual(primera, segunda);
+    }
+
+    [Fact]
+    public async Task Una_solicitud_con_ceros_escrita_a_mano_no_reserva_ni_falla_y_vuelve_con_una_solicitud_nueva()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+        var datos = Datos();
+        datos["Comando.SolicitudId"] = Guid.Empty.ToString();
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
+
+        Assert.DoesNotContain("Tu cita está confirmada", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Exception", html, StringComparison.Ordinal);
+        Assert.NotEqual(Guid.Empty, SolicitudDe(html));
+        Assert.Empty(await escenario.CitasAsync());
+        Assert.Empty(await escenario.PacientesAsync());
+    }
+
+    [Fact]
+    public async Task Confirmar_dos_veces_el_mismo_formulario_da_una_Cita_y_la_misma_confirmacion()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+        var (accion, campos) = await LlenarAsync(cliente, Ruta(), Datos());
+
+        var primera = await PostAsync(cliente, accion, campos);
+        var segunda = await PostAsync(cliente, accion, campos);
+
+        Assert.Contains("Tu cita está confirmada", primera, StringComparison.Ordinal);
+        Assert.Equal(Confirmacion(primera), Confirmacion(segunda));
+        Assert.DoesNotContain("Ese horario se acaba de ocupar", segunda, StringComparison.Ordinal);
+        Assert.Single(await escenario.CitasAsync());
+        Assert.Equal(
+            Guid.Parse(campos["Comando.SolicitudId"]),
+            await escenario.EscalarAsync<Guid>("select solicitud_id from agenda.cita"));
+    }
+
+    [Fact]
+    public async Task Un_horario_ocupado_muestra_el_aviso_y_los_horarios_libres_restantes_sin_error_tecnico()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         Assert.True((await escenario.AgendarAsync(ReservaEnLineaTests.Comando())).EsExito);
+
+        // El miércoles, lleno por Citas del consultorio: se ve "Lleno", como en Día y hora.
+        var miercoles = new DateOnly(2026, 11, 4);
+        for (var inicio = new TimeOnly(15, 30); inicio < new TimeOnly(18, 0); inicio = inicio.AddMinutes(30))
+        {
+            await escenario.InsertarCitaDelConsultorioAsync(miercoles, inicio, inicio.AddMinutes(30));
+        }
+
         using var cliente = escenario.Web.CreateClient();
         var datos = Datos();
         datos["Comando.Nombre"] = "Mariana López";
 
         var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
 
-        Assert.Contains("Ese horario se acaba de ocupar.", html, StringComparison.Ordinal);
-        Assert.Contains("value=\"Mariana López\"", html, StringComparison.Ordinal);
+        Assert.Contains("Ese horario se acaba de ocupar. Elige otro; tus datos se conservan.", html, StringComparison.Ordinal);
+        Assert.Contains("Elige otro horario", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Tu cita está confirmada", html, StringComparison.Ordinal);
         Assert.DoesNotContain("agenda.horario_ocupado", html, StringComparison.Ordinal);
         Assert.DoesNotContain("Exception", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(await escenario.CitasAsync(), c => c.Origen == "en_linea");
+
+        // Las horas libres del tipo; la tomada ya no se ofrece y el día lleno no tiene horas.
+        var horas = Horas().Matches(html)
+            .Select(m => (Accion: m.Groups["accion"].Value, Texto: m.Groups["texto"].Value))
+            .ToList();
+        Assert.Contains(horas, h => h.Accion == Ruta("16:30") && h.Texto == "4:30 pm");
+        Assert.Contains(horas, h => h.Accion == Ruta("15:30"));
+        Assert.DoesNotContain(horas, h => h.Accion == Ruta("16:00"));
+        Assert.DoesNotContain(horas, h => h.Accion.Contains("fecha=2026-11-04", StringComparison.Ordinal));
+        Assert.Matches("Miércoles 4 de noviembre</span>\\s*<span class=\"dsm-otro-dia__estado\">Lleno</span>", html);
+
+        // Los datos viajan ocultos en el cuerpo; en la dirección de cada hora, solo tipo, fecha y hora (AD-11).
+        Assert.All(horas, h => Assert.Equal(["fecha", "hora", "tipo"], ParametrosDe(h.Accion)));
+        var ocultos = CamposOcultos(html);
+        Assert.Equal("Mariana López", ocultos["Comando.Nombre"]);
+        Assert.Equal("444 123 4567", ocultos["Comando.Telefono"]);
+        Assert.Equal("ana@correo.com", ocultos["Comando.Correo"]);
+        Assert.Equal("Dolor de rodilla derecha", ocultos["Comando.Motivo"]);
+        Assert.Equal("true", ocultos["Comando.Consentimiento"]);
+    }
+
+    [Fact]
+    public async Task Elegir_otra_hora_vuelve_a_Tus_datos_llena_sin_reservar_y_confirmar_reserva_con_la_misma_solicitud()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(ReservaEnLineaTests.Comando())).EsExito);
+        using var cliente = escenario.Web.CreateClient();
+        var datos = Datos();
+        datos["Comando.Nombre"] = "Mariana López";
+        var (accion, campos) = await LlenarAsync(cliente, Ruta(), datos);
+        var solicitud = Guid.Parse(campos["Comando.SolicitudId"]);
+        var tomado = await PostAsync(cliente, accion, campos);
+
+        // Elegir las 4:30 pm: el botón envía el formulario de la vista a Tus datos con la nueva hora.
+        var otraHora = Horas().Matches(tomado).Select(m => m.Groups["accion"].Value).Single(a => a == Ruta("16:30"));
+        var datosConHora = await PostAsync(cliente, otraHora, CamposOcultos(tomado));
+
+        Assert.Contains("Tus datos", datosConHora, StringComparison.Ordinal);
+        Assert.Contains("Mar 3 nov · 4:30 pm", datosConHora, StringComparison.Ordinal);
+        Assert.Contains("value=\"Mariana López\"", datosConHora, StringComparison.Ordinal);
+        Assert.Contains("value=\"444 123 4567\"", datosConHora, StringComparison.Ordinal);
+        Assert.Contains("value=\"ana@correo.com\"", datosConHora, StringComparison.Ordinal);
+        Assert.Contains("Dolor de rodilla derecha</textarea>", datosConHora, StringComparison.Ordinal);
+        Assert.Matches(Marcada(), datosConHora);
+        Assert.DoesNotContain("Ese horario se acaba de ocupar", datosConHora, StringComparison.Ordinal);
+        Assert.DoesNotContain("Tu cita está confirmada", datosConHora, StringComparison.Ordinal);
         Assert.Single(await escenario.CitasAsync());
+
+        // Confirmar sin volver a escribir nada: la Cita de las 16:30, con la misma solicitud.
+        var formulario = Formulario().Match(datosConHora).Value;
+        Assert.Contains("value=\"datos\"", formulario, StringComparison.Ordinal);
+        var confirmada = await PostAsync(cliente, otraHora, CamposDelFormulario(formulario));
+
+        Assert.Contains("Tu cita está confirmada", confirmada, StringComparison.Ordinal);
+        Assert.Contains("3 de noviembre, 4:30 pm", confirmada, StringComparison.Ordinal);
+        Assert.Equal(2, (await escenario.CitasAsync()).Count);
+        Assert.Equal(
+            solicitud,
+            await escenario.EscalarAsync<Guid>(
+                $"select solicitud_id from agenda.cita where inicio = '{new DateTimeOffset(2026, 11, 3, 22, 30, 0, TimeSpan.Zero):O}'"));
     }
 
     [Fact]
@@ -213,6 +332,14 @@ public sealed partial class TusDatosTests(Arnes arnes)
     /// </summary>
     private static async Task<(string Accion, string Html)> EnviarAsync(HttpClient cliente, string ruta, Dictionary<string, string> datos)
     {
+        var (accion, campos) = await LlenarAsync(cliente, ruta, datos);
+        return (accion, await PostAsync(cliente, accion, campos));
+    }
+
+    /// <summary>Pide la página y llena su formulario: devuelve su destino y sus campos, los ocultos y los datos.</summary>
+    private static async Task<(string Accion, Dictionary<string, string> Campos)> LlenarAsync(
+        HttpClient cliente, string ruta, Dictionary<string, string> datos)
+    {
         var pagina = await cliente.GetStringAsync(ruta, Cancelacion);
         var formulario = Formulario().Match(pagina);
         Assert.True(formulario.Success, "La página no tiene formulario.");
@@ -220,16 +347,56 @@ public sealed partial class TusDatosTests(Arnes arnes)
         // Sin action, el navegador envía a la dirección de la página.
         var destino = Accion().Match(formulario.Groups["apertura"].Value);
         var accion = destino.Success ? WebUtility.HtmlDecode(destino.Groups["accion"].Value) : ruta;
-        var campos = Ocultos().Matches(formulario.Value)
-            .ToDictionary(m => m.Groups["nombre"].Value, m => WebUtility.HtmlDecode(m.Groups["valor"].Value));
+        var campos = CamposOcultos(formulario.Value);
         foreach (var (nombre, valor) in datos)
         {
             campos[nombre] = valor;
         }
 
+        return (accion, campos);
+    }
+
+    /// <summary>Envía los campos como el navegador y devuelve el HTML de la respuesta, ya decodificado.</summary>
+    private static async Task<string> PostAsync(HttpClient cliente, string accion, Dictionary<string, string> campos)
+    {
         using var respuesta = await cliente.PostAsync(accion, new FormUrlEncodedContent(campos), Cancelacion);
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
-        return (accion, WebUtility.HtmlDecode(await respuesta.Content.ReadAsStringAsync(Cancelacion)));
+        return WebUtility.HtmlDecode(await respuesta.Content.ReadAsStringAsync(Cancelacion));
+    }
+
+    // Los campos ocultos, con su valor decodificado. Sirve también sobre HTML ya decodificado: los valores de las
+    // pruebas no llevan comillas ni "&".
+    private static Dictionary<string, string> CamposOcultos(string html) =>
+        Ocultos().Matches(html).ToDictionary(m => m.Groups["nombre"].Value, m => WebUtility.HtmlDecode(m.Groups["valor"].Value));
+
+    // Lo que el navegador enviaría del formulario de Tus datos (ya decodificado) sin tocar nada: los ocultos, los
+    // controles de texto con su valor, el motivo y la casilla si está marcada.
+    private static Dictionary<string, string> CamposDelFormulario(string formulario)
+    {
+        var campos = CamposOcultos(formulario);
+        foreach (Match control in Textos().Matches(formulario))
+        {
+            campos[control.Groups["nombre"].Value] = control.Groups["valor"].Value;
+        }
+
+        campos["Comando.Motivo"] = Motivo().Match(formulario).Groups["valor"].Value;
+        if (Marcada().IsMatch(formulario))
+        {
+            campos["Comando.Consentimiento"] = "true";
+        }
+
+        return campos;
+    }
+
+    private static Guid SolicitudDe(string html) => Guid.Parse(CamposOcultos(html)["Comando.SolicitudId"]);
+
+    // La tarjeta de Cita confirmada: dos respuestas se comparan sin el resto de la página.
+    private static string Confirmacion(string html)
+    {
+        var inicio = html.IndexOf("<section class=\"dsm-contenedor dsm-confirmada\"", StringComparison.Ordinal);
+        Assert.True(inicio >= 0, "La respuesta no es Cita confirmada.");
+        var fin = html.IndexOf("</section>", inicio, StringComparison.Ordinal) + "</section>".Length;
+        return html[inicio..fin];
     }
 
     private static List<string> ParametrosDe(string ruta) =>
@@ -245,6 +412,19 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
     [GeneratedRegex(@"\baction=""(?<accion>[^""]*)""")]
     private static partial Regex Accion();
+
+    // Cada hora de Horario tomado: un botón que envía el formulario a Tus datos con la hora elegida.
+    [GeneratedRegex("""<button[^>]*formaction="(?<accion>[^"]*)"[^>]*>\s*(?<texto>[^<]*?)\s*</button>""")]
+    private static partial Regex Horas();
+
+    [GeneratedRegex("""<input(?=[^>]*type="(?:text|tel|email)")(?=[^>]*name="(?<nombre>[^"]+)")(?=[^>]*value="(?<valor>[^"]*)")[^>]*>""")]
+    private static partial Regex Textos();
+
+    [GeneratedRegex("""<textarea[^>]*name="Comando.Motivo"[^>]*>(?<valor>[^<]*)</textarea>""")]
+    private static partial Regex Motivo();
+
+    [GeneratedRegex("""<input(?=[^>]*name="Comando.Consentimiento")(?=[^>]*checked)[^>]*>""")]
+    private static partial Regex Marcada();
 
     [GeneratedRegex("""<input(?=[^>]*type="hidden")(?=[^>]*name="(?<nombre>[^"]+)")(?=[^>]*value="(?<valor>[^"]*)")[^>]*>""")]
     private static partial Regex Ocultos();
