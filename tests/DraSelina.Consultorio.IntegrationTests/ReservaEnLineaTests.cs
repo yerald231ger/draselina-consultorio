@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Agenda.Infrastructure;
@@ -5,6 +6,7 @@ using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -472,6 +474,16 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         }
     }
 
+    /// <summary>
+    /// Fija un usuario anónimo en el ámbito, como lo fija el renderizador de Blazor en una petición sin sesión: el
+    /// actor de <see cref="IActorActual"/> es el Paciente (AD-22).
+    /// </summary>
+    internal static void SinSesion(AsyncServiceScope ambito)
+    {
+        var autenticacion = (IHostEnvironmentAuthenticationStateProvider)ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>();
+        autenticacion.SetAuthenticationState(Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()))));
+    }
+
     /// <summary>Un comando válido: Primera consulta, mañana a las 16:00 (o lo que se pida), con Consentimiento.</summary>
     public static AgendarCitaEnLinea Comando(DateOnly? fecha = null, TimeOnly? hora = null) => new()
     {
@@ -504,10 +516,14 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
             return new Escenario(cadena, arnes.ArrancarWebSinEntregaAutomatica(cadena, new RelojDePrueba(Ahora)));
         }
 
-        /// <summary>El handler se pide al contenedor por su interfaz, en un ámbito propio, como lo hace la página.</summary>
+        /// <summary>
+        /// El handler se pide al contenedor por su interfaz, en un ámbito propio, como lo hace la página. El usuario del
+        /// ámbito es anónimo, como el de una petición sin sesión: el actor es el Paciente (AD-22).
+        /// </summary>
         public async Task<Resultado<CitaAgendadaEnLinea>> AgendarAsync(AgendarCitaEnLinea comando)
         {
             await using var ambito = Web.Services.CreateAsyncScope();
+            SinSesion(ambito);
             return await ambito.ServiceProvider
                 .GetRequiredService<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>>()
                 .HandleAsync(comando, Cancelacion);

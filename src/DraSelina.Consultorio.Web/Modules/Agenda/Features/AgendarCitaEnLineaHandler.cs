@@ -12,8 +12,10 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// transacción antes de la de Agenda (AD-28); abre la transacción de Agenda, toma el candado de la fecha local
 /// (AD-26, RN-20) y solo después lee las reglas y la agenda de atención; arma <see cref="ReglasDeAgenda"/> con los
 /// tramos vigentes de esa fecha, crea la Cita con su Consentimiento por <see cref="Cita.Agendar"/>, que decide INV-C5,
-/// y la guarda bajo la restricción de exclusión (AD-8). Ni este handler ni sus puertos registran nombre, teléfono,
-/// correo ni motivo (AD-23).
+/// y la guarda bajo la restricción de exclusión (AD-8). Ya guardada, y en la misma transacción, deja su entrada en la
+/// bitácora con el actor de <see cref="IActorActual"/> (RN-24, AD-22) y publica <see cref="CitaAgendada"/> por el
+/// outbox (AD-3, T-30): Cita, bitácora y evento se confirman juntos o ninguno. Ni este handler ni sus puertos
+/// registran nombre, teléfono, correo ni motivo (AD-23).
 /// </summary>
 public sealed class AgendarCitaEnLineaHandler(
     ITiposDeVisita tiposDeVisita,
@@ -24,6 +26,9 @@ public sealed class AgendarCitaEnLineaHandler(
     IReglasDeReserva reglasDeReserva,
     IAgendaAtencion agendaAtencion,
     ICitas citas,
+    IBitacoraDeAgenda bitacora,
+    IOutboxDeAgenda outbox,
+    IActorActual actorActual,
     IClock reloj) : ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>
 {
     public async Task<Resultado<CitaAgendadaEnLinea>> HandleAsync(
@@ -34,6 +39,9 @@ public sealed class AgendarCitaEnLineaHandler(
         var fecha = comando.Fecha!.Value;
         var hora = comando.Hora!.Value;
         var ahora = reloj.UtcNow;
+
+        // Sin sesión, una reserva en línea es del Paciente (AD-22).
+        var actor = await actorActual.ObtenerAsync();
 
         var tipo = await tiposDeVisita.ObtenerAsync(comando.TipoDeVisitaId!.Value, cancellationToken);
         if (tipo is null)
@@ -77,6 +85,8 @@ public sealed class AgendarCitaEnLineaHandler(
             return Resultado.Fallo(CodigosDeAgenda.HorarioOcupado).Como<CitaAgendadaEnLinea>();
         }
 
+        await DejarRastroAsync(cita!, actor, ahora, cancellationToken);
+
         await tx.ConfirmarAsync(cancellationToken);
 
         var consultorio = contenido.DatosDelConsultorio;
@@ -89,6 +99,45 @@ public sealed class AgendarCitaEnLineaHandler(
             consultorio.Lugar,
             $"{consultorio.Direccion}, {consultorio.Ciudad}");
     }
+
+    // RN-24 y AD-3, dentro de la transacción y después de guardar la Cita sin traslape: si la Cita no se confirma,
+    // tampoco quedan. El id del Administrador llega con la épica 5; una reserva del Paciente lo deja nulo.
+    private async Task DejarRastroAsync(Cita cita, Actor actor, DateTimeOffset ahora, CancellationToken cancellationToken)
+    {
+        var origen = Origen(cita.Origen);
+
+        await bitacora.AnotarAsync(
+            new EntradaDeBitacora(
+                ahora,
+                actor,
+                ActorId: null,
+                EntidadDeBitacora.Cita,
+                cita.Id.ToString(),
+                AccionDeBitacora.Agendada,
+                new
+                {
+                    inicio = cita.Rango.Inicio,
+                    fin = cita.Rango.Fin,
+                    tipoDeVisitaId = cita.TipoDeVisitaId.Valor,
+                    origen,
+                }),
+            cancellationToken);
+
+        var eventoId = Guid.CreateVersion7();
+        await outbox.PublicarAsync(
+            new CitaAgendada(eventoId, ahora, cita.Id, cita.PacienteId, actor, cita.Rango.Inicio, cita.Rango.Fin, origen),
+            eventoId,
+            claveDeOrden: cita.Id.Valor,
+            ahora,
+            cancellationToken);
+    }
+
+    private static string Origen(OrigenDeCita origen) => origen switch
+    {
+        OrigenDeCita.EnLinea => CitaAgendada.OrigenEnLinea,
+        OrigenDeCita.Consultorio => CitaAgendada.OrigenConsultorio,
+        _ => throw new ArgumentOutOfRangeException(nameof(origen), origen, "Origen sin texto."),
+    };
 
     private static string Codigo(RechazoAlAgendar rechazo) => rechazo switch
     {

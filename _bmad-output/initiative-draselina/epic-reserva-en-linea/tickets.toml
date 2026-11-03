@@ -65,7 +65,6 @@ covers = ["CAP-17"]
 after = [4, "1.7", "1.11"]
 hitl = false
 risk = "medium"
-unknown = "¿Qué guarda actor_id de la bitácora, si Actor es un enum sin id de usuario? (épica 1, pregunta abierta de la entrada 10)."
 
 [[entry]]
 id = 7

@@ -8,7 +8,9 @@ namespace DraSelina.Consultorio.IntegrationTests;
 
 /// <summary>
 /// Ejecuta el <c>MigrationService</c> real como proceso, igual que lo hace el AppHost: mismo <c>Program</c>,
-/// misma variable de entorno para la cadena de conexión, mismo código de salida.
+/// misma variable de entorno para la cadena de conexión, mismo ambiente (Development, el de su launchSettings.json)
+/// y mismo código de salida. En Development el host valida al construirse que todo lo registrado se pueda crear: un
+/// servicio que falta hace fallar aquí la migración, como haría fallar el arranque del AppHost.
 /// </summary>
 public static class MigrationService
 {
@@ -28,6 +30,7 @@ public static class MigrationService
         };
         inicio.ArgumentList.Add(ensamblado);
         inicio.Environment[$"ConnectionStrings__{BaseDeDatos.Nombre}"] = cadenaDeConexion;
+        inicio.Environment["DOTNET_ENVIRONMENT"] = "Development";
 
         var salida = new StringBuilder();
         using var proceso = new Process { StartInfo = inicio };

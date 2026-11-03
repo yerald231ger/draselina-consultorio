@@ -245,6 +245,59 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                     b.ToTable("agenda_custom", "agenda");
                 });
 
+            modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeBitacora", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("accion");
+
+                    b.Property<string>("ActorId")
+                        .HasColumnType("text")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("ActorTipo")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("actor_tipo");
+
+                    b.Property<string>("Detalle")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("detalle");
+
+                    b.Property<string>("Entidad")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("entidad");
+
+                    b.Property<string>("EntidadId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("entidad_id");
+
+                    b.Property<DateTimeOffset>("OcurridoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ocurrido_en");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Entidad", "EntidadId", "OcurridoEn")
+                        .HasDatabaseName("ix_bitacora_entidad_entidad_id_ocurrido_en");
+
+                    b.ToTable("bitacora", "agenda", t =>
+                        {
+                            t.HasCheckConstraint("ck_bitacora_accion", "accion IN ('Agendada', 'Reprogramada', 'Cancelada', 'NoSePresento', 'Registrada', 'Cambiada', 'Borrada')");
+
+                            t.HasCheckConstraint("ck_bitacora_actor_tipo", "actor_tipo IN ('Paciente', 'Administrador', 'Sistema')");
+
+                            t.HasCheckConstraint("ck_bitacora_entidad", "entidad IN ('Cita', 'AgendaBase', 'AgendaCustom', 'TipoDeVisita', 'ReglasDeReserva')");
+                        });
+                });
+
             modelBuilder.Entity("DraSelina.Consultorio.Agenda.Infrastructure.FilaDeOutbox", b =>
                 {
                     b.Property<Guid>("Id")

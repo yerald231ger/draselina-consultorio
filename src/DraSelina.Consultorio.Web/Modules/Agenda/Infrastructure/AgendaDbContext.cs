@@ -56,6 +56,32 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
             fila.Property(f => f.EntregadoEn).HasColumnName("entregado_en");
         });
 
+        // agenda.bitacora: quién cambió qué y cuándo (RN-24). Solo se inserta, por BitacoraDeAgenda. Los CHECK son los
+        // conjuntos de Actor, EntidadDeBitacora y AccionDeBitacora, guardados por su nombre.
+        modelBuilder.Entity<FilaDeBitacora>(fila =>
+        {
+            fila.ToTable(FilaDeBitacora.Tabla, t =>
+            {
+                t.HasCheckConstraint("ck_bitacora_actor_tipo", "actor_tipo IN ('Paciente', 'Administrador', 'Sistema')");
+                t.HasCheckConstraint(
+                    "ck_bitacora_entidad",
+                    "entidad IN ('Cita', 'AgendaBase', 'AgendaCustom', 'TipoDeVisita', 'ReglasDeReserva')");
+                t.HasCheckConstraint(
+                    "ck_bitacora_accion",
+                    "accion IN ('Agendada', 'Reprogramada', 'Cancelada', 'NoSePresento', 'Registrada', 'Cambiada', 'Borrada')");
+            });
+            fila.HasKey(f => f.Id);
+            fila.Property(f => f.Id).HasColumnName("id").ValueGeneratedNever();
+            fila.Property(f => f.OcurridoEn).HasColumnName("ocurrido_en");
+            fila.Property(f => f.ActorTipo).HasColumnName("actor_tipo");
+            fila.Property(f => f.ActorId).HasColumnName("actor_id");
+            fila.Property(f => f.Entidad).HasColumnName("entidad");
+            fila.Property(f => f.EntidadId).HasColumnName("entidad_id");
+            fila.Property(f => f.Accion).HasColumnName("accion");
+            fila.Property(f => f.Detalle).HasColumnName("detalle").HasColumnType("jsonb");
+            fila.HasIndex(f => new { f.Entidad, f.EntidadId, f.OcurridoEn }).HasDatabaseName("ix_bitacora_entidad_entidad_id_ocurrido_en");
+        });
+
         // agenda.tipo_de_visita, con los dos tipos sembrados (AD-25).
         modelBuilder.Entity<TipoDeVisita>(tipo =>
         {

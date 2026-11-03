@@ -36,9 +36,11 @@ if (builder.Configuration.GetConnectionString(BaseDeDatos.Nombre) is { } cadena)
 
     // Lo que los handlers y las API de los módulos piden al host. Aquí no se usan, pero en Development el host valida
     // al construirse que todo lo registrado se pueda crear.
+    // Este proceso actúa como Sistema; ActorDelHost no sirve aquí porque lee la autenticación de la web.
     builder.Services
         .AddContenido()
-        .AddSingleton<IClock, RelojDelSistema>();
+        .AddSingleton<IClock, RelojDelSistema>()
+        .AddSingleton<IActorActual, ActorSistema>();
 }
 
 // El host se construye pero no se arranca: solo hacen falta sus servicios.
@@ -79,4 +81,10 @@ catch (Exception error)
 {
     registro.LogCritical(error, "Las migraciones fallaron; la web no debe arrancar");
     return 1;
+}
+
+/// <summary>El actor de este proceso: siempre <see cref="Actor.Sistema"/> (AD-22). No tiene usuario ni sesión.</summary>
+internal sealed class ActorSistema : IActorActual
+{
+    public Task<Actor> ObtenerAsync() => Task.FromResult(Actor.Sistema);
 }

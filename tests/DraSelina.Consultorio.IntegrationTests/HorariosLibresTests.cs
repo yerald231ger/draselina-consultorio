@@ -163,11 +163,12 @@ public sealed class HorariosLibresTests(Arnes arnes)
                 .HandleAsync(new HorariosLibres(tipo), Cancelacion);
         }
 
-        /// <summary>Una Cita en línea de Primera consulta guardada por su propio handler.</summary>
+        /// <summary>Una Cita en línea de Primera consulta guardada por su propio handler, sin sesión.</summary>
         public async Task<Resultado<CitaAgendadaEnLinea>> AgendarAsync(DateOnly fecha, TimeOnly hora)
         {
             var comando = ReservaEnLineaTests.Comando(fecha, hora);
             await using var ambito = _web.Services.CreateAsyncScope();
+            ReservaEnLineaTests.SinSesion(ambito);
             return await ambito.ServiceProvider
                 .GetRequiredService<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>>()
                 .HandleAsync(comando, Cancelacion);
