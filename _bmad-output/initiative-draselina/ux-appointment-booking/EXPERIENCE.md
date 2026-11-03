@@ -116,7 +116,7 @@ Reglas:
 |---|---|---|
 | Día lleno | Día y hora | Chip o celda punteada, "Lleno", no seleccionable. En escritorio, si se elige: "Este día ya no tiene horarios libres. Elige otro día en el calendario." |
 | Sin horarios en toda la ventana | Día y hora | Mensaje único con el contacto de WhatsApp `[ASSUMPTION]`. |
-| Horario tomado al confirmar | Tus datos → Día y hora | Regresa a Día y hora con los datos conservados y un aviso: ese horario se acaba de ocupar; se muestran los Horarios libres restantes. Nunca una pantalla de error (FR-4). `[ASSUMPTION: los datos capturados se conservan]` |
+| Horario tomado al confirmar | Tus datos | La misma respuesta de Tus datos muestra el aviso "Ese horario se acaba de ocupar. Elige otro; tus datos se conservan." y los días y Horarios libres restantes del tipo, con la misma regla de "Lleno" que Día y hora. Elegir otra hora vuelve a Tus datos con los datos llenos y el nuevo horario; no se reserva hasta confirmar. Los datos viajan solo en el cuerpo del formulario (AD-11). Nunca una pantalla de error (FR-4). |
 | Campo inválido | Tus datos | Mensaje bajo el campo, en lenguaje llano; el foco va al primer error. Celular imposible: "Revisa tu número: deben ser 10 dígitos." `[ASSUMPTION: texto]` |
 | Sin Consentimiento | Tus datos | No se puede confirmar; el aviso aparece junto a la casilla. |
 | Tope semanal alcanzado | Tus datos | Explica que ese número ya tiene el máximo de Citas esta semana y ofrece WhatsApp `[ASSUMPTION]`. |
@@ -129,7 +129,7 @@ Reglas:
 | Cita cancelada | Cita cancelada | Confirma la cancelación y ofrece "Agendar otra cita". Si fue tardía, lo reconoce con amabilidad. |
 | Cancelada por el Consultorio | Tu cita (desde el correo) | Disculpa, la Cita cancelada y un botón para elegir otro horario. |
 | Cita pasada o enlace no válido | Enlace no válido | "Este enlace ya no está disponible" y "Agendar cita" `[ASSUMPTION: texto]`. |
-| Enviando | Confirmar, cancelar | El botón se deshabilita y muestra progreso; evita el doble envío. |
+| Enviando | Confirmar, cancelar | Sin scripts en el sitio, el botón no se deshabilita. El servidor evita el doble efecto: confirmar dos veces el mismo formulario devuelve la misma Cita (AD-27). Cancelar lo resuelve la épica 3. |
 
 **Administrador** `[ASSUMPTION: todos los tratamientos de esta tabla]`
 
@@ -208,7 +208,7 @@ Los nombres siguen los recorridos del PRD (UJ-1 a UJ-7).
 6. Toca "Confirmar cita".
 7. **Clímax:** "Tu cita está confirmada", con la fecha y hora en grande, el lugar, "Agregar a mi calendario" y "Guarda este enlace". Todo en menos de un minuto.
 
-Falla: alguien tomó el horario un instante antes → regresa a Día y hora con sus datos intactos y los horarios restantes.
+Falla: alguien tomó el horario un instante antes → en la misma pantalla ve el aviso y los horarios restantes; elige otro y vuelve a sus datos intactos para confirmar.
 
 ### UJ-2 — Mariana reprograma, y otro día cancela tarde
 
@@ -292,7 +292,7 @@ Ninguna impide pasar a arquitectura; se avanza con los supuestos indexados abajo
 - Foundation — el Administrador trabaja en escritorio.
 - IA — el sitio es una página con secciones; navegación de administración de cuatro entradas.
 - Component Patterns — "Continuar" deshabilitado sin hora; validación al salir del campo; "Copiado".
-- State Patterns (Paciente) — sin horarios en la ventana; datos conservados si el horario se ocupa; textos de error; tope semanal; variante sin correo; cancelación normal; enlace no válido.
+- State Patterns (Paciente) — sin horarios en la ventana; textos de error; tope semanal; variante sin correo; cancelación normal; enlace no válido.
 - State Patterns (Administrador) — todos los tratamientos.
 - Accessibility — ampliación al 200 %.
 - Responsive — administración mínima en teléfono.
