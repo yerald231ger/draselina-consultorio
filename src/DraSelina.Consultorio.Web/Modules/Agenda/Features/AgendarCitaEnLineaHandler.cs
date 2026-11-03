@@ -11,8 +11,9 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// Agenda una Cita en línea. Orquesta y no decide (T-13): pide el Paciente a Pacientes, que confirma en su propia
 /// transacción antes de la de Agenda (AD-28); abre la transacción de Agenda, toma el candado de la fecha local
 /// (AD-26, RN-20) y solo después lee las reglas y la agenda de atención; arma <see cref="ReglasDeAgenda"/> con los
-/// tramos vigentes de esa fecha, crea la Cita con su Consentimiento por <see cref="Cita.Agendar"/>, que decide INV-C5,
-/// y la guarda bajo la restricción de exclusión (AD-8). Ya guardada, y en la misma transacción, deja su entrada en la
+/// tramos vigentes de esa fecha, cuenta las Citas Agendadas de la semana local de la Cita de los Pacientes que
+/// comparten el teléfono (RN-18, AD-13), crea la Cita con su Consentimiento por <see cref="Cita.Agendar"/>, que decide
+/// INV-C5 y el tope semanal, y la guarda bajo la restricción de exclusión (AD-8). Ya guardada, y en la misma transacción, deja su entrada en la
 /// bitácora con el actor de <see cref="IActorActual"/> (RN-24, AD-22) y publica <see cref="CitaAgendada"/> por el
 /// outbox (AD-3, T-30): Cita, bitácora y evento se confirman juntos o ninguno. Ni este handler ni sus puertos
 /// registran nombre, teléfono, correo ni motivo (AD-23).
@@ -26,6 +27,7 @@ public sealed class AgendarCitaEnLineaHandler(
     IReglasDeReserva reglasDeReserva,
     IAgendaAtencion agendaAtencion,
     ICitas citas,
+    ICitasActivas citasActivas,
     IBitacoraDeAgenda bitacora,
     IOutboxDeAgenda outbox,
     IActorActual actorActual,
@@ -58,6 +60,10 @@ public sealed class AgendarCitaEnLineaHandler(
             return DatoDelPacienteInvalido(paciente);
         }
 
+        // RN-18: quiénes comparten el teléfono lo contesta Pacientes (RN-29); las Citas las cuenta Agenda. Pacientes ya
+        // confirmó al Paciente de esta reserva, así que viene en la lista.
+        var mismoTelefono = await pacientes.ConTelefonoAsync(comando.Telefono!, cancellationToken);
+
         var consentimiento = Consentimiento.Crear(ahora, contenido.VersionDelAvisoDePrivacidad, CanalDeConsentimiento.EnLinea);
 
         await using var tx = await transaccion.AbrirAsync(cancellationToken);
@@ -71,7 +77,13 @@ public sealed class AgendarCitaEnLineaHandler(
         var agenda = await agendaAtencion.ObtenerAsync(HoraLocal.DesdeUtc(ahora).Fecha, cancellationToken);
         var reglas = ReglasDeAgenda.Crear(agenda.TramosVigentes(fechaLocal), reserva);
 
-        var rechazo = Cita.Agendar(paciente.Valor, tipo, inicio, comando.Motivo!, consentimiento, reglas, ahora, out var cita);
+        // La semana de calendario local de la Cita, de lunes a domingo (AD-17). Cuenta después del candado: es un
+        // límite blando (AD-13); dos reservas simultáneas de días distintos pueden pasar las dos.
+        var (lunes, lunesSiguiente) = HoraLocal.SemanaDe(fechaLocal);
+        var citasDeLaSemana = await citasActivas.AgendadasDeAsync(mismoTelefono, lunes, lunesSiguiente, cancellationToken);
+
+        var rechazo = Cita.Agendar(
+            paciente.Valor, tipo, inicio, comando.Motivo!, consentimiento, reglas, citasDeLaSemana, ahora, out var cita);
         if (rechazo is not null)
         {
             await tx.DeshacerAsync(cancellationToken);
@@ -145,6 +157,7 @@ public sealed class AgendarCitaEnLineaHandler(
         RechazoAlAgendar.EnElPasado => CodigosDeAgenda.EnElPasado,
         RechazoAlAgendar.FueraDeHorario => CodigosDeAgenda.FueraDeHorario,
         RechazoAlAgendar.FueraDeVentana => CodigosDeAgenda.FueraDeVentana,
+        RechazoAlAgendar.TopeSemanal => CodigosDeAgenda.TopeSemanal,
         _ => throw new ArgumentOutOfRangeException(nameof(rechazo), rechazo, "Rechazo sin código."),
     };
 

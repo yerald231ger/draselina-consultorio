@@ -160,9 +160,13 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         var martes = new DateOnly(2026, 11, 3);
-        foreach (var hora in new TimeOnly[] { new(15, 30), new(16, 0), new(16, 30), new(17, 0), new(17, 30) })
+        // Cada hora con otro teléfono, para no topar con el tope semanal (RN-18).
+        TimeOnly[] horas = [new(15, 30), new(16, 0), new(16, 30), new(17, 0), new(17, 30)];
+        for (var i = 0; i < horas.Length; i++)
         {
-            Assert.True((await escenario.AgendarAsync(ReservaEnLineaTests.Comando(martes, hora))).EsExito);
+            var comando = ReservaEnLineaTests.Comando(martes, horas[i]);
+            comando.Telefono = $"444 555 {1000 + i}";
+            Assert.True((await escenario.AgendarAsync(comando)).EsExito);
         }
 
         using var cliente = escenario.Web.CreateClient();

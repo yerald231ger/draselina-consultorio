@@ -89,4 +89,7 @@ public static class CodigosDeAgenda
 
     /// <summary>Antes de la anticipación mínima o después de la ventana de reserva (INV-C5).</summary>
     public const string FueraDeVentana = "agenda.fuera_de_ventana";
+
+    /// <summary>Ese teléfono ya tiene el máximo de Citas de la semana de la Cita (RN-18, AD-13).</summary>
+    public const string TopeSemanal = "agenda.tope_semanal";
 }

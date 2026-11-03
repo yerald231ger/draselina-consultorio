@@ -24,4 +24,15 @@ public static class HoraLocal
         var local = TimeZoneInfo.ConvertTime(instante, Zona);
         return (DateOnly.FromDateTime(local.DateTime), TimeOnly.FromDateTime(local.DateTime));
     }
+
+    /// <summary>
+    /// La semana de calendario local de <paramref name="fecha"/>, de lunes a domingo (RN-18), como instantes UTC
+    /// <c>[desde, hasta)</c>: de las 00:00 locales del lunes a las 00:00 locales del lunes siguiente.
+    /// </summary>
+    public static (DateTimeOffset Desde, DateTimeOffset Hasta) SemanaDe(DateOnly fecha)
+    {
+        // DayOfWeek empieza en domingo (0); el lunes queda 0 días atrás y el domingo 6.
+        var lunes = fecha.AddDays(-(((int)fecha.DayOfWeek + 6) % 7));
+        return (AUtc(lunes, TimeOnly.MinValue), AUtc(lunes.AddDays(7), TimeOnly.MinValue));
+    }
 }

@@ -73,6 +73,12 @@ public sealed class PacientesApi(ITransaccionDePacientes transaccion, IPacientes
         }
     }
 
+    // Solo lectura: no abre transacción; lo que ya confirmó BuscarOCrear se ve.
+    public async Task<IReadOnlyList<PatientId>> ConTelefonoAsync(string telefono, CancellationToken cancellationToken) =>
+        TelefonoDeMexico(telefono) is { } tel
+            ? await pacientes.ConTelefonoAsync(tel, cancellationToken)
+            : [];
+
     // libphonenumber decide si el número existe en el plan de numeración de México y lo da en E.164; el dominio
     // solo acepta esa forma.
     private static Telefono? TelefonoDeMexico(string? texto)

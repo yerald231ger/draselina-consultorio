@@ -1,3 +1,5 @@
+using DraSelina.Consultorio.Kernel;
+
 namespace DraSelina.Consultorio.Pacientes.Domain;
 
 /// <summary>
@@ -11,6 +13,9 @@ public interface IPacientes
     /// espacios de más (RN-25, RN-26). Nulo si no existe.
     /// </summary>
     Task<Paciente?> BuscarAsync(Telefono telefono, NombreCompleto nombre, CancellationToken cancellationToken);
+
+    /// <summary>Los ids de los Pacientes con ese teléfono, con cualquier nombre (INV-P3). Sin rastrear.</summary>
+    Task<IReadOnlyList<PatientId>> ConTelefonoAsync(Telefono telefono, CancellationToken cancellationToken);
 
     void Agregar(Paciente paciente);
 

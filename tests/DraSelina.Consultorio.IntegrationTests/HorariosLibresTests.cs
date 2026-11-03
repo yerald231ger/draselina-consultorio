@@ -81,9 +81,10 @@ public sealed class HorariosLibresTests(Arnes arnes)
     public async Task Un_dia_lleno_aparece_con_la_lista_vacia()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
-        foreach (var hora in TardeCompleta)
+        // Cada hora con otro teléfono, para no topar con el tope semanal (RN-18).
+        foreach (var (hora, i) in TardeCompleta.Select((h, i) => (h, i)))
         {
-            Assert.True((await escenario.AgendarAsync(Martes, hora)).EsExito);
+            Assert.True((await escenario.AgendarAsync(Martes, hora, $"444 555 {1000 + i}")).EsExito);
         }
 
         var resultado = await escenario.ConsultarAsync(TiposDeVisitaSembrados.PrimeraConsulta);
@@ -164,9 +165,10 @@ public sealed class HorariosLibresTests(Arnes arnes)
         }
 
         /// <summary>Una Cita en línea de Primera consulta guardada por su propio handler, sin sesión.</summary>
-        public async Task<Resultado<CitaAgendadaEnLinea>> AgendarAsync(DateOnly fecha, TimeOnly hora)
+        public async Task<Resultado<CitaAgendadaEnLinea>> AgendarAsync(DateOnly fecha, TimeOnly hora, string? telefono = null)
         {
             var comando = ReservaEnLineaTests.Comando(fecha, hora);
+            comando.Telefono = telefono ?? comando.Telefono;
             await using var ambito = _web.Services.CreateAsyncScope();
             ReservaEnLineaTests.SinSesion(ambito);
             return await ambito.ServiceProvider

@@ -23,6 +23,14 @@ public interface IPacientesApi
         string telefono,
         string? correo,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Los Pacientes que tienen ese teléfono, con cualquier nombre (RN-25, INV-P3). Es para el tope semanal de Agenda
+    /// (AD-13, RN-18): Pacientes solo contesta quiénes son; nunca cuenta Citas (RN-29). No registra nada.
+    /// </summary>
+    /// <param name="telefono">Celular de México, en la misma forma que acepta <see cref="BuscarOCrearAsync"/>.</param>
+    /// <returns>Sus <see cref="PatientId"/>; vacía si no hay ninguno o si el teléfono no es válido.</returns>
+    Task<IReadOnlyList<PatientId>> ConTelefonoAsync(string telefono, CancellationToken cancellationToken);
 }
 
 /// <summary>El conjunto cerrado de códigos de fallo esperado de Pacientes.</summary>

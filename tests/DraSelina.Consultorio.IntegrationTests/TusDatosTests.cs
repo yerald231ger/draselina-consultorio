@@ -115,6 +115,32 @@ public sealed partial class TusDatosTests(Arnes arnes)
         Assert.Single(await escenario.CitasAsync());
     }
 
+    [Fact]
+    public async Task Con_el_tope_semanal_alcanzado_avisa_ofrece_WhatsApp_y_conserva_los_datos()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        await escenario.AgendarTresAsync();
+        using var cliente = escenario.Web.CreateClient();
+        var datos = Datos();
+        datos["Comando.Nombre"] = "Mariana López";
+
+        var (_, html) = await EnviarAsync(cliente, Ruta("17:00"), datos);
+
+        // El WhatsApp todavía no se conoce: el mensaje lo nombra sin número (Gerardo, 2026-11-02).
+        Assert.Contains(
+            "Este número ya tiene el máximo de citas de esta semana. Escríbenos por WhatsApp y te ayudamos.",
+            html,
+            StringComparison.Ordinal);
+        Assert.Contains("value=\"Mariana López\"", html, StringComparison.Ordinal);
+        Assert.Contains("value=\"444 123 4567\"", html, StringComparison.Ordinal);
+        Assert.Contains("value=\"ana@correo.com\"", html, StringComparison.Ordinal);
+        Assert.Contains("Dolor de rodilla derecha</textarea>", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Tu cita está confirmada", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("agenda.tope_semanal", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Exception", html, StringComparison.Ordinal);
+        Assert.Equal(3, (await escenario.CitasAsync()).Count);
+    }
+
     [Theory]
     [InlineData("2026-11-03", "15:45")]
     [InlineData("2026-11-02", "16:00")]

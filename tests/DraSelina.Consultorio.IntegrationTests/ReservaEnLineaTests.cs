@@ -474,6 +474,169 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         }
     }
 
+    // RN-18 y AD-13: tope semanal por teléfono, con el sembrado de 3. El reloj está en el lunes 2 de noviembre; la
+    // semana de mañana va del lunes 2 al domingo 8.
+
+    [Fact]
+    public async Task Bajo_el_tope_semanal_la_tercera_Cita_de_la_semana_se_guarda()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(Comando(hora: new TimeOnly(16, 0)))).EsExito);
+        Assert.True((await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 5), new TimeOnly(16, 0)))).EsExito);
+
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 6), new TimeOnly(16, 0)));
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        Assert.Equal(3, (await escenario.CitasAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Con_tres_Citas_en_la_semana_la_cuarta_vuelve_como_tope_semanal_y_no_se_guarda()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.AgendarTresAsync();
+
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 6), new TimeOnly(17, 0)));
+
+        Assert.Equal(FormaDeResultado.Fallo, resultado.Forma);
+        Assert.Equal(CodigosDeAgenda.TopeSemanal, resultado.Codigo);
+        Assert.Equal(3, (await escenario.CitasAsync()).Count);
+    }
+
+    [Fact]
+    public async Task El_tope_es_del_telefono_aunque_las_Citas_sean_de_Pacientes_con_otro_nombre()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var nombres = new[] { "Mariana López", "Jorge López", "Luisa López" };
+        for (var i = 0; i < nombres.Length; i++)
+        {
+            var otra = Comando(hora: new TimeOnly(16, 0).AddMinutes(30 * i));
+            otra.Nombre = nombres[i];
+            otra.Telefono = "+52 444 123 4567";
+            Assert.True((await escenario.AgendarAsync(otra)).EsExito);
+        }
+
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 4), new TimeOnly(16, 0)));
+
+        Assert.Equal(CodigosDeAgenda.TopeSemanal, resultado.Codigo);
+        Assert.Equal(3, (await escenario.CitasAsync()).Count);
+        Assert.Equal(4, (await escenario.PacientesAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Otro_telefono_no_suma_al_tope()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.AgendarTresAsync();
+        var otra = Comando(new DateOnly(2026, 11, 6), new TimeOnly(17, 0));
+        otra.Telefono = "444 765 4321";
+
+        var resultado = await escenario.AgendarAsync(otra);
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+    }
+
+    [Fact]
+    public async Task Con_tres_Citas_la_semana_pasada_la_de_la_semana_siguiente_se_guarda()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.AgendarTresAsync();
+
+        // Lunes 9 de noviembre: la semana siguiente.
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 9), new TimeOnly(16, 0)));
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        Assert.Equal(4, (await escenario.CitasAsync()).Count);
+    }
+
+    [Fact]
+    public async Task Las_Citas_del_domingo_anterior_y_del_lunes_siguiente_no_cuentan_para_la_semana()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var paciente = await escenario.PacienteDeAnaAsync();
+
+        // Domingo 8 por la noche (ya lunes 9 en UTC) y lunes 16 desde las 0:00: fuera de la semana del 9 al 15.
+        foreach (var (fecha, hora) in new[]
+                 {
+                     (new DateOnly(2026, 11, 8), new TimeOnly(19, 0)),
+                     (new DateOnly(2026, 11, 8), new TimeOnly(20, 0)),
+                     (new DateOnly(2026, 11, 8), new TimeOnly(23, 0)),
+                     (new DateOnly(2026, 11, 16), new TimeOnly(0, 0)),
+                     (new DateOnly(2026, 11, 16), new TimeOnly(9, 0)),
+                     (new DateOnly(2026, 11, 16), new TimeOnly(10, 0)),
+                 })
+        {
+            await escenario.InsertarCitaDelConsultorioAsync(fecha, hora, hora.AddMinutes(30), paciente);
+        }
+
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 11), new TimeOnly(16, 0)));
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+    }
+
+    [Fact]
+    public async Task Una_Cita_Cancelada_no_cuenta_para_el_tope()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.AgendarTresAsync();
+        await escenario.EjecutarAsync(
+            $"""
+            update agenda.cita set estado = 'Cancelada', motivo_de_cancelacion = 'paciente', cancelada_en = now()
+            where inicio = '{HoraLocal.AUtc(Manana, new TimeOnly(16, 0)):O}'
+            """);
+
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 6), new TimeOnly(17, 0)));
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+    }
+
+    [Fact]
+    public async Task Una_Cita_del_consultorio_cuenta_para_el_tope()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(Comando(hora: new TimeOnly(16, 0)))).EsExito);
+        Assert.True((await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 5), new TimeOnly(16, 0)))).EsExito);
+        var paciente = Assert.Single(await escenario.PacientesAsync()).Id;
+
+        // Sábado 7, fuera de los tramos: del consultorio, escrita directo en la base.
+        await escenario.InsertarCitaDelConsultorioAsync(new DateOnly(2026, 11, 7), new TimeOnly(10, 0), new TimeOnly(10, 30), paciente);
+
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 6), new TimeOnly(16, 0)));
+
+        Assert.Equal(CodigosDeAgenda.TopeSemanal, resultado.Codigo);
+        Assert.Equal(3, (await escenario.CitasAsync()).Count);
+    }
+
+    [Fact]
+    public async Task El_tope_se_lee_de_las_reglas_de_reserva()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.EjecutarAsync("update agenda.reglas_de_reserva set tope_semanal_por_telefono = 1");
+        Assert.True((await escenario.AgendarAsync(Comando())).EsExito);
+
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 5), new TimeOnly(16, 0)));
+
+        Assert.Equal(CodigosDeAgenda.TopeSemanal, resultado.Codigo);
+        Assert.Single(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Pacientes_da_los_ids_de_todos_los_que_comparten_el_telefono_y_nada_con_uno_invalido()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await using var ambito = escenario.Web.Services.CreateAsyncScope();
+        var api = ambito.ServiceProvider.GetRequiredService<IPacientesApi>();
+        var ana = (await api.BuscarOCrearAsync("Ana Sofía López", "4441234567", null, Cancelacion)).Valor;
+        var mariana = (await api.BuscarOCrearAsync("Mariana López", "+52 444-123-4567", null, Cancelacion)).Valor;
+        Assert.True((await api.BuscarOCrearAsync("Luis Pérez", "4449876543", null, Cancelacion)).EsExito);
+
+        var ids = await api.ConTelefonoAsync("444 123 4567", Cancelacion);
+
+        Assert.Equal(new[] { ana.Valor, mariana.Valor }.Order(), ids.Select(id => id.Valor).Order());
+        Assert.Empty(await api.ConTelefonoAsync("12345", Cancelacion));
+        Assert.Empty(await api.ConTelefonoAsync("4447777777", Cancelacion));
+    }
+
     /// <summary>
     /// Fija un usuario anónimo en el ámbito, como lo fija el renderizador de Blazor en una petición sin sesión: el
     /// actor de <see cref="IActorActual"/> es el Paciente (AD-22).
@@ -529,6 +692,26 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
                 .HandleAsync(comando, Cancelacion);
         }
 
+        /// <summary>Tres Citas de Ana esta semana: martes 3, jueves 5 y viernes 6 a las 16:00.</summary>
+        public async Task AgendarTresAsync()
+        {
+            foreach (var dia in new[] { 3, 5, 6 })
+            {
+                var resultado = await AgendarAsync(Comando(new DateOnly(2026, 11, dia), new TimeOnly(16, 0)));
+                Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+            }
+        }
+
+        /// <summary>El id de Ana, registrándola por Pacientes si todavía no existe.</summary>
+        public async Task<Guid> PacienteDeAnaAsync()
+        {
+            await using var ambito = Web.Services.CreateAsyncScope();
+            var resultado = await ambito.ServiceProvider.GetRequiredService<IPacientesApi>()
+                .BuscarOCrearAsync("Ana Sofía López", "4441234567", "ana@correo.com", Cancelacion);
+            Assert.True(resultado.EsExito);
+            return resultado.Valor.Valor;
+        }
+
         public Task<List<CitaLeida>> CitasAsync() => FilasAsync(
             "select id, paciente_id, tipo_de_visita_id, inicio, fin, estado, origen, motivo_de_consulta, "
             + "consentimiento_en, consentimiento_version_aviso, consentimiento_canal from agenda.cita order by inicio, creada_en",
@@ -571,12 +754,13 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         /// Una Cita del consultorio escrita directo en la base, de <paramref name="inicio"/> a <paramref name="fin"/>
         /// en hora local: puede quedar fuera de la rejilla, que no la valida (AD-7, RN-13).
         /// </summary>
-        public Task InsertarCitaDelConsultorioAsync(DateOnly fecha, TimeOnly inicio, TimeOnly fin) =>
+        /// <param name="pacienteId">El Paciente de la Cita; si no se da, uno al azar que no existe.</param>
+        public Task InsertarCitaDelConsultorioAsync(DateOnly fecha, TimeOnly inicio, TimeOnly fin, Guid? pacienteId = null) =>
             EjecutarAsync(
                 $"""
                 insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, origen, nota,
                     consentimiento_en, consentimiento_version_aviso, consentimiento_canal, creada_en)
-                values (gen_random_uuid(), gen_random_uuid(), '{TiposDeVisitaSembrados.PrimeraConsulta}',
+                values (gen_random_uuid(), {(pacienteId is { } id ? $"'{id}'" : "gen_random_uuid()")}, '{TiposDeVisitaSembrados.PrimeraConsulta}',
                     '{HoraLocal.AUtc(fecha, inicio):O}', '{HoraLocal.AUtc(fecha, fin):O}', 'Agendada', 'consultorio',
                     'Pidió por WhatsApp', now(), '2026-11-borrador', 'externo', now())
                 """);

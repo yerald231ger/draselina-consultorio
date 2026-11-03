@@ -48,8 +48,8 @@ public sealed class Cita
 
     /// <summary>
     /// Agenda una Cita en línea: la crea el Paciente desde el sitio. Cumple INV-C1 a C5, C7, C9 a C11. La rejilla y la
-    /// ventana son las de <see cref="CalculadoraDeDisponibilidad"/> (T-21). El tope semanal (RN-18) llega después como
-    /// parámetro nuevo de este mismo método.
+    /// ventana son las de <see cref="CalculadoraDeDisponibilidad"/> (T-21). Rechaza también si el teléfono ya alcanzó el
+    /// tope semanal (RN-18): el conteo lo hace el llamador; la Cita solo compara (T-1).
     /// </summary>
     /// <param name="paciente">El Paciente, ya reconocido o registrado por Pacientes.</param>
     /// <param name="tipo">El tipo de visita: fija la duración, y por lo tanto el fin (INV-C3).</param>
@@ -58,6 +58,8 @@ public sealed class Cita
     /// <param name="consentimiento">El Consentimiento dado en línea (INV-C9).</param>
     /// <param name="reglas">Los tramos vigentes de la fecha local de <paramref name="inicio"/> y los valores de las
     /// reglas de reserva (T-1).</param>
+    /// <param name="citasDeLaSemana">Las Citas Agendadas, de cualquier origen, de los Pacientes que comparten el
+    /// teléfono, en la semana de calendario local (lunes a domingo) de <paramref name="inicio"/> (RN-18).</param>
     /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
     /// <param name="cita">La Cita, si no hubo rechazo.</param>
     /// <returns>Nulo si se agendó; si no, por qué no.</returns>
@@ -70,6 +72,7 @@ public sealed class Cita
         string motivoDeConsulta,
         Consentimiento consentimiento,
         ReglasDeAgenda reglas,
+        int citasDeLaSemana,
         DateTimeOffset now,
         out Cita? cita)
     {
@@ -78,6 +81,7 @@ public sealed class Cita
         ArgumentNullException.ThrowIfNull(consentimiento);
         ArgumentNullException.ThrowIfNull(reglas);
         ArgumentException.ThrowIfNullOrWhiteSpace(motivoDeConsulta);
+        ArgumentOutOfRangeException.ThrowIfNegative(citasDeLaSemana);
         if (paciente == default || paciente.Valor == Guid.Empty)
         {
             throw new ArgumentException("La Cita lleva un Paciente.", nameof(paciente));
@@ -122,6 +126,12 @@ public sealed class Cita
             return RechazoAlAgendar.FueraDeHorario;
         }
 
+        // RN-18: con tope 3, la cuarta de la semana se rechaza. Es un límite blando, no transaccional (AD-13).
+        if (citasDeLaSemana >= reglas.TopeSemanalPorTelefono)
+        {
+            return RechazoAlAgendar.TopeSemanal;
+        }
+
         cita = new Cita
         {
             Id = CitaId.Nuevo(),
@@ -153,4 +163,7 @@ public enum RechazoAlAgendar
 
     /// <summary>Cae antes de la anticipación mínima o después de la ventana de reserva (INV-C5).</summary>
     FueraDeVentana = 4,
+
+    /// <summary>Las Citas de la semana con ese teléfono ya alcanzaron el tope semanal (RN-18).</summary>
+    TopeSemanal = 5,
 }
