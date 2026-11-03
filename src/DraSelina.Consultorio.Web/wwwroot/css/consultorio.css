@@ -977,6 +977,18 @@ a.dsm-dia[aria-current="true"]:hover {
   margin-top: var(--dsm-spacing-5);
 }
 
+/* Fuera de los 7 días mostrados: enlace a Día y hora, avisando que ahí se escriben los datos de nuevo. */
+.dsm-otros-dias__mas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-2);
+  margin-top: var(--dsm-spacing-5);
+}
+
+.dsm-otros-dias__nota-mas {
+  color: var(--dsm-muted);
+}
+
 button.dsm-hora {
   width: 100%;
   font-family: inherit;

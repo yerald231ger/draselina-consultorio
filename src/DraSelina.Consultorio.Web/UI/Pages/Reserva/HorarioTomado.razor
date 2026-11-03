@@ -13,6 +13,8 @@
     ?tipo=&fecha=&hora= de la hora elegida (formaction). Nombre, celular, correo, motivo, la casilla y el SolicitudId
     viajan en campos ocultos del cuerpo, nunca en la dirección. Tus datos los pinta llenos y no reserva: el Paciente
     confirma de nuevo con la misma solicitud. Los días van como <details> para no pintar todas las horas abiertas.
+    Solo se muestran el día del horario perdido y los 6 siguientes de la ventana (Gerardo, 2026-11-03); para otros
+    días, un enlace a Día y hora, donde los datos se escriben de nuevo (no viajan en la dirección).
 *@
 
 <section class="dsm-contenedor dsm-reserva dsm-horario">
@@ -54,9 +56,10 @@
         }
         else
         {
-            var primero = Dias.First(d => d.Horas.Count > 0).Fecha;
+            var mostrados = Mostrados();
+            var primero = mostrados.FirstOrDefault(d => d.Horas.Count > 0)?.Fecha;
             <ul class="dsm-otros-dias" aria-label="Días">
-                @foreach (var dia in Dias)
+                @foreach (var dia in mostrados)
                 {
                     <li>
                         @if (dia.Horas.Count == 0)
@@ -98,6 +101,11 @@
                 </svg>
                 <span>Solo ves horarios libres. Hora del centro de México. Al elegir uno, revisas tus datos y confirmas.</span>
             </div>
+
+            <p class="dsm-otros-dias__mas">
+                <a href="@RutaDeDiaYHora(Tipo)" class="dsm-enlace-fuerte">Ver otros días</a>
+                <span class="dsm-otros-dias__nota-mas">Ahí tendrás que escribir tus datos de nuevo.</span>
+            </p>
         }
     </form>
 </section>
@@ -116,6 +124,13 @@
     [Parameter, EditorRequired]
     public TipoDeVisitaId Tipo { get; set; }
 
+    /// <summary>La fecha del horario que se ocupó: desde ella se muestran los días.</summary>
+    [Parameter, EditorRequired]
+    public DateOnly Desde { get; set; }
+
+    /// <summary>Cuántos días se muestran: el del horario perdido y los 6 siguientes de la ventana.</summary>
+    public const int DiasMostrados = 7;
+
     /// <summary>Los días de la ventana, de <see cref="HorariosLibres"/>; vacía mientras no se han leído.</summary>
     [Parameter]
     public IReadOnlyList<DiaConHorarios> Dias { get; set; } = [];
@@ -127,6 +142,10 @@
     /// <summary>Se elige una hora: Tus datos vuelve a pintar el formulario, sin reservar.</summary>
     [Parameter]
     public EventCallback AlElegir { get; set; }
+
+    private IReadOnlyList<DiaConHorarios> Mostrados() => [.. Dias.Where(d => d.Fecha >= Desde).Take(DiasMostrados)];
+
+    private static string RutaDeDiaYHora(TipoDeVisitaId tipo) => $"/reservar/horario?tipo={tipo}";
 
     private static string Libres(int cuantos) => cuantos == 1 ? "1 horario libre" : $"{cuantos} horarios libres";
 

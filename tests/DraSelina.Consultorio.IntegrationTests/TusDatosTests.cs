@@ -194,6 +194,30 @@ public sealed partial class TusDatosTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task Un_horario_ocupado_muestra_solo_su_dia_y_los_6_siguientes_y_un_enlace_a_Dia_y_hora()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(ReservaEnLineaTests.Comando())).EsExito);
+
+        using var cliente = escenario.Web.CreateClient();
+        var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
+
+        // El martes 3 del horario perdido y los 6 días hábiles siguientes de la ventana: hasta el miércoles 11.
+        var fechas = Horas().Matches(html)
+            .Select(m => Regex.Match(m.Groups["accion"].Value, "fecha=([0-9-]+)").Groups[1].Value)
+            .Distinct()
+            .ToList();
+        Assert.Equal(
+            ["2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-09", "2026-11-10", "2026-11-11"],
+            fechas);
+
+        // Para otros días, Día y hora: la dirección solo lleva el tipo; los datos se escriben de nuevo.
+        Assert.Contains("Ver otros días", html, StringComparison.Ordinal);
+        Assert.Contains($"href=\"/reservar/horario?tipo={TiposDeVisitaSembrados.PrimeraConsulta}\"", html, StringComparison.Ordinal);
+        Assert.Contains("Ahí tendrás que escribir tus datos de nuevo.", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Elegir_otra_hora_vuelve_a_Tus_datos_llena_sin_reservar_y_confirmar_reserva_con_la_misma_solicitud()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);

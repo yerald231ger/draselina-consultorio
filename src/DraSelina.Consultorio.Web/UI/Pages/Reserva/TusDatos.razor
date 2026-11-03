@@ -30,7 +30,7 @@
 }
 else if (_tomado)
 {
-    <HorarioTomado Tipo="_horarioTomado" Dias="_diasLibres" Datos="Comando!" AlElegir="VolverATusDatos" />
+    <HorarioTomado Tipo="_horarioTomado" Desde="@(Comando!.Fecha ?? DateOnly.MinValue)" Dias="_diasLibres" Datos="Comando!" AlElegir="VolverATusDatos" />
 }
 else if (_horario is not { } horario)
 {
