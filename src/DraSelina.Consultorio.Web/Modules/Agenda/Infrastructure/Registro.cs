@@ -24,5 +24,7 @@ public static class Registro
             .AddScoped<ITiposDeVisita, TiposDeVisita>()
             .AddScoped<IAgendaAtencion, AgendaAtencionPersistida>()
             .AddScoped<IReglasDeReserva, ReglasDeReservaPersistidas>()
-            .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>();
+            .AddScoped<ICitasActivas, CitasActivas>()
+            .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
+            .AddScoped<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>, HorariosLibresHandler>();
 }
