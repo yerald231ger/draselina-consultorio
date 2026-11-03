@@ -4,7 +4,8 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure;
 
 /// <summary>
 /// Los tipos de visita iniciales (modelo de datos, Datos iniciales; AD-25): 30 min y reservables en línea. Sus ids son
-/// fijos para que la migración los siembre una sola vez y las pruebas los nombren.
+/// fijos para que la migración los siembre una sola vez y las pruebas los nombren. Las descripciones las dio Gerardo
+/// (2026-11-02) y llegaron con la migración <c>DescribirTiposDeVisita</c>.
 /// </summary>
 public static class TiposDeVisitaSembrados
 {
@@ -19,7 +20,7 @@ public static class TiposDeVisitaSembrados
         {
             Id = PrimeraConsulta,
             Nombre = "Primera consulta",
-            Descripcion = (string?)null,
+            Descripcion = (string?)"Si es tu primera vez con la doctora.",
             DuracionMin = 30,
             ReservableEnLinea = true,
             Orden = 1,
@@ -29,7 +30,7 @@ public static class TiposDeVisitaSembrados
         {
             Id = ConsultaDeSeguimiento,
             Nombre = "Consulta de seguimiento",
-            Descripcion = (string?)null,
+            Descripcion = (string?)"Si ya te atendió y vienes a revisión.",
             DuracionMin = 30,
             ReservableEnLinea = true,
             Orden = 2,

@@ -9,11 +9,13 @@ namespace DraSelina.Consultorio.Agenda.Domain;
 public static class CalculadoraDeDisponibilidad
 {
     /// <summary>
-    /// Las fechas de la ventana de reserva que tienen tramos vigentes, en orden, cada una con sus horarios libres. Una
-    /// fecha con tramos y sin horarios libres va con la lista vacía; las fechas sin tramos no van. Por cada fecha:
-    /// pide a la agenda sus tramos vigentes (INV-V1); dentro de cada tramo arma la rejilla desde su inicio, en pasos
-    /// de la duración, solo los que caben completos; quita los que traslapan una Cita activa de cualquier origen
-    /// (<c>[inicio, fin)</c>, AD-8) y los que no son posteriores a <paramref name="now"/>. Nada se guarda (RN-3).
+    /// Las fechas de la ventana de reserva que tienen algún horario posible para la duración, en orden, cada una con
+    /// sus horarios libres. Por cada fecha: pide a la agenda sus tramos vigentes (INV-V1); dentro de cada tramo arma
+    /// la rejilla desde su inicio, en pasos de la duración, solo los que caben completos; quita los que no son
+    /// posteriores a <paramref name="now"/>. Si no queda ninguno, la fecha no va: no se atiende, la duración no cabe
+    /// en sus tramos o hoy ya pasó. De los que quedan, quita los que traslapan una Cita activa de cualquier origen
+    /// (<c>[inicio, fin)</c>, AD-8); si las Citas los quitan todos, la fecha va con la lista vacía: está llena
+    /// (Gerardo, 2026-11-02). Nada se guarda (RN-3).
     /// </summary>
     /// <param name="agenda">La agenda de atención, con las custom de hoy (fecha local) en adelante.</param>
     /// <param name="citasActivas">Los rangos de las Citas no canceladas de la ventana, de cualquier origen.</param>
@@ -44,18 +46,30 @@ public static class CalculadoraDeDisponibilidad
                 continue;
             }
 
+            var posibles = 0;
             var horarios = new List<HorarioLibre>();
             foreach (var tramo in vigentes.Tramos)
             {
                 foreach (var hora in Rejilla(tramo, duracion))
                 {
                     var inicio = HoraLocal.AUtc(fecha, hora);
+                    if (inicio <= now)
+                    {
+                        continue;
+                    }
+
+                    posibles++;
                     var rango = RangoDeTiempo.Crear(inicio, inicio + duracion);
-                    if (inicio > now && !ocupados.Any(rango.Traslapa))
+                    if (!ocupados.Any(rango.Traslapa))
                     {
                         horarios.Add(new HorarioLibre(fecha, hora));
                     }
                 }
+            }
+
+            if (posibles == 0)
+            {
+                continue;
             }
 
             dias.Add(new DisponibilidadDelDia(fecha, horarios));
@@ -125,7 +139,10 @@ public static class CalculadoraDeDisponibilidad
 /// <param name="Hora">Hora local del consultorio.</param>
 public sealed record HorarioLibre(DateOnly Fecha, TimeOnly Hora);
 
-/// <summary>Una fecha de la ventana con tramos vigentes y sus horarios libres; vacía si está llena.</summary>
+/// <summary>
+/// Una fecha de la ventana con algún horario posible para la duración y sus horarios libres; vacía si las Citas la
+/// llenan.
+/// </summary>
 /// <param name="Fecha">Fecha local del consultorio.</param>
 /// <param name="Horarios">En orden de hora.</param>
 public sealed record DisponibilidadDelDia(DateOnly Fecha, IReadOnlyList<HorarioLibre> Horarios);

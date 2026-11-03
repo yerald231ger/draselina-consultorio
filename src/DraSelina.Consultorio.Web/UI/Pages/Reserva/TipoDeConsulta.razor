@@ -1,0 +1,105 @@
+@page "/reservar"
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.Kernel
+@using Microsoft.AspNetCore.Http
+@inject IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>> Tipos
+@inject IContenidoApi Contenido
+
+@*
+    Reserva 1 · Tipo de consulta (mockup Main), sin el horario del encabezado: sale de la Agenda base y lo resuelve
+    la épica del sitio. Solo los tipos activos y reservables en línea, en su orden y sin precios (FR-1); el primero
+    llega elegido (UJ-1), o el que trae ?tipo= al regresar desde Día y hora. Sin scripts (AD-11): las tarjetas son
+    radios de un formulario GET a Día y hora, así que la dirección solo lleva ?tipo=<TipoDeVisitaId>.
+*@
+
+<PageTitle>Tipo de consulta · Dra. Selina Medina Castillo</PageTitle>
+
+<section class="dsm-contenedor dsm-reserva">
+    <div class="dsm-presentacion">
+        <h1 class="dsm-presentacion__titulo">Agenda en un minuto</h1>
+        <div class="dsm-presentacion__lugar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path>
+                <circle cx="12" cy="9.5" r="2.5"></circle>
+            </svg>
+            <span>@Contenido.DatosDelConsultorio.Lugar</span>
+        </div>
+    </div>
+
+    <div class="dsm-paso" aria-label="Paso 1 de 3">
+        <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
+        <div class="dsm-paso__barra"></div>
+        <div class="dsm-paso__barra"></div>
+    </div>
+    <div class="dsm-rotulo">Paso 1 de 3</div>
+    <h2 class="dsm-pregunta">¿Qué tipo de consulta necesitas?</h2>
+
+    @if (_tipos.Count == 0)
+    {
+        <div class="dsm-aviso" role="status">
+            <p class="dsm-aviso__mensaje">
+                Por ahora no se puede agendar en línea. <MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" />
+            </p>
+        </div>
+    }
+    else
+    {
+        <form method="get" action="/reservar/horario" class="dsm-formulario-de-tipo">
+            <fieldset class="dsm-opciones">
+                <legend class="visually-hidden">Tipo de consulta</legend>
+                @foreach (var tipo in _tipos)
+                {
+                    <label class="dsm-opcion">
+                        <input type="radio" name="tipo" value="@tipo.Id" checked="@(tipo.Id == _elegido)"
+                               class="dsm-opcion__control" />
+                        <span class="dsm-opcion__texto">
+                            <span class="dsm-opcion__cabeza">
+                                <span class="dsm-opcion__nombre">@tipo.Nombre</span>
+                                <span class="dsm-opcion__duracion">@tipo.DuracionMin min</span>
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(tipo.Descripcion))
+                            {
+                                <span class="dsm-opcion__descripcion">@tipo.Descripcion</span>
+                            }
+                        </span>
+                    </label>
+                }
+            </fieldset>
+
+            <div class="dsm-barra-de-accion">
+                <button type="submit" class="btn btn-primary dsm-accion-principal">
+                    Ver horarios disponibles
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 6l6 6-6 6"></path>
+                    </svg>
+                </button>
+                <p class="dsm-barra-de-accion__nota">Sin cuenta ni app. Tu cita queda confirmada al instante.</p>
+            </div>
+        </form>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<TipoDeVisitaReservable> _tipos = [];
+    private TipoDeVisitaId? _elegido;
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromQuery(Name = "tipo")]
+    public string? Tipo { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var resultado = await Tipos.HandleAsync(new TiposDeVisitaReservables(), HttpContext?.RequestAborted ?? CancellationToken.None);
+        _tipos = resultado.EsExito ? resultado.Valor : [];
+
+        // El que trae la dirección, si es uno de la lista; si no, el primero.
+        _elegido = _tipos.FirstOrDefault(t => Guid.TryParse(Tipo, out var id) && t.Id.Valor == id)?.Id
+                   ?? _tipos.FirstOrDefault()?.Id;
+    }
+}

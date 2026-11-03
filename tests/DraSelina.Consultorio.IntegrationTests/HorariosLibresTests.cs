@@ -92,6 +92,24 @@ public sealed class HorariosLibresTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task Una_fecha_sin_ningun_horario_posible_para_el_tipo_no_viene()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.EjecutarAsync(
+            $"update agenda.tipo_de_visita set duracion_min = 45 where id = '{TiposDeVisitaSembrados.ConsultaDeSeguimiento}'");
+        await escenario.EjecutarAsync(
+            "insert into agenda.agenda_custom (fecha, motivo, creada_en, actualizada_en) values ('2026-11-03', 'tarde corta', now(), now())");
+        await escenario.EjecutarAsync(
+            "insert into agenda.agenda_custom_tramo (id, fecha, inicio, fin) values (gen_random_uuid(), '2026-11-03', '15:30', '16:00')");
+
+        var seguimiento = await escenario.ConsultarAsync(TiposDeVisitaSembrados.ConsultaDeSeguimiento);
+        var primera = await escenario.ConsultarAsync(TiposDeVisitaSembrados.PrimeraConsulta);
+
+        Assert.DoesNotContain(seguimiento.Valor, d => d.Fecha == Martes);
+        Assert.Equal([new TimeOnly(15, 30)], Assert.Single(primera.Valor, d => d.Fecha == Martes).Horas);
+    }
+
+    [Fact]
     public async Task Un_tipo_inexistente_vuelve_como_tipo_no_reservable()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);

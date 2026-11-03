@@ -1,0 +1,245 @@
+@page "/reservar/horario"
+@using System.Globalization
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.Kernel
+@using Microsoft.AspNetCore.Http
+@inject IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>> Tipos
+@inject IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>> Horarios
+@inject IContenidoApi Contenido
+
+@*
+    Reserva 2 · Día y hora (mockup Horario). Todo sale de HorariosLibres (T-21): ninguna fecha ni hora escrita en la
+    página; horas del centro de México (FR-2). Sin scripts (AD-11): cada día y cada hora es un enlace que recarga la
+    página con ?tipo=&fecha=&hora=; elegir otro día quita la hora. "Lleno" solo para un día con horarios del tipo y
+    todos ocupados; los días sin ningún horario posible no vienen (Gerardo, 2026-11-02). "Continuar" lleva a Tus
+    datos con los tres parámetros.
+*@
+
+<PageTitle>Día y hora · Dra. Selina Medina Castillo</PageTitle>
+
+@if (_tipo is not { } tipo)
+{
+    <section class="dsm-contenedor dsm-reserva">
+        <h1 class="dsm-titulo-de-paso">Elige día y hora</h1>
+        <div class="dsm-aviso" role="alert">
+            <p class="dsm-aviso__mensaje">No encontramos ese tipo de consulta. Vuelve a elegirlo.</p>
+        </div>
+        <a href="/reservar" class="dsm-enlace-fuerte">Elegir tipo de consulta</a>
+    </section>
+}
+else
+{
+    <section class="dsm-contenedor dsm-reserva dsm-horario">
+        <div class="dsm-regreso">
+            <a href="@RutaDeTipo(tipo.Id)" class="dsm-regreso__enlace" aria-label="Regresar">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 12H5M11 6l-6 6 6 6"></path>
+                </svg>
+            </a>
+            <div class="dsm-regreso__texto">@tipo.Nombre · @tipo.DuracionMin min</div>
+        </div>
+
+        <div class="dsm-paso" aria-label="Paso 2 de 3">
+            <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
+            <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
+            <div class="dsm-paso__barra"></div>
+        </div>
+        <div class="dsm-rotulo">Paso 2 de 3</div>
+        <h1 class="dsm-titulo-de-paso">Elige día y hora</h1>
+
+        @if (_dia is not { } dia)
+        {
+            <div class="dsm-aviso" role="status">
+                <p class="dsm-aviso__mensaje">
+                    Por ahora no hay horarios libres para agendar en línea. <MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" />
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="dsm-mes">
+                <div class="dsm-mes__nombre">@FormatoDeCita.MesYAnio(dia.Fecha)</div>
+                <div class="dsm-mes__hasta">Hasta el @FormatoDeCita.DiaYMes(_dias[^1].Fecha)</div>
+            </div>
+
+            <ul class="dsm-dias" aria-label="Días">
+                @for (var i = 0; i < _dias.Count; i++)
+                {
+                    var d = _dias[i];
+                    @* El mes corto en el primer chip de la fila y en el primero de cada mes: la fila cruza meses. *@
+                    var conMes = i == 0 || _dias[i - 1].Fecha.Month != d.Fecha.Month;
+                    <li>
+                        @if (d.Horas.Count == 0)
+                        {
+                            <span id="@IdDeDia(d.Fecha)" class="dsm-dia dsm-dia--lleno">
+                                <span class="visually-hidden">@FormatoDeCita.Largo(d.Fecha), </span>
+                                <span class="dsm-dia__semana" aria-hidden="true">@FormatoDeCita.DiaCorto(d.Fecha)</span>
+                                <span class="dsm-dia__numero" aria-hidden="true">@d.Fecha.Day</span>
+                                @if (conMes)
+                                {
+                                    <span class="dsm-dia__mes" aria-hidden="true">@FormatoDeCita.MesCorto(d.Fecha)</span>
+                                }
+                                <span class="dsm-dia__estado">Lleno</span>
+                            </span>
+                        }
+                        else
+                        {
+                            <a id="@IdDeDia(d.Fecha)" href="@($"{Ruta(tipo.Id, d.Fecha)}#{IdDeDia(d.Fecha)}")" class="dsm-dia"
+                               aria-current="@(d.Fecha == dia.Fecha ? "true" : null)"
+                               aria-label="@($"{FormatoDeCita.Largo(d.Fecha)}, {Libres(d.Horas.Count)}")">
+                                <span class="dsm-dia__semana">@FormatoDeCita.DiaCorto(d.Fecha)</span>
+                                <span class="dsm-dia__numero">@d.Fecha.Day</span>
+                                @if (conMes)
+                                {
+                                    <span class="dsm-dia__mes">@FormatoDeCita.MesCorto(d.Fecha)</span>
+                                }
+                                <span class="dsm-dia__estado">@(d.Horas.Count == 1 ? "1 libre" : $"{d.Horas.Count} libres")</span>
+                            </a>
+                        }
+                    </li>
+                }
+            </ul>
+
+            <div class="dsm-horas">
+                <div class="dsm-horas__cabeza">
+                    <h2 class="dsm-seccion">@FormatoDeCita.Largo(dia.Fecha)</h2>
+                    <div class="dsm-horas__cuantas">@Libres(dia.Horas.Count)</div>
+                </div>
+                <ul class="dsm-horas__rejilla" aria-label="Horas">
+                    @foreach (var h in dia.Horas)
+                    {
+                        <li>
+                            <a href="@Ruta(tipo.Id, dia.Fecha, h)" class="dsm-hora" aria-current="@(h == _hora ? "true" : null)">
+                                @FormatoDeCita.Hora(h)
+                            </a>
+                        </li>
+                    }
+                </ul>
+                <div class="dsm-nota">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 8h.01M11 12h1v4h1"></path>
+                    </svg>
+                    <span>Solo ves horarios libres. Hora del centro de México.</span>
+                </div>
+            </div>
+
+            <div class="dsm-barra-de-accion dsm-resumen">
+                <div class="dsm-resumen__eleccion">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                        <path d="M16 3v4M8 3v4M3 10h18"></path>
+                    </svg>
+                    <div class="dsm-resumen__texto">
+                        @(_hora is { } hora ? FormatoDeCita.Corto(dia.Fecha, hora) : "Elige una hora")
+                    </div>
+                </div>
+                @if (_hora is { } elegida)
+                {
+                    <a href="@RutaDeDatos(tipo.Id, dia.Fecha, elegida)" class="btn btn-primary dsm-accion-principal">
+                        Continuar
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14M13 6l6 6-6 6"></path>
+                        </svg>
+                    </a>
+                }
+                else
+                {
+                    <span class="btn btn-primary dsm-accion-principal disabled" aria-disabled="true">Continuar</span>
+                }
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private TipoDeVisitaReservable? _tipo;
+    private IReadOnlyList<DiaConHorarios> _dias = [];
+    private DiaConHorarios? _dia;
+    private TimeOnly? _hora;
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromQuery(Name = "tipo")]
+    public string? Tipo { get; set; }
+
+    [SupplyParameterFromQuery(Name = "fecha")]
+    public string? Fecha { get; set; }
+
+    [SupplyParameterFromQuery(Name = "hora")]
+    public string? Hora { get; set; }
+
+    private CancellationToken Cancelacion => HttpContext?.RequestAborted ?? CancellationToken.None;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _tipo = null;
+        _dias = [];
+        _dia = null;
+        _hora = null;
+
+        if (!Guid.TryParse(Tipo, out var id))
+        {
+            return;
+        }
+
+        // El nombre y la duración del encabezado; un tipo que no está en la lista no se agenda en línea.
+        var tipos = await Tipos.HandleAsync(new TiposDeVisitaReservables(), Cancelacion);
+        var tipo = tipos.EsExito ? tipos.Valor.FirstOrDefault(t => t.Id.Valor == id) : null;
+        if (tipo is null)
+        {
+            return;
+        }
+
+        var horarios = await Horarios.HandleAsync(new HorariosLibres(tipo.Id), Cancelacion);
+        if (!horarios.EsExito)
+        {
+            return;
+        }
+
+        _tipo = tipo;
+        _dias = horarios.Valor;
+
+        // El día de la dirección si tiene horas libres; si no, el primero que las tenga. Sin ninguno, el mensaje único.
+        _dia = _dias.FirstOrDefault(d => d.Horas.Count > 0 && FechaDeLaDireccion() == d.Fecha)
+               ?? _dias.FirstOrDefault(d => d.Horas.Count > 0);
+
+        // La hora solo cuenta si es del día que pide la dirección y está libre; nunca pasa a otro día.
+        if (_dia is not null
+            && _dia.Fecha == FechaDeLaDireccion()
+            && TimeOnly.TryParseExact(Hora, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var hora)
+            && _dia.Horas.Contains(hora))
+        {
+            _hora = hora;
+        }
+    }
+
+    private DateOnly? FechaDeLaDireccion() =>
+        DateOnly.TryParseExact(Fecha, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha)
+            ? fecha
+            : null;
+
+    private static string Libres(int cuantos) => cuantos == 1 ? "1 horario libre" : $"{cuantos} horarios libres";
+
+    // El id del chip; los enlaces de día lo llevan como fragmento para que el navegador lo muestre al recargar.
+    private static string IdDeDia(DateOnly fecha) =>
+        string.Create(CultureInfo.InvariantCulture, $"dia-{fecha:yyyy-MM-dd}");
+
+    private static string RutaDeTipo(TipoDeVisitaId tipo) => $"/reservar?tipo={tipo}";
+
+    // Fecha y hora en formato invariable: el separador ":" de la hora depende de la cultura.
+    private static string Ruta(TipoDeVisitaId tipo, DateOnly fecha, TimeOnly? hora = null) =>
+        hora is { } h
+            ? string.Create(CultureInfo.InvariantCulture, $"/reservar/horario?tipo={tipo}&fecha={fecha:yyyy-MM-dd}&hora={h:HH:mm}")
+            : string.Create(CultureInfo.InvariantCulture, $"/reservar/horario?tipo={tipo}&fecha={fecha:yyyy-MM-dd}");
+
+    private static string RutaDeDatos(TipoDeVisitaId tipo, DateOnly fecha, TimeOnly hora) =>
+        string.Create(CultureInfo.InvariantCulture, $"/reservar/datos?tipo={tipo}&fecha={fecha:yyyy-MM-dd}&hora={hora:HH:mm}");
+}

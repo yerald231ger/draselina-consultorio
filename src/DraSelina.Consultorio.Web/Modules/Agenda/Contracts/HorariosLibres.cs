@@ -12,8 +12,9 @@ namespace DraSelina.Consultorio.Agenda.Contracts;
 public sealed record HorariosLibres(TipoDeVisitaId TipoDeVisitaId) : IQuery<IReadOnlyList<DiaConHorarios>>;
 
 /// <summary>
-/// Una fecha de la ventana en la que Selina atiende, con sus horas libres. Lista vacía: la fecha está llena. Las fechas
-/// en las que no se atiende no vienen.
+/// Una fecha de la ventana con algún horario posible del tipo, con sus horas libres. Lista vacía: las Citas ocupan
+/// todos sus horarios y la fecha se ve "Lleno". No vienen las fechas en las que no se atiende ni las que no tienen
+/// ningún horario posible del tipo (su duración no cabe en los tramos, o hoy ya pasó).
 /// </summary>
 /// <param name="Fecha">Fecha local del consultorio (AD-17).</param>
 /// <param name="Horas">Horas locales de inicio, en orden.</param>

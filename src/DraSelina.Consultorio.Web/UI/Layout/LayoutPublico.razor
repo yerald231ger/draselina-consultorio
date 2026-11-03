@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 
-@* El layout del sitio y de la reserva: encabezado sobre la superficie y el contenido de la página debajo. *@
+@* El layout del sitio y de la reserva: encabezado sobre la superficie, el contenido de la página y un pie con el
+   Aviso de privacidad. *@
 <header class="dsm-encabezado">
     <div class="dsm-contenedor dsm-encabezado__fila">
         <a class="dsm-marca" href="/">
@@ -13,3 +14,10 @@
 <main>
     @Body
 </main>
+
+<footer class="dsm-pie">
+    <div class="dsm-contenedor dsm-pie__fila">
+        <span>Dra. Selina Medina Castillo · Traumatología y Ortopedia</span>
+        <a href="/aviso-de-privacidad" class="dsm-pie__enlace">Aviso de privacidad</a>
+    </div>
+</footer>

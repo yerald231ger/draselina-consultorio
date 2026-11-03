@@ -1,0 +1,20 @@
+@page "/aviso-de-privacidad"
+@using DraSelina.Consultorio.Contenido.Contracts
+@inject IContenidoApi Contenido
+
+@*
+    Aviso de privacidad: una página aparte (EXPERIENCE.md) con el texto y la versión vigentes de Contenido, la misma
+    versión que queda en el Consentimiento de cada Cita (AD-24). Se llega desde la casilla de Tus datos y desde el pie.
+*@
+
+<PageTitle>Aviso de privacidad · Dra. Selina Medina Castillo</PageTitle>
+
+<article class="dsm-contenedor dsm-aviso-de-privacidad">
+    <h1 class="dsm-titulo-de-paso">Aviso de privacidad</h1>
+    @foreach (var parrafo in Contenido.TextoDelAvisoDePrivacidad)
+    {
+        <p class="dsm-cuerpo">@parrafo</p>
+    }
+    <p class="dsm-aviso-de-privacidad__version">Versión @Contenido.VersionDelAvisoDePrivacidad</p>
+    <a href="/" class="dsm-enlace-fuerte">Volver al inicio</a>
+</article>

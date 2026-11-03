@@ -209,7 +209,7 @@ public sealed partial class BaseVisualTests(Arnes arnes)
     [GeneratedRegex("""<h1[^>]*>\s*Dra\. Selina Medina Castillo\s*</h1>""")]
     private static partial Regex H1ConNombre();
 
-    [GeneratedRegex("""<button[^>]*class="[^"]*\bbtn-primary\b[^"]*"[^>]*>\s*Agendar una cita\s*</button>""")]
+    [GeneratedRegex("""<a(?=[^>]*href="/reservar")[^>]*class="[^"]*\bbtn-primary\b[^"]*"[^>]*>\s*Agendar una cita\s*</a>""")]
     private static partial Regex BotonAgendar();
 
     [GeneratedRegex("""<link[^>]*rel="stylesheet"[^>]*href="(?<href>[^"]+)""")]

@@ -86,14 +86,14 @@ else
                     }
                 </div>
 
-                @* La casilla del Consentimiento (AD-24). *@
+                @* La casilla del Consentimiento (AD-24). El Aviso se abre en otra pestaña para no perder lo escrito. *@
                 <div class="dsm-campo">
                     <label class="dsm-casilla" for="Consentimiento">
                         <InputCheckbox id="Consentimiento" @bind-Value="Comando!.Consentimiento" class="dsm-casilla__control"
                                        aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.Consentimiento), conAyuda: false)"
                                        autofocus="@LlevaElFoco(nameof(AgendarCitaEnLinea.Consentimiento))" />
                         <span class="dsm-casilla__texto">
-                            Acepto el <strong>Aviso de privacidad</strong> y doy mi consentimiento expreso para el uso de mis
+                            Acepto el <a href="/aviso-de-privacidad" target="_blank" class="dsm-enlace-en-texto">Aviso de privacidad</a> y doy mi consentimiento expreso para el uso de mis
                             datos de salud con el fin de agendar mi cita.
                         </span>
                     </label>

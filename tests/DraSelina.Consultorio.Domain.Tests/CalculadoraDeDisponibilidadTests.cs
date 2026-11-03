@@ -193,6 +193,53 @@ public class CalculadoraDeDisponibilidadTests
     }
 
     [Fact]
+    public void Una_sola_Cita_larga_que_cubre_todo_el_tramo_deja_el_dia_lleno_y_vacio()
+    {
+        var inicio = HoraLocal.AUtc(Martes, H(15, 30));
+        var tarde = RangoDeTiempo.Crear(inicio, inicio + TimeSpan.FromMinutes(150));
+
+        var martes = Assert.Single(Calcular(Sembrada(), tarde), d => d.Fecha == Martes);
+
+        Assert.Empty(martes.Horarios);
+    }
+
+    [Fact]
+    public void Con_anticipacion_cero_hoy_no_aparece_si_su_ultimo_horario_ya_empezo()
+    {
+        var ahora = HoraLocal.AUtc(Lunes, new TimeOnly(17, 30));
+
+        var dias = CalculadoraDeDisponibilidad.Calcular(Sembrada(), [], Media, Reglas(anticipacion: 0), ahora);
+
+        Assert.DoesNotContain(dias, d => d.Fecha == Lunes);
+        Assert.Equal(Martes, dias[0].Fecha);
+    }
+
+    [Fact]
+    public void Con_anticipacion_cero_hoy_lleno_por_Citas_aparece_vacio()
+    {
+        var ahora = HoraLocal.AUtc(Lunes, new TimeOnly(16, 10));
+        RangoDeTiempo[] citas = [Cita(Lunes, 16, 30), Cita(Lunes, 17, 0), Cita(Lunes, 17, 30)];
+
+        var dias = CalculadoraDeDisponibilidad.Calcular(Sembrada(), citas, Media, Reglas(anticipacion: 0), ahora);
+
+        Assert.Empty(Assert.Single(dias, d => d.Fecha == Lunes).Horarios);
+    }
+
+    [Fact]
+    public void Un_tipo_que_no_cabe_en_el_tramo_de_una_custom_no_ve_esa_fecha()
+    {
+        var agenda = Sembrada();
+        Assert.Null(agenda.RegistrarCustom(Martes, [T(15, 30, 16, 0)], "tarde corta", Media));
+
+        var deTreinta = Calcular(agenda);
+        var deCuarentaYCinco = CalculadoraDeDisponibilidad.Calcular(agenda, [], TimeSpan.FromMinutes(45), Reglas(), Ahora);
+
+        Assert.Equal([H(15, 30)], Horas(deTreinta, Martes));
+        Assert.DoesNotContain(deCuarentaYCinco, d => d.Fecha == Martes);
+        Assert.Contains(deCuarentaYCinco, d => d.Fecha == Miercoles);
+    }
+
+    [Fact]
     public void Los_horarios_libres_llevan_su_fecha()
     {
         var martes = Assert.Single(Calcular(Sembrada()), d => d.Fecha == Martes);

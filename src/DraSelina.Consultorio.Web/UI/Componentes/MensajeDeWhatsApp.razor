@@ -1,0 +1,26 @@
+@*
+    "Escríbenos por WhatsApp" con el número del consultorio cuando Contenido lo tiene (enlace a la conversación), y
+    sin número mientras no se conozca (Gerardo, 2026-11-02). Un enlace externo permitido (EXPERIENCE.md).
+*@
+
+@if (Digitos is { } digitos)
+{
+    <text>Escríbenos por WhatsApp al </text><a href="https://wa.me/52@(digitos)" class="dsm-enlace-en-texto">@Legible(digitos)</a><text> y te ayudamos.</text>
+}
+else
+{
+    <text>Escríbenos por WhatsApp y te ayudamos.</text>
+}
+
+@code {
+    /// <summary>El WhatsApp de <c>IContenidoApi</c>, a 10 dígitos; nulo o vacío si no se conoce.</summary>
+    [Parameter]
+    public string? WhatsApp { get; set; }
+
+    // Solo los dígitos, si son 10; con cualquier otra cosa se pinta sin número antes que con un enlace roto.
+    private string? Digitos =>
+        new string((WhatsApp ?? "").Where(char.IsAsciiDigit).ToArray()) is { Length: 10 } digitos ? digitos : null;
+
+    // "444 123 4567".
+    private static string Legible(string digitos) => $"{digitos[..3]} {digitos[3..6]} {digitos[6..]}";
+}

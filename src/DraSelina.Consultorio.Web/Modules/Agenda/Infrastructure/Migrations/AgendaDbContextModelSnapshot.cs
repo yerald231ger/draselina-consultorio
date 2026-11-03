@@ -203,6 +203,7 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         {
                             Id = new Guid("01a19e61-08c5-7c92-a7e1-3b97e6858869"),
                             Activo = true,
+                            Descripcion = "Si es tu primera vez con la doctora.",
                             DuracionMin = 30,
                             Nombre = "Primera consulta",
                             Orden = 1,
@@ -212,6 +213,7 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         {
                             Id = new Guid("01a19e61-08d2-771e-8fa6-a54172742655"),
                             Activo = true,
+                            Descripcion = "Si ya te atendió y vienes a revisión.",
                             DuracionMin = 30,
                             Nombre = "Consulta de seguimiento",
                             Orden = 2,

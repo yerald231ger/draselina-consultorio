@@ -1,8 +1,8 @@
 namespace DraSelina.Consultorio.Contenido.Contracts;
 
 /// <summary>
-/// Lo que Contenido ofrece a la interfaz y a otros módulos (AD-3, AD-15): los datos del consultorio y la versión
-/// vigente del aviso de privacidad. Contenido no tiene esquema: su contenido se despliega con la aplicación (AD-2).
+/// Lo que Contenido ofrece a la interfaz y a otros módulos (AD-3, AD-15): los datos del consultorio, su WhatsApp y
+/// la versión vigente del aviso de privacidad con su texto. Contenido no tiene esquema: su contenido se despliega con la aplicación (AD-2).
 /// </summary>
 public interface IContenidoApi
 {
@@ -14,6 +14,18 @@ public interface IContenidoApi
     /// (AD-24).
     /// </summary>
     string VersionDelAvisoDePrivacidad { get; }
+
+    /// <summary>
+    /// El texto del aviso de privacidad vigente, en párrafos, de la versión <see cref="VersionDelAvisoDePrivacidad"/>.
+    /// Lo muestra la página del Aviso de privacidad.
+    /// </summary>
+    IReadOnlyList<string> TextoDelAvisoDePrivacidad { get; }
+
+    /// <summary>
+    /// El WhatsApp del consultorio, a 10 dígitos; nulo mientras no se conozca. Sin él, las pantallas dicen
+    /// "escríbenos por WhatsApp" sin número (Gerardo, 2026-11-02).
+    /// </summary>
+    string? WhatsApp { get; }
 }
 
 /// <summary>Los datos del consultorio.</summary>

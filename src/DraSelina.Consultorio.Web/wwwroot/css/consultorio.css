@@ -588,3 +588,366 @@ a:hover {
   justify-content: center;
   margin-top: var(--dsm-spacing-9);
 }
+
+/* Un enlace dentro de un texto corrido: la casilla del Consentimiento, el mensaje de WhatsApp. */
+.dsm-enlace-en-texto {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Pie del layout público: nombre y el enlace al Aviso de privacidad. */
+.dsm-pie {
+  margin-top: 40px;
+  border-top: 1px solid var(--dsm-border);
+  background: var(--dsm-surface);
+}
+
+.dsm-pie__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dsm-spacing-3) var(--dsm-spacing-7);
+  padding-block: var(--dsm-spacing-6);
+  font-size: var(--dsm-help-font-size);
+  line-height: var(--dsm-help-line-height);
+  color: var(--dsm-muted);
+}
+
+.dsm-pie__enlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--dsm-spacing-touch-min);
+  font-weight: 600;
+}
+
+/* Reserva 1 · Tipo de consulta (mockup Main). */
+.dsm-presentacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-2);
+  margin-bottom: var(--dsm-spacing-8);
+}
+
+.dsm-presentacion__titulo {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--dsm-ink);
+}
+
+.dsm-presentacion__lugar {
+  display: flex;
+  align-items: center;
+  gap: var(--dsm-spacing-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dsm-primary-strong);
+}
+
+.dsm-pregunta {
+  margin: var(--dsm-spacing-1) 0 0;
+  font-size: var(--dsm-question-font-size);
+  font-weight: var(--dsm-question-font-weight);
+  letter-spacing: var(--dsm-question-letter-spacing);
+  color: var(--dsm-ink);
+}
+
+.dsm-formulario-de-tipo {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsm-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  margin: var(--dsm-spacing-7) 0 var(--dsm-spacing-9);
+  padding: 0;
+  border: 0;
+}
+
+/* Tarjeta de opción: toda la tarjeta es el área táctil; la elegida, con borde vino y un anillo tinta. */
+.dsm-opcion {
+  display: flex;
+  gap: var(--dsm-spacing-6);
+  align-items: flex-start;
+  min-height: var(--dsm-spacing-touch-min);
+  padding: var(--dsm-spacing-7);
+  border-radius: var(--dsm-rounded-xl);
+  background: var(--dsm-surface);
+  border: 2px solid var(--dsm-border);
+  cursor: pointer;
+}
+
+.dsm-opcion:has(.dsm-opcion__control:checked) {
+  border-color: var(--dsm-primary);
+  outline: 4px solid var(--dsm-tint);
+}
+
+.dsm-opcion:has(.dsm-opcion__control:focus-visible) {
+  outline: 3px solid var(--dsm-primary);
+  outline-offset: 2px;
+}
+
+.dsm-opcion__control {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+  accent-color: var(--dsm-primary);
+}
+
+.dsm-opcion__texto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+}
+
+.dsm-opcion__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--dsm-spacing-3);
+}
+
+.dsm-opcion__nombre {
+  font-size: var(--dsm-input-font-size);
+  font-weight: 700;
+}
+
+.dsm-opcion__duracion {
+  font-size: var(--dsm-help-font-size);
+  font-weight: 600;
+  color: var(--dsm-muted);
+  white-space: nowrap;
+}
+
+.dsm-opcion__descripcion {
+  font-size: var(--dsm-body-small-font-size);
+  line-height: var(--dsm-body-small-line-height);
+  color: var(--dsm-muted);
+}
+
+/* Reserva 2 · Día y hora (mockup Horario). */
+.dsm-regreso {
+  display: flex;
+  align-items: center;
+  gap: var(--dsm-spacing-1);
+  margin: calc(-1 * var(--dsm-spacing-3)) 0 var(--dsm-spacing-3) calc(-1 * var(--dsm-spacing-3));
+}
+
+.dsm-regreso__enlace {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dsm-spacing-touch-min);
+  height: var(--dsm-spacing-touch-min);
+  border-radius: var(--dsm-rounded-md);
+  color: var(--dsm-ink);
+}
+
+.dsm-regreso__texto {
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 600;
+  color: var(--dsm-muted);
+}
+
+.dsm-mes {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--dsm-spacing-3);
+  margin-top: var(--dsm-spacing-9);
+  margin-bottom: var(--dsm-spacing-4);
+}
+
+.dsm-mes__nombre {
+  font-size: var(--dsm-body-font-size);
+  font-weight: 700;
+}
+
+.dsm-mes__hasta {
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+}
+
+/* Chips de día: la única fila con desplazamiento lateral; llega al borde de la pantalla en el teléfono. */
+.dsm-dias {
+  display: flex;
+  gap: var(--dsm-spacing-3);
+  margin: 0 calc(-1 * var(--dsm-spacing-margin-mobile));
+  padding: 0 var(--dsm-spacing-margin-mobile) var(--dsm-spacing-1);
+  overflow-x: auto;
+  list-style: none;
+}
+
+.dsm-dia {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 60px;
+  min-height: 78px;
+  border-radius: var(--dsm-rounded-lg);
+  background: var(--dsm-surface);
+  border: 1.5px solid var(--dsm-border);
+  color: var(--dsm-ink);
+  text-decoration: none;
+}
+
+a.dsm-dia:hover {
+  color: var(--dsm-ink);
+  border-color: var(--dsm-primary);
+}
+
+.dsm-dia[aria-current="true"],
+a.dsm-dia[aria-current="true"]:hover {
+  background: var(--dsm-primary);
+  border-color: var(--dsm-primary);
+  color: var(--dsm-on-primary);
+}
+
+.dsm-dia--lleno {
+  background: transparent;
+  border: 1.5px dashed var(--dsm-border-disabled);
+  color: var(--dsm-disabled);
+  cursor: not-allowed;
+}
+
+.dsm-dia__semana {
+  font-size: var(--dsm-eyebrow-font-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dsm-dia__numero {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.dsm-dia__mes {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dsm-dia__estado {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dsm-horas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  margin-top: 22px;
+}
+
+.dsm-horas__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--dsm-spacing-3);
+}
+
+.dsm-seccion {
+  margin: 0;
+  font-size: var(--dsm-section-font-size);
+  font-weight: var(--dsm-section-font-weight);
+}
+
+.dsm-horas__cuantas {
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+  white-space: nowrap;
+}
+
+.dsm-horas__rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--dsm-spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsm-hora {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border-radius: var(--dsm-rounded-md);
+  background: var(--dsm-surface);
+  border: 2px solid var(--dsm-border);
+  color: var(--dsm-ink);
+  font-size: var(--dsm-button-font-size);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dsm-hora:hover {
+  color: var(--dsm-ink);
+  border-color: var(--dsm-primary);
+}
+
+.dsm-hora[aria-current="true"],
+.dsm-hora[aria-current="true"]:hover {
+  background: var(--dsm-primary);
+  border-color: var(--dsm-primary);
+  color: var(--dsm-on-primary);
+  outline: 4px solid var(--dsm-tint);
+}
+
+.dsm-nota {
+  display: flex;
+  gap: var(--dsm-spacing-3);
+  align-items: flex-start;
+  font-size: var(--dsm-help-font-size);
+  line-height: var(--dsm-help-line-height);
+  color: var(--dsm-muted);
+}
+
+.dsm-nota svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Resumen de selección, al pie, sobre la acción "Continuar". */
+.dsm-resumen {
+  margin-top: var(--dsm-spacing-9);
+}
+
+.dsm-resumen__eleccion {
+  display: flex;
+  align-items: center;
+  gap: var(--dsm-spacing-4);
+  color: var(--dsm-primary);
+}
+
+.dsm-resumen__texto {
+  font-size: var(--dsm-body-font-size);
+  font-weight: 700;
+  color: var(--dsm-ink);
+}
+
+/* Aviso de privacidad. */
+.dsm-aviso-de-privacidad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-7);
+  max-width: 720px;
+  padding-block: var(--dsm-spacing-9);
+}
+
+.dsm-aviso-de-privacidad__version {
+  margin: 0;
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+}
