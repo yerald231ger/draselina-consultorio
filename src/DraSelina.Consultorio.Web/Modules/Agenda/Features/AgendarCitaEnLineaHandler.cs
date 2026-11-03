@@ -9,15 +9,20 @@ namespace DraSelina.Consultorio.Agenda.Features;
 
 /// <summary>
 /// Agenda una Cita en línea. Orquesta y no decide (T-13): pide el Paciente a Pacientes, que confirma en su propia
-/// transacción antes de la de Agenda (AD-28); abre la transacción de Agenda, crea la Cita con su Consentimiento por
-/// <see cref="Cita.Agendar"/> y la guarda bajo la restricción de exclusión (AD-8). Ni este handler ni sus puertos
-/// registran nombre, teléfono, correo ni motivo (AD-23).
+/// transacción antes de la de Agenda (AD-28); abre la transacción de Agenda, toma el candado de la fecha local
+/// (AD-26, RN-20) y solo después lee las reglas y la agenda de atención; arma <see cref="ReglasDeAgenda"/> con los
+/// tramos vigentes de esa fecha, crea la Cita con su Consentimiento por <see cref="Cita.Agendar"/>, que decide INV-C5,
+/// y la guarda bajo la restricción de exclusión (AD-8). Ni este handler ni sus puertos registran nombre, teléfono,
+/// correo ni motivo (AD-23).
 /// </summary>
 public sealed class AgendarCitaEnLineaHandler(
     ITiposDeVisita tiposDeVisita,
     IPacientesApi pacientes,
     IContenidoApi contenido,
     ITransaccionDeAgenda transaccion,
+    ICandadoDeFecha candado,
+    IReglasDeReserva reglasDeReserva,
+    IAgendaAtencion agendaAtencion,
     ICitas citas,
     IClock reloj) : ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>
 {
@@ -49,7 +54,16 @@ public sealed class AgendarCitaEnLineaHandler(
 
         await using var tx = await transaccion.AbrirAsync(cancellationToken);
 
-        var rechazo = Cita.Agendar(paciente.Valor, tipo, inicio, comando.Motivo!, consentimiento, ahora, out var cita);
+        // AD-26: la fila sobre la fecha local de la Cita va antes de leer los tramos vigentes; así una custom que se
+        // guarda en el mismo instante no deja pasar una Cita con los tramos de antes.
+        var fechaLocal = HoraLocal.DesdeUtc(inicio).Fecha;
+        await candado.TomarAsync(fechaLocal, cancellationToken);
+
+        var reserva = await reglasDeReserva.ObtenerAsync(cancellationToken);
+        var agenda = await agendaAtencion.ObtenerAsync(HoraLocal.DesdeUtc(ahora).Fecha, cancellationToken);
+        var reglas = ReglasDeAgenda.Crear(agenda.TramosVigentes(fechaLocal), reserva);
+
+        var rechazo = Cita.Agendar(paciente.Valor, tipo, inicio, comando.Motivo!, consentimiento, reglas, ahora, out var cita);
         if (rechazo is not null)
         {
             await tx.DeshacerAsync(cancellationToken);
@@ -80,6 +94,8 @@ public sealed class AgendarCitaEnLineaHandler(
     {
         RechazoAlAgendar.TipoNoReservable => CodigosDeAgenda.TipoNoReservable,
         RechazoAlAgendar.EnElPasado => CodigosDeAgenda.EnElPasado,
+        RechazoAlAgendar.FueraDeHorario => CodigosDeAgenda.FueraDeHorario,
+        RechazoAlAgendar.FueraDeVentana => CodigosDeAgenda.FueraDeVentana,
         _ => throw new ArgumentOutOfRangeException(nameof(rechazo), rechazo, "Rechazo sin código."),
     };
 

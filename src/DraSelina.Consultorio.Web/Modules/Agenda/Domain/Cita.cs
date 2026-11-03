@@ -47,31 +47,36 @@ public sealed class Cita
     public DateTimeOffset CreadaEn { get; private set; }
 
     /// <summary>
-    /// Agenda una Cita en línea: la crea el Paciente desde el sitio. Cumple INV-C1 a C4, C7, C9 a C11. Los tramos
-    /// vigentes, la rejilla y la ventana (INV-C5) y el tope semanal (RN-18) llegan después como parámetros nuevos de
-    /// este mismo método.
+    /// Agenda una Cita en línea: la crea el Paciente desde el sitio. Cumple INV-C1 a C5, C7, C9 a C11. La rejilla y la
+    /// ventana son las de <see cref="CalculadoraDeDisponibilidad"/> (T-21). El tope semanal (RN-18) llega después como
+    /// parámetro nuevo de este mismo método.
     /// </summary>
     /// <param name="paciente">El Paciente, ya reconocido o registrado por Pacientes.</param>
     /// <param name="tipo">El tipo de visita: fija la duración, y por lo tanto el fin (INV-C3).</param>
     /// <param name="inicio">El instante de inicio.</param>
     /// <param name="motivoDeConsulta">Obligatorio (INV-C11).</param>
     /// <param name="consentimiento">El Consentimiento dado en línea (INV-C9).</param>
+    /// <param name="reglas">Los tramos vigentes de la fecha local de <paramref name="inicio"/> y los valores de las
+    /// reglas de reserva (T-1).</param>
     /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
     /// <param name="cita">La Cita, si no hubo rechazo.</param>
     /// <returns>Nulo si se agendó; si no, por qué no.</returns>
-    /// <exception cref="ArgumentException">Si falta un dato que el llamador debía haber validado antes.</exception>
+    /// <exception cref="ArgumentException">Si falta un dato que el llamador debía haber validado antes, o si los
+    /// tramos vigentes no son de la fecha local de la Cita.</exception>
     public static RechazoAlAgendar? Agendar(
         PatientId paciente,
         TipoDeVisita tipo,
         DateTimeOffset inicio,
         string motivoDeConsulta,
         Consentimiento consentimiento,
+        ReglasDeAgenda reglas,
         DateTimeOffset now,
         out Cita? cita)
     {
         // INV-C1, C9, C11: datos que la validación de forma ya exigió. Faltar uno aquí es un error de programación.
         ArgumentNullException.ThrowIfNull(tipo);
         ArgumentNullException.ThrowIfNull(consentimiento);
+        ArgumentNullException.ThrowIfNull(reglas);
         ArgumentException.ThrowIfNullOrWhiteSpace(motivoDeConsulta);
         if (paciente == default || paciente.Valor == Guid.Empty)
         {
@@ -81,6 +86,15 @@ public sealed class Cita
         if (consentimiento.Canal != CanalDeConsentimiento.EnLinea)
         {
             throw new ArgumentException("Una Cita en línea lleva un Consentimiento dado en línea.", nameof(consentimiento));
+        }
+
+        // Los tramos vigentes son los de la fecha local de la Cita (AD-17); otros serían un error del llamador.
+        var (fecha, hora) = HoraLocal.DesdeUtc(inicio);
+        if (reglas.TramosVigentes.Fecha != fecha)
+        {
+            throw new ArgumentException(
+                $"Los tramos vigentes son del {reglas.TramosVigentes.Fecha:yyyy-MM-dd} y la Cita es del {fecha:yyyy-MM-dd}.",
+                nameof(reglas));
         }
 
         cita = null;
@@ -94,6 +108,18 @@ public sealed class Cita
         if (inicio <= now)
         {
             return RechazoAlAgendar.EnElPasado;
+        }
+
+        // INV-C5: dentro de la ventana de reserva, la misma que ofrece la calculadora (T-21).
+        if (!CalculadoraDeDisponibilidad.Ventana(reglas, now).Contiene(fecha))
+        {
+            return RechazoAlAgendar.FueraDeVentana;
+        }
+
+        // INV-C5: cabe completa en un tramo vigente y empieza en su rejilla, la misma de la calculadora (T-21).
+        if (!CalculadoraDeDisponibilidad.EstaEnLaRejilla(reglas.TramosVigentes, hora, tipo.Duracion))
+        {
+            return RechazoAlAgendar.FueraDeHorario;
         }
 
         cita = new Cita
@@ -121,4 +147,10 @@ public enum RechazoAlAgendar
 
     /// <summary>El inicio ya pasó (INV-C4).</summary>
     EnElPasado = 2,
+
+    /// <summary>No cabe completa en un tramo vigente de su fecha o no empieza en la rejilla (INV-C5).</summary>
+    FueraDeHorario = 3,
+
+    /// <summary>Cae antes de la anticipación mínima o después de la ventana de reserva (INV-C5).</summary>
+    FueraDeVentana = 4,
 }

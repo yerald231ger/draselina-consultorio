@@ -199,6 +199,8 @@ else
     {
         CodigosDeAgenda.HorarioOcupado => "Ese horario se acaba de ocupar. Vuelve a elegir otro horario; tus datos se conservan.",
         CodigosDeAgenda.EnElPasado => "Ese horario ya pasó. Vuelve a elegir otro horario.",
+        CodigosDeAgenda.FueraDeHorario or CodigosDeAgenda.FueraDeVentana =>
+            "Ese horario ya no está disponible. Vuelve a elegir otro horario.",
         CodigosDeAgenda.TipoNoReservable => "Ese tipo de consulta no se puede agendar en línea. Vuelve a elegir tu cita.",
         _ => "No pudimos agendar tu cita. Inténtalo de nuevo en un momento.",
     };

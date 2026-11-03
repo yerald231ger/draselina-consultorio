@@ -39,7 +39,11 @@ public sealed class Arnes : IAsyncLifetime
     {
         try
         {
-            _contenedor = new PostgreSqlBuilder(Imagen).WithDatabase(BaseDeDatos.Nombre).Build();
+            // Muchas pruebas crean su propia base y cada una deja conexiones en su pool: las 100 de fábrica no alcanzan.
+            _contenedor = new PostgreSqlBuilder(Imagen)
+                .WithDatabase(BaseDeDatos.Nombre)
+                .WithCommand("-c", "max_connections=400")
+                .Build();
             await _contenedor.StartAsync();
         }
         catch (Exception error)

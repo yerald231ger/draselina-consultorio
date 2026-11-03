@@ -72,9 +72,20 @@ public static class CalculadoraDeDisponibilidad
     public static VentanaDeReserva Ventana(ReglasDeReserva reglas, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(reglas);
+        return Ventana(reglas.AnticipacionMinimaDias, reglas.VentanaMeses, now);
+    }
 
+    /// <summary>La misma ventana de reserva, con los valores que trae la Cita en sus <see cref="ReglasDeAgenda"/> (INV-C5).</summary>
+    public static VentanaDeReserva Ventana(ReglasDeAgenda reglas, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(reglas);
+        return Ventana(reglas.AnticipacionMinimaDias, reglas.VentanaMeses, now);
+    }
+
+    private static VentanaDeReserva Ventana(int anticipacionMinimaDias, int ventanaMeses, DateTimeOffset now)
+    {
         var hoy = HoraLocal.DesdeUtc(now).Fecha;
-        return new VentanaDeReserva(hoy.AddDays(reglas.AnticipacionMinimaDias), hoy.AddMonths(reglas.VentanaMeses));
+        return new VentanaDeReserva(hoy.AddDays(anticipacionMinimaDias), hoy.AddMonths(ventanaMeses));
     }
 
     /// <summary>
@@ -124,6 +135,9 @@ public sealed record DisponibilidadDelDia(DateOnly Fecha, IReadOnlyList<HorarioL
 /// <param name="UltimaFecha">Hoy más la ventana en meses.</param>
 public sealed record VentanaDeReserva(DateOnly PrimeraFecha, DateOnly UltimaFecha)
 {
+    /// <summary>Si la fecha local cae dentro de la ventana, las dos puntas inclusive.</summary>
+    public bool Contiene(DateOnly fecha) => PrimeraFecha <= fecha && fecha <= UltimaFecha;
+
     /// <summary>Los instantes UTC que cubren la ventana: desde el inicio de la primera fecha hasta el de la siguiente a la última.</summary>
     public (DateTimeOffset Desde, DateTimeOffset Hasta) EnUtc() =>
         (HoraLocal.AUtc(PrimeraFecha, TimeOnly.MinValue), HoraLocal.AUtc(UltimaFecha.AddDays(1), TimeOnly.MinValue));

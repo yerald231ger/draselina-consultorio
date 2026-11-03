@@ -116,6 +116,24 @@ public sealed partial class TusDatosTests(Arnes arnes)
     }
 
     [Theory]
+    [InlineData("2026-11-03", "15:45")]
+    [InlineData("2026-11-02", "16:00")]
+    public async Task Un_horario_fuera_de_la_rejilla_o_de_la_ventana_muestra_el_aviso_sin_error_tecnico(string fecha, string hora)
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+        var ruta = $"/reservar/datos?tipo={TiposDeVisitaSembrados.PrimeraConsulta}&fecha={fecha}&hora={hora}";
+
+        var (_, html) = await EnviarAsync(cliente, ruta, Datos());
+
+        Assert.Contains("Ese horario ya no está disponible. Vuelve a elegir otro horario.", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Tu cita está confirmada", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("agenda.fuera_de", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Exception", html, StringComparison.Ordinal);
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Theory]
     [InlineData("/reservar/datos")]
     [InlineData("/reservar/datos?tipo=no-es-un-id&fecha=2026-11-03&hora=16:00")]
     [InlineData("/reservar/datos?tipo=01a19e61-08c5-7c92-a7e1-3b97e6858869&fecha=3-11-2026&hora=16:00")]

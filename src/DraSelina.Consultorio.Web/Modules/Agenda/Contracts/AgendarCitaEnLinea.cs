@@ -83,4 +83,10 @@ public static class CodigosDeAgenda
 
     /// <summary>El horario ya pasó (INV-C4).</summary>
     public const string EnElPasado = "agenda.en_el_pasado";
+
+    /// <summary>No cabe en un tramo vigente de su fecha o no empieza en la rejilla (INV-C5).</summary>
+    public const string FueraDeHorario = "agenda.fuera_de_horario";
+
+    /// <summary>Antes de la anticipación mínima o después de la ventana de reserva (INV-C5).</summary>
+    public const string FueraDeVentana = "agenda.fuera_de_ventana";
 }

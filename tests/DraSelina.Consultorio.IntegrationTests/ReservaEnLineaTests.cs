@@ -1,4 +1,5 @@
 using DraSelina.Consultorio.Agenda.Contracts;
+using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
@@ -20,8 +21,11 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
     /// <summary>Lunes 2 de noviembre de 2026, 12:00 en Ciudad de México.</summary>
     public static readonly DateTimeOffset Ahora = new(2026, 11, 2, 18, 0, 0, TimeSpan.Zero);
 
-    /// <summary>Mañana, en hora local.</summary>
+    /// <summary>Mañana, en hora local: martes.</summary>
     public static readonly DateOnly Manana = new(2026, 11, 3);
+
+    /// <summary>La primera parte de la llave del candado por fecha de Agenda (<c>CandadoDeFecha</c>): "AGFE" en ASCII.</summary>
+    private const int ClaseDeCandadoDeFecha = 0x41474645;
 
     private static CancellationToken Cancelacion => TestContext.Current.CancellationToken;
 
@@ -150,18 +154,29 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
     public async Task Una_Cita_traslapada_vuelve_como_horario_ocupado_y_no_se_crea()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
-        var otra = Comando(hora: new TimeOnly(16, 15));
-        otra.Nombre = "Mariana López";
 
-        Assert.True((await escenario.AgendarAsync(Comando())).EsExito);
-        var resultado = await escenario.AgendarAsync(otra);
+        // Una Cita del consultorio fuera de la rejilla, de 15:45 a 16:15, traslapa la de las 16:00.
+        await escenario.InsertarCitaDelConsultorioAsync(Manana, new TimeOnly(15, 45), new TimeOnly(16, 15));
+        var resultado = await escenario.AgendarAsync(Comando());
 
         Assert.Equal(FormaDeResultado.Fallo, resultado.Forma);
         Assert.Equal(CodigosDeAgenda.HorarioOcupado, resultado.Codigo);
-        Assert.Single(await escenario.CitasAsync());
+        Assert.Equal("consultorio", Assert.Single(await escenario.CitasAsync()).Origen);
 
         // El Paciente sí queda: confirma antes que la Cita (AD-28, RN-28).
-        Assert.Equal(2, (await escenario.PacientesAsync()).Count);
+        Assert.Single(await escenario.PacientesAsync());
+    }
+
+    [Fact]
+    public async Task Una_Cita_en_linea_contigua_a_una_del_consultorio_fuera_de_la_rejilla_no_choca()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.InsertarCitaDelConsultorioAsync(Manana, new TimeOnly(15, 30), new TimeOnly(16, 0));
+
+        var resultado = await escenario.AgendarAsync(Comando());
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        Assert.Equal(2, (await escenario.CitasAsync()).Count);
     }
 
     [Fact]
@@ -187,6 +202,145 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
 
         Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
         Assert.Equal(2, (await escenario.CitasAsync()).Count);
+    }
+
+    // INV-C5 con la base sembrada (lunes a viernes, 15:30 a 18:00) y el reloj en el lunes 2 a las 12:00.
+
+    [Theory]
+    [InlineData("2026-11-03", "15:45")]
+    [InlineData("2026-11-03", "17:45")]
+    [InlineData("2026-11-03", "15:00")]
+    [InlineData("2026-11-07", "16:00")]
+    public async Task Fuera_de_la_rejilla_o_de_los_tramos_vuelve_como_fuera_de_horario_y_no_crea_Cita(string fecha, string hora)
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        var resultado = await escenario.AgendarAsync(Comando(DateOnly.Parse(fecha), TimeOnly.Parse(hora)));
+
+        Assert.Equal(FormaDeResultado.Fallo, resultado.Forma);
+        Assert.Equal(CodigosDeAgenda.FueraDeHorario, resultado.Codigo);
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Un_dia_con_custom_que_no_se_atiende_vuelve_como_fuera_de_horario()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await escenario.InsertarCustomAsync(Manana, "cirugía");
+
+        var resultado = await escenario.AgendarAsync(Comando());
+
+        Assert.Equal(CodigosDeAgenda.FueraDeHorario, resultado.Codigo);
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Una_custom_que_abre_un_sabado_deja_reservar_en_su_rejilla()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var sabado = new DateOnly(2026, 11, 7);
+        await escenario.InsertarCustomAsync(sabado, "sábado abierto", (new TimeOnly(10, 0), new TimeOnly(11, 0)));
+
+        var resultado = await escenario.AgendarAsync(Comando(sabado, new TimeOnly(10, 30)));
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        Assert.Equal(HoraLocal.AUtc(sabado, new TimeOnly(10, 30)), Assert.Single(await escenario.CitasAsync()).Inicio);
+    }
+
+    [Fact]
+    public async Task Hoy_con_anticipacion_de_un_dia_vuelve_como_fuera_de_ventana()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        // Hoy lunes a las 16:00: futuro y en la rejilla, pero antes de mañana.
+        var resultado = await escenario.AgendarAsync(Comando(new DateOnly(2026, 11, 2), new TimeOnly(16, 0)));
+
+        Assert.Equal(FormaDeResultado.Fallo, resultado.Forma);
+        Assert.Equal(CodigosDeAgenda.FueraDeVentana, resultado.Codigo);
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Un_dia_despues_de_la_ventana_vuelve_como_fuera_de_ventana()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        // Hoy + 2 meses + 1 día: domingo 3 de enero de 2027, abierto por una custom para que solo falle la ventana.
+        var domingo = new DateOnly(2027, 1, 3);
+        await escenario.InsertarCustomAsync(domingo, "domingo abierto", (new TimeOnly(10, 0), new TimeOnly(11, 0)));
+
+        var resultado = await escenario.AgendarAsync(Comando(domingo, new TimeOnly(10, 0)));
+
+        Assert.Equal(CodigosDeAgenda.FueraDeVentana, resultado.Codigo);
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task El_ultimo_dia_de_la_ventana_se_reserva()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        // Hoy + 2 meses: sábado 2 de enero de 2027, abierto por una custom.
+        var sabado = new DateOnly(2027, 1, 2);
+        await escenario.InsertarCustomAsync(sabado, "sábado abierto", (new TimeOnly(10, 0), new TimeOnly(11, 0)));
+
+        var resultado = await escenario.AgendarAsync(Comando(sabado, new TimeOnly(10, 30)));
+
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        Assert.Single(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Dos_reservas_simultaneas_del_mismo_horario_dan_una_Cita_y_la_otra_horario_ocupado()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var otra = Comando();
+        otra.Nombre = "Mariana López";
+
+        var resultados = await Task.WhenAll(escenario.AgendarAsync(Comando()), escenario.AgendarAsync(otra));
+
+        Assert.Single(resultados, r => r.EsExito);
+        var fallo = Assert.Single(resultados, r => !r.EsExito);
+        Assert.Equal(FormaDeResultado.Fallo, fallo.Forma);
+        Assert.Equal(CodigosDeAgenda.HorarioOcupado, fallo.Codigo);
+        Assert.Single(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task La_reserva_espera_el_candado_de_su_fecha_y_lee_los_tramos_despues_de_tomarlo()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        // Otra transacción toma el candado de mañana y, sin confirmar, cierra el día con una custom sin tramos.
+        await using var conexion = new NpgsqlConnection(escenario.Cadena);
+        await conexion.OpenAsync(Cancelacion);
+        await using var otra = await conexion.BeginTransactionAsync(Cancelacion);
+        await using (var candado = new NpgsqlCommand(
+            $"select pg_advisory_xact_lock({ClaseDeCandadoDeFecha}, {Manana.DayNumber})", conexion, otra))
+        {
+            await candado.ExecuteNonQueryAsync(Cancelacion);
+        }
+
+        await using (var custom = new NpgsqlCommand(
+            $"insert into agenda.agenda_custom (fecha, motivo, creada_en, actualizada_en) values ('{Manana:yyyy-MM-dd}', 'cirugía', now(), now())",
+            conexion,
+            otra))
+        {
+            await custom.ExecuteNonQueryAsync(Cancelacion);
+        }
+
+        var reserva = escenario.AgendarAsync(Comando());
+
+        // Mientras la otra no termina, la reserva hace fila.
+        await Task.Delay(TimeSpan.FromMilliseconds(500), Cancelacion);
+        Assert.False(reserva.IsCompleted);
+
+        await otra.CommitAsync(Cancelacion);
+        var resultado = await reserva;
+
+        // Leyó los tramos después del candado: ve el día cerrado, no la base de antes.
+        Assert.Equal(CodigosDeAgenda.FueraDeHorario, resultado.Codigo);
+        Assert.Empty(await escenario.CitasAsync());
     }
 
     [Theory]
@@ -395,6 +549,32 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
             await conexion.OpenAsync(Cancelacion);
             await using var comando = new NpgsqlCommand(sql, conexion);
             await comando.ExecuteNonQueryAsync(Cancelacion);
+        }
+
+        /// <summary>
+        /// Una Cita del consultorio escrita directo en la base, de <paramref name="inicio"/> a <paramref name="fin"/>
+        /// en hora local: puede quedar fuera de la rejilla, que no la valida (AD-7, RN-13).
+        /// </summary>
+        public Task InsertarCitaDelConsultorioAsync(DateOnly fecha, TimeOnly inicio, TimeOnly fin) =>
+            EjecutarAsync(
+                $"""
+                insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, origen, nota,
+                    consentimiento_en, consentimiento_version_aviso, consentimiento_canal, creada_en)
+                values (gen_random_uuid(), gen_random_uuid(), '{TiposDeVisitaSembrados.PrimeraConsulta}',
+                    '{HoraLocal.AUtc(fecha, inicio):O}', '{HoraLocal.AUtc(fecha, fin):O}', 'Agendada', 'consultorio',
+                    'Pidió por WhatsApp', now(), '2026-11-borrador', 'externo', now())
+                """);
+
+        /// <summary>Una agenda custom escrita directo en la base; sin tramos, ese día no se atiende.</summary>
+        public async Task InsertarCustomAsync(DateOnly fecha, string motivo, params (TimeOnly Inicio, TimeOnly Fin)[] tramos)
+        {
+            await EjecutarAsync(
+                $"insert into agenda.agenda_custom (fecha, motivo, creada_en, actualizada_en) values ('{fecha:yyyy-MM-dd}', '{motivo}', now(), now())");
+            foreach (var (inicio, fin) in tramos)
+            {
+                await EjecutarAsync(
+                    $"insert into agenda.agenda_custom_tramo (id, fecha, inicio, fin) values (gen_random_uuid(), '{fecha:yyyy-MM-dd}', '{inicio:HH:mm}', '{fin:HH:mm}')");
+            }
         }
 
         public ValueTask DisposeAsync() => Web.DisposeAsync();
