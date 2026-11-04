@@ -16,9 +16,12 @@
     días van como <details> para no pintar todas las horas abiertas.
     Solo se muestran el día del horario perdido y los 6 siguientes de la ventana (Gerardo, 2026-11-03); para otros
     días, un enlace a Día y hora, donde los datos se escriben de nuevo (no viajan en la dirección).
+
+    En escritorio (ticket 12) los días van a la izquierda y el panel "Tu cita" a la derecha, con la consulta, "Elige
+    otro horario" y el lugar. En el teléfono no cambia nada.
 *@
 
-<section class="dsm-contenedor dsm-reserva dsm-horario">
+<section class="dsm-contenedor dsm-reserva dsm-reserva--ancha dsm-horario">
     <div class="dsm-paso" aria-label="Paso 2 de 3">
         <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
         <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
@@ -31,86 +34,109 @@
         <p class="dsm-aviso__mensaje">@Aviso</p>
     </div>
 
-    <form method="post" @formname="@NombreDelFormulario" @onsubmit="AlElegir">
-        <AntiforgeryToken />
-        <input type="hidden" name="@CampoDeEleccion" value="true" />
-        <input type="hidden" name="Comando.SolicitudId" value="@Datos.SolicitudId" />
-        @* El instante en que se pintó Tus datos la primera vez: al volver, la verificación anti-bots lo mide desde ahí. *@
-        <input type="hidden" name="@VerificacionAntiBots.CampoDePintado" value="@Pintado" />
-        <input type="hidden" name="Comando.Nombre" value="@Datos.Nombre" />
-        <input type="hidden" name="Comando.Telefono" value="@Datos.Telefono" />
-        @if (Datos.Correo is { } correo)
-        {
-            <input type="hidden" name="Comando.Correo" value="@correo" />
-        }
-        <input type="hidden" name="Comando.Motivo" value="@Datos.Motivo" />
-        @if (Datos.Consentimiento)
-        {
-            <input type="hidden" name="Comando.Consentimiento" value="true" />
-        }
+    <div class="dsm-reserva__columnas dsm-reserva__columnas--tomado">
+        <form method="post" class="dsm-reserva__principal" @formname="@NombreDelFormulario" @onsubmit="AlElegir">
+            <AntiforgeryToken />
+            <input type="hidden" name="@CampoDeEleccion" value="true" />
+            <input type="hidden" name="Comando.SolicitudId" value="@Datos.SolicitudId" />
+            @* El instante en que se pintó Tus datos la primera vez: al volver, la verificación anti-bots lo mide desde ahí. *@
+            <input type="hidden" name="@VerificacionAntiBots.CampoDePintado" value="@Pintado" />
+            <input type="hidden" name="Comando.Nombre" value="@Datos.Nombre" />
+            <input type="hidden" name="Comando.Telefono" value="@Datos.Telefono" />
+            @if (Datos.Correo is { } correo)
+            {
+                <input type="hidden" name="Comando.Correo" value="@correo" />
+            }
+            <input type="hidden" name="Comando.Motivo" value="@Datos.Motivo" />
+            @if (Datos.Consentimiento)
+            {
+                <input type="hidden" name="Comando.Consentimiento" value="true" />
+            }
 
-        @if (!Dias.Any(d => d.Horas.Count > 0))
-        {
-            <div class="dsm-aviso" role="status">
-                <p class="dsm-aviso__mensaje">
-                    Por ahora no hay horarios libres para agendar en línea. <MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" />
-                </p>
-            </div>
-        }
-        else
-        {
-            var mostrados = Mostrados();
-            var primero = mostrados.FirstOrDefault(d => d.Horas.Count > 0)?.Fecha;
-            <ul class="dsm-otros-dias" aria-label="Días">
-                @foreach (var dia in mostrados)
-                {
-                    <li>
-                        @if (dia.Horas.Count == 0)
-                        {
-                            <div class="dsm-otro-dia dsm-otro-dia--lleno">
-                                <span class="dsm-otro-dia__fecha">@FormatoDeCita.Largo(dia.Fecha)</span>
-                                <span class="dsm-otro-dia__estado">Lleno</span>
-                            </div>
-                        }
-                        else
-                        {
-                            <details class="dsm-otro-dia" open="@(dia.Fecha == primero)">
-                                <summary class="dsm-otro-dia__cabeza">
+            @if (!Dias.Any(d => d.Horas.Count > 0))
+            {
+                <div class="dsm-aviso" role="status">
+                    <p class="dsm-aviso__mensaje">
+                        Por ahora no hay horarios libres para agendar en línea. <MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" />
+                    </p>
+                </div>
+            }
+            else
+            {
+                var mostrados = Mostrados();
+                var primero = mostrados.FirstOrDefault(d => d.Horas.Count > 0)?.Fecha;
+                <ul class="dsm-otros-dias" aria-label="Días">
+                    @foreach (var dia in mostrados)
+                    {
+                        <li>
+                            @if (dia.Horas.Count == 0)
+                            {
+                                <div class="dsm-otro-dia dsm-otro-dia--lleno">
                                     <span class="dsm-otro-dia__fecha">@FormatoDeCita.Largo(dia.Fecha)</span>
-                                    <span class="dsm-otro-dia__estado">@Libres(dia.Horas.Count)</span>
-                                </summary>
-                                <ul class="dsm-horas__rejilla" aria-label="@($"Horas del {FormatoDeCita.Largo(dia.Fecha)}")">
-                                    @foreach (var hora in dia.Horas)
-                                    {
-                                        <li>
-                                            <button type="submit" class="dsm-hora" formaction="@RutaDeDatos(Tipo, dia.Fecha, hora)"
-                                                    aria-label="@($"{FormatoDeCita.Largo(dia.Fecha)}, {FormatoDeCita.Hora(hora)}")">
-                                                @FormatoDeCita.Hora(hora)
-                                            </button>
-                                        </li>
-                                    }
-                                </ul>
-                            </details>
-                        }
-                    </li>
+                                    <span class="dsm-otro-dia__estado">Lleno</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <details class="dsm-otro-dia" open="@(dia.Fecha == primero)">
+                                    <summary class="dsm-otro-dia__cabeza">
+                                        <span class="dsm-otro-dia__fecha">@FormatoDeCita.Largo(dia.Fecha)</span>
+                                        <span class="dsm-otro-dia__estado">@Libres(dia.Horas.Count)</span>
+                                    </summary>
+                                    <ul class="dsm-horas__rejilla" aria-label="@($"Horas del {FormatoDeCita.Largo(dia.Fecha)}")">
+                                        @foreach (var hora in dia.Horas)
+                                        {
+                                            <li>
+                                                <button type="submit" class="dsm-hora" formaction="@RutaDeDatos(Tipo, dia.Fecha, hora)"
+                                                        aria-label="@($"{FormatoDeCita.Largo(dia.Fecha)}, {FormatoDeCita.Hora(hora)}")">
+                                                    @FormatoDeCita.Hora(hora)
+                                                </button>
+                                            </li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+                        </li>
+                    }
+                </ul>
+
+                <div class="dsm-nota dsm-otros-dias__nota">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 8h.01M11 12h1v4h1"></path>
+                    </svg>
+                    <span>Solo ves horarios libres. Hora del centro de México. Al elegir uno, revisas tus datos y confirmas.</span>
+                </div>
+
+                <p class="dsm-otros-dias__mas">
+                    <a href="@RutaDeDiaYHora(Tipo)" class="dsm-enlace-fuerte">Ver otros días</a>
+                    <span class="dsm-otros-dias__nota-mas">Ahí tendrás que escribir tus datos de nuevo.</span>
+                </p>
+            }
+        </form>
+
+        <aside class="dsm-tu-cita dsm-solo-escritorio" aria-labelledby="tu-cita">
+            <h2 id="tu-cita" class="dsm-seccion">Tu cita</h2>
+            <dl class="dsm-tu-cita__datos">
+                @if (Consulta is { } consulta)
+                {
+                    <div>
+                        <dt>Consulta</dt>
+                        <dd>@consulta.Nombre · @consulta.DuracionMin min</dd>
+                    </div>
                 }
-            </ul>
-
-            <div class="dsm-nota dsm-otros-dias__nota">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M12 8h.01M11 12h1v4h1"></path>
-                </svg>
-                <span>Solo ves horarios libres. Hora del centro de México. Al elegir uno, revisas tus datos y confirmas.</span>
-            </div>
-
-            <p class="dsm-otros-dias__mas">
-                <a href="@RutaDeDiaYHora(Tipo)" class="dsm-enlace-fuerte">Ver otros días</a>
-                <span class="dsm-otros-dias__nota-mas">Ahí tendrás que escribir tus datos de nuevo.</span>
-            </p>
-        }
-    </form>
+                <div>
+                    <dt>Fecha y hora</dt>
+                    <dd>Elige otro horario</dd>
+                </div>
+                <div>
+                    <dt>Lugar</dt>
+                    <dd>@Contenido.DatosDelConsultorio.Lugar</dd>
+                </div>
+            </dl>
+        </aside>
+    </div>
 </section>
 
 @code {
@@ -126,6 +152,10 @@
     /// <summary>El tipo de la Cita: las horas que se ofrecen son de este tipo.</summary>
     [Parameter, EditorRequired]
     public TipoDeVisitaId Tipo { get; set; }
+
+    /// <summary>El tipo como lo ve el Paciente, para el panel "Tu cita" de escritorio; sin él, el panel no lo nombra.</summary>
+    [Parameter]
+    public TipoDeVisitaReservable? Consulta { get; set; }
 
     /// <summary>La fecha del horario que se ocupó: desde ella se muestran los días.</summary>
     [Parameter, EditorRequired]

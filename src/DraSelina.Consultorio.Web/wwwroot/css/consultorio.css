@@ -1133,3 +1133,423 @@ button.dsm-hora {
   height: 1px;
   overflow: hidden;
 }
+
+/*
+ * Reserva en escritorio (mockups WebReserva, WebDatos y WebConfirmada; ticket 12). Las mismas páginas: desde 992 px
+ * se acomodan en columnas con el panel "Tu cita"; por debajo, el teléfono queda como estaba. Lo que solo es de un
+ * ancho lleva dsm-solo-movil o dsm-solo-escritorio.
+ */
+@media (max-width: 991.98px) {
+  .dsm-solo-escritorio {
+    display: none !important;
+  }
+
+  /* En el teléfono, Día y hora sigue siendo una sola columna: las envolturas no cuentan. */
+  .dsm-reserva__columnas--horario,
+  .dsm-reserva__columnas--horario > .dsm-reserva__principal {
+    display: contents;
+  }
+}
+
+@media (min-width: 992px) {
+  .dsm-solo-movil {
+    display: none !important;
+  }
+
+  .dsm-reserva--ancha {
+    max-width: var(--dsm-spacing-container-max);
+    padding-block: 32px 48px;
+  }
+
+  .dsm-reserva__columnas {
+    display: grid;
+    gap: 24px;
+    align-items: start;
+    margin-top: 24px;
+  }
+
+  .dsm-reserva__columnas--horario {
+    grid-template-columns: 240px minmax(0, 1fr) 300px;
+  }
+
+  .dsm-reserva__columnas--datos,
+  .dsm-reserva__columnas--tomado {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  /* Paneles blancos: tipos, Día y hora, el formulario y "Tu cita". */
+  .dsm-panel,
+  .dsm-reserva__columnas--horario > .dsm-reserva__principal,
+  .dsm-reserva__columnas--datos > .dsm-reserva__principal,
+  .dsm-reserva__columnas--tomado > .dsm-reserva__principal,
+  .dsm-reserva__columnas .dsm-tu-cita {
+    padding: 24px;
+    border-radius: var(--dsm-rounded-3xl);
+    background: var(--dsm-surface);
+    border: 1px solid var(--dsm-border);
+  }
+
+  .dsm-reserva__columnas--datos > .dsm-reserva__principal {
+    padding: 28px;
+  }
+
+  .dsm-reserva__columnas--tomado .dsm-otros-dias {
+    margin-top: 0;
+  }
+
+  /* Día y hora: el calendario y, al lado, las horas del día elegido. */
+  .dsm-reserva__columnas--horario > .dsm-reserva__principal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px;
+    grid-template-areas:
+      "cabeza cabeza"
+      "calendario horas";
+    gap: 16px 28px;
+    align-items: start;
+  }
+
+  .dsm-dia-y-hora__cabeza {
+    grid-area: cabeza;
+  }
+
+  .dsm-calendario {
+    grid-area: calendario;
+  }
+
+  .dsm-reserva__columnas--horario .dsm-horas {
+    grid-area: horas;
+    margin-top: 0;
+  }
+
+  .dsm-reserva__columnas--horario .dsm-horas__cabeza {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dsm-reserva__columnas--horario .dsm-horas__rejilla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* El panel "Tu cita": a la derecha, sigue a la vista al bajar. */
+  .dsm-reserva__columnas .dsm-tu-cita {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--dsm-spacing-7);
+    margin-top: 0;
+  }
+
+  .dsm-tu-cita .dsm-accion-principal {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .dsm-tu-cita .dsm-barra-de-accion {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .dsm-tu-cita .dsm-barra-de-accion__nota {
+    text-align: left;
+  }
+
+  /* Cita confirmada: la Cita a un lado, "Guarda este enlace" al otro. */
+  .dsm-confirmada {
+    max-width: 960px;
+    padding-block: 48px;
+  }
+
+  .dsm-confirmada__columnas {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+}
+
+.dsm-tu-cita__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--dsm-spacing-3);
+}
+
+.dsm-tu-cita__cambiar,
+.dsm-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dsm-spacing-2);
+  min-height: var(--dsm-spacing-touch-min);
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dsm-volver {
+  align-self: flex-start;
+  margin-bottom: var(--dsm-spacing-3);
+}
+
+.dsm-tu-cita__datos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+}
+
+.dsm-tu-cita__datos > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dsm-tu-cita__datos dt {
+  font-weight: 400;
+  color: var(--dsm-muted);
+}
+
+.dsm-tu-cita__datos dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Tipos de consulta de Día y hora en escritorio: enlaces con forma de tarjeta; el elegido, como la tarjeta de opción. */
+.dsm-tipos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-7);
+}
+
+.dsm-tipos__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsm-tipo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+  min-height: var(--dsm-spacing-touch-min);
+  padding: var(--dsm-spacing-7);
+  border-radius: var(--dsm-rounded-lg);
+  border: 2px solid var(--dsm-border);
+  color: var(--dsm-ink);
+  text-decoration: none;
+}
+
+.dsm-tipo:hover {
+  color: var(--dsm-ink);
+  border-color: var(--dsm-primary);
+}
+
+.dsm-tipo[aria-current="true"] {
+  border-color: var(--dsm-primary);
+  outline: 4px solid var(--dsm-tint);
+}
+
+.dsm-tipo__nombre {
+  font-size: var(--dsm-input-font-size);
+  font-weight: 700;
+}
+
+.dsm-tipo__duracion {
+  font-size: var(--dsm-help-font-size);
+  font-weight: 600;
+  color: var(--dsm-muted);
+}
+
+/* Calendario de Día y hora en escritorio: tabla de lunes a domingo. */
+.dsm-dia-y-hora__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--dsm-spacing-3);
+}
+
+.dsm-dia-y-hora__nota {
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-calendario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  min-width: 0;
+}
+
+.dsm-calendario__mes {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--dsm-spacing-3);
+}
+
+.dsm-calendario__nombre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: var(--dsm-input-font-size);
+  font-weight: 700;
+}
+
+.dsm-calendario__hasta {
+  font-size: var(--dsm-help-font-size);
+  font-weight: 400;
+  color: var(--dsm-muted);
+}
+
+.dsm-calendario__vecino {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dsm-spacing-touch-min);
+  height: var(--dsm-spacing-touch-min);
+  border-radius: var(--dsm-rounded-md);
+  border: 1.5px solid var(--dsm-border);
+  background: var(--dsm-surface);
+  color: var(--dsm-ink);
+}
+
+a.dsm-calendario__vecino:hover {
+  color: var(--dsm-ink);
+  border-color: var(--dsm-primary);
+}
+
+.dsm-calendario__vecino--sin-mes {
+  border-color: var(--dsm-divider);
+  color: var(--dsm-past-day);
+}
+
+.dsm-calendario__tabla {
+  width: calc(100% + 12px);
+  margin: -6px;
+  border-collapse: separate;
+  border-spacing: 6px;
+  table-layout: fixed;
+}
+
+.dsm-calendario__tabla th {
+  padding: 0;
+  font-size: var(--dsm-eyebrow-font-size);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--dsm-muted);
+}
+
+.dsm-calendario__tabla abbr {
+  text-decoration: none;
+  cursor: default;
+}
+
+.dsm-calendario__tabla td {
+  padding: 0;
+}
+
+.dsm-calendario__dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 52px;
+  border-radius: var(--dsm-rounded-md);
+  border: 1.5px solid transparent;
+  text-decoration: none;
+}
+
+.dsm-calendario__numero {
+  font-size: var(--dsm-body-font-size);
+  font-weight: 700;
+}
+
+a.dsm-calendario__dia {
+  border-color: var(--dsm-border);
+  background: var(--dsm-surface);
+  color: var(--dsm-ink);
+}
+
+a.dsm-calendario__dia:hover {
+  color: var(--dsm-ink);
+  border-color: var(--dsm-primary);
+}
+
+a.dsm-calendario__dia[aria-current="true"],
+a.dsm-calendario__dia[aria-current="true"]:hover {
+  border-color: var(--dsm-primary);
+  background: var(--dsm-primary);
+  color: var(--dsm-on-primary);
+}
+
+a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
+  background: var(--dsm-on-primary);
+}
+
+.dsm-calendario__dia--lleno {
+  border: 1.5px dashed var(--dsm-border-disabled);
+  color: var(--dsm-disabled);
+  cursor: not-allowed;
+}
+
+.dsm-calendario__dia--elegido {
+  border-color: var(--dsm-primary);
+}
+
+.dsm-calendario__dia--no-disponible {
+  color: var(--dsm-past-day);
+}
+
+.dsm-calendario__estado {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dsm-calendario__punto {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--dsm-rounded-full);
+  background: var(--dsm-primary);
+}
+
+.dsm-calendario__punto--vacio {
+  background: transparent;
+  border: 1.5px solid var(--dsm-disabled);
+}
+
+.dsm-calendario__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dsm-spacing-7);
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-calendario__clave {
+  display: flex;
+  align-items: center;
+  gap: var(--dsm-spacing-2);
+}
+
+.dsm-calendario__clave .dsm-calendario__punto {
+  width: 8px;
+  height: 8px;
+}
+
+.dsm-horas__sin-horarios {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  line-height: var(--dsm-body-line-height);
+  color: var(--dsm-muted);
+}

@@ -12,6 +12,10 @@
     las reglas de reserva. Con correo no hay todavía frase del correo ni del recordatorio: nada se envía hasta la
     épica 4. Con o sin correo lo dice Pacientes (el Paciente puede tener uno guardado de antes). Sin correo, la frase de "sin correo" y el panel del enlace sube antes de la tarjeta (EXPERIENCE.md,
     "Confirmada, sin correo").
+
+    En escritorio (mockup WebConfirmada, ticket 12) dos columnas: la Cita con el lugar y "Agregar a mi calendario" a un
+    lado, "Guarda este enlace" al otro, en el mismo orden que en el teléfono. Sin "Copiar" ni "Abrir en el mapa"
+    (Contenido no tiene enlace de mapa todavía).
 *@
 
 <section class="dsm-contenedor dsm-confirmada" aria-labelledby="cita-confirmada">
@@ -29,43 +33,47 @@
         }
     </div>
 
-    @if (!Cita.ConCorreo)
-    {
-        @Enlace
-    }
+    <div class="dsm-confirmada__columnas">
+        @if (!Cita.ConCorreo)
+        {
+            @Enlace
+        }
 
-    <div class="dsm-tarjeta">
-        <div class="dsm-tarjeta__seccion dsm-confirmada__cuando">
-            <div class="dsm-confirmada__dia">@FormatoDeCita.Dia(Cita.Fecha)</div>
-            <div class="dsm-confirmada__fecha">@FormatoDeCita.FechaYHora(Cita.Fecha, Cita.Hora)</div>
-            <div class="dsm-confirmada__tipo">@Cita.TipoDeVisita · @Cita.DuracionMin min · Dra. Selina Medina Castillo</div>
-        </div>
-        <div class="dsm-tarjeta__seccion dsm-lugar">
-            <svg class="dsm-lugar__icono" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path>
-                <circle cx="12" cy="9.5" r="2.5"></circle>
-            </svg>
-            <div class="dsm-lugar__texto">
-                <div class="dsm-lugar__nombre">@Cita.Lugar</div>
-                <div class="dsm-lugar__direccion">@Cita.Direccion</div>
+        <div class="dsm-confirmada__cita">
+            <div class="dsm-tarjeta">
+                <div class="dsm-tarjeta__seccion dsm-confirmada__cuando">
+                    <div class="dsm-confirmada__dia">@FormatoDeCita.Dia(Cita.Fecha)</div>
+                    <div class="dsm-confirmada__fecha">@FormatoDeCita.FechaYHora(Cita.Fecha, Cita.Hora)</div>
+                    <div class="dsm-confirmada__tipo">@Cita.TipoDeVisita · @Cita.DuracionMin min · Dra. Selina Medina Castillo</div>
+                </div>
+                <div class="dsm-tarjeta__seccion dsm-lugar">
+                    <svg class="dsm-lugar__icono" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path>
+                        <circle cx="12" cy="9.5" r="2.5"></circle>
+                    </svg>
+                    <div class="dsm-lugar__texto">
+                        <div class="dsm-lugar__nombre">@Cita.Lugar</div>
+                        <div class="dsm-lugar__direccion">@Cita.Direccion</div>
+                    </div>
+                </div>
             </div>
+
+            <a href="@Calendario" class="btn dsm-boton-secundario dsm-confirmada__calendario">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
+                    <path d="M3.5 10h17M8 3v4M16 3v4"></path>
+                </svg>
+                Agregar a mi calendario
+            </a>
         </div>
+
+        @if (Cita.ConCorreo)
+        {
+            @Enlace
+        }
     </div>
-
-    <a href="@Calendario" class="btn dsm-boton-secundario dsm-confirmada__calendario">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
-            <path d="M3.5 10h17M8 3v4M16 3v4"></path>
-        </svg>
-        Agregar a mi calendario
-    </a>
-
-    @if (Cita.ConCorreo)
-    {
-        @Enlace
-    }
 
     <div class="dsm-confirmada__pie">
         <a href="/" class="dsm-enlace-fuerte">Volver al inicio</a>

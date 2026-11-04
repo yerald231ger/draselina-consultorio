@@ -487,6 +487,70 @@ public sealed partial class TusDatosTests(Arnes arnes)
         Assert.Empty(await escenario.CitasAsync());
     }
 
+    [Fact]
+    public async Task En_escritorio_Tus_datos_lleva_el_panel_Tu_cita_con_Cambiar_dentro_del_formulario_y_Volver_a_horarios()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.ClienteDeUnaPersona();
+
+        var html = WebUtility.HtmlDecode(await cliente.GetStringAsync(Ruta(), Cancelacion));
+        var horario = $"/reservar/horario?tipo={TiposDeVisitaSembrados.PrimeraConsulta}&fecha=2026-11-03&hora=16:00";
+
+        Assert.Equal(horario, Assert.Single(Vinculos().Matches(html), v => v.Groups["texto"].Value.Contains("Volver a horarios", StringComparison.Ordinal)).Groups["href"].Value);
+
+        // El panel va dentro del formulario, con el mismo botón de envío en los dos anchos.
+        var formulario = Formulario().Match(html).Value;
+        var panel = Assert.Single(TuCita().Matches(formulario)).Value;
+        Assert.Contains(">Tu cita</h2>", panel, StringComparison.Ordinal);
+        Assert.Equal(horario, Assert.Single(Vinculos().Matches(panel), v => v.Groups["texto"].Value == "Cambiar").Groups["href"].Value);
+        Assert.Contains("<dd>Primera consulta · 30 min</dd>", panel, StringComparison.Ordinal);
+        Assert.Contains("<dd>Martes 3 de noviembre, 4:00 pm</dd>", panel, StringComparison.Ordinal);
+        Assert.Contains("<dd>Hospital Star Médica, consultorio 101</dd>", panel, StringComparison.Ordinal);
+        Assert.Contains("<button type=\"submit\" class=\"btn btn-primary dsm-accion-principal\">Confirmar cita</button>", panel, StringComparison.Ordinal);
+        Assert.Single(Regex.Matches(html, "Confirmar cita</button>"));
+    }
+
+    [Fact]
+    public async Task En_escritorio_Horario_tomado_lleva_el_panel_Tu_cita_sin_horario()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        Assert.True((await escenario.AgendarAsync(ReservaEnLineaTests.Comando())).EsExito);
+        using var cliente = escenario.ClienteDeUnaPersona();
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
+
+        var panel = Assert.Single(TuCita().Matches(html)).Value;
+        Assert.Contains("<dd>Primera consulta · 30 min</dd>", panel, StringComparison.Ordinal);
+        Assert.Contains("<dd>Elige otro horario</dd>", panel, StringComparison.Ordinal);
+        Assert.Contains("<dd>Hospital Star Médica, consultorio 101</dd>", panel, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("ana@correo.com")]
+    [InlineData("")]
+    public async Task En_escritorio_Cita_confirmada_pone_la_cita_y_Guarda_este_enlace_en_dos_columnas(string correo)
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.ClienteDeUnaPersona();
+        var datos = Datos();
+        datos["Comando.Correo"] = correo;
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
+        var confirmacion = Confirmacion(html);
+
+        // Las dos columnas: la Cita con el lugar y "Agregar a mi calendario"; y el panel del enlace.
+        var columnas = confirmacion[confirmacion.IndexOf("dsm-confirmada__columnas", StringComparison.Ordinal)..confirmacion.IndexOf("dsm-confirmada__pie", StringComparison.Ordinal)];
+        var cita = columnas[columnas.IndexOf("dsm-confirmada__cita", StringComparison.Ordinal)..];
+        Assert.Contains("dsm-tarjeta", cita, StringComparison.Ordinal);
+        Assert.Contains("Hospital Star Médica, consultorio 101", cita, StringComparison.Ordinal);
+        Assert.Contains("Agregar a mi calendario", cita, StringComparison.Ordinal);
+        Assert.Contains("Guarda este enlace", columnas, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("Copiar", confirmacion, StringComparison.Ordinal);
+        Assert.DoesNotContain("Abrir en el mapa", confirmacion, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static Dictionary<string, string> Datos() => new()
     {
         ["Comando.Nombre"] = "Ana Sofía López",
@@ -587,6 +651,10 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
     [GeneratedRegex("""(?<apertura><form[^>]*>).*?</form>""", RegexOptions.Singleline)]
     private static partial Regex Formulario();
+
+    // El panel "Tu cita": en Tus datos un div que termina con "Confirmar cita"; en Horario tomado, un aside.
+    [GeneratedRegex("""<(?:div|aside) class="dsm-tu-cita[^"]*"[^>]*>.*?(?:</button>|</aside>)""", RegexOptions.Singleline)]
+    private static partial Regex TuCita();
 
     [GeneratedRegex(@"https://citas\.prueba\.mx/c/[A-Za-z0-9_-]{43}")]
     private static partial Regex Enlaces();

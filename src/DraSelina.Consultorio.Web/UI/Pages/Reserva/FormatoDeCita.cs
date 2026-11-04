@@ -61,5 +61,21 @@ public static class FormatoDeCita
         _ => $"hasta {minutos} minutos antes",
     };
 
+    /// <summary>
+    /// "desde mañana y hasta 2 meses", la ventana de reserva de las reglas: anticipación mínima en días ("desde hoy",
+    /// "desde mañana", "desde dentro de 3 días") y ventana en meses ("hasta 1 mes", "hasta 2 meses").
+    /// </summary>
+    public static string Ventana(int anticipacionMinimaDias, int ventanaMeses)
+    {
+        var desde = anticipacionMinimaDias switch
+        {
+            <= 0 => "desde hoy",
+            1 => "desde mañana",
+            _ => $"desde dentro de {anticipacionMinimaDias} días",
+        };
+        var hasta = ventanaMeses == 1 ? "hasta 1 mes" : $"hasta {ventanaMeses} meses";
+        return $"{desde} y {hasta}";
+    }
+
     private static string Mayuscula(string texto) => char.ToUpperInvariant(texto[0]) + texto[1..];
 }

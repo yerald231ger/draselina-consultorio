@@ -198,8 +198,12 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
         var primera = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}");
 
         Assert.DoesNotContain("fecha=2026-11-04", seguimiento, StringComparison.Ordinal);
-        Assert.DoesNotContain("Miércoles 4 de noviembre", seguimiento, StringComparison.Ordinal);
+        Assert.DoesNotContain(Dias(seguimiento), d => d.Href.Contains("2026-11-04", StringComparison.Ordinal));
         Assert.Empty(DiasLlenos().Matches(seguimiento));
+
+        // En el calendario de escritorio sí está su celda, deshabilitada como cualquier día sin horarios.
+        Assert.Contains("<span class=\"visually-hidden\">Miércoles 4 de noviembre, no disponible</span>", seguimiento, StringComparison.Ordinal);
+        Assert.DoesNotContain(CeldasConHoras(seguimiento), c => c.Fecha == "2026-11-04");
         Assert.Contains("Consulta de seguimiento · 45 min", seguimiento, StringComparison.Ordinal);
 
         // A Primera consulta, de 30 min, sí le cabe un horario ese día.
@@ -307,6 +311,194 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
         SinScripts(aviso);
     }
 
+    [Fact]
+    public async Task En_escritorio_el_calendario_es_una_tabla_de_lunes_a_domingo_con_los_dias_habiles_de_la_ventana()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+
+        var html = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}");
+        var tabla = Assert.Single(Calendario().Matches(html)).Value;
+
+        // Siete columnas siempre, con su encabezado (Gerardo, 2026-11-04).
+        Assert.Equal(
+            ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+            EncabezadoDeDia().Matches(tabla).Select(m => m.Groups["corto"].Value));
+        Assert.Contains("<caption class=\"visually-hidden\">Noviembre 2026</caption>", tabla, StringComparison.Ordinal);
+
+        // Noviembre empieza en domingo: seis semanas, siete celdas cada una.
+        var semanas = Semanas(tabla);
+        Assert.Equal(6, semanas.Count);
+        Assert.All(semanas, s => Assert.Equal(7, s.Count));
+        Assert.Contains("Domingo 1 de noviembre, no disponible", semanas[0][6], StringComparison.Ordinal);
+
+        // Los días hábiles de noviembre desde mañana son enlaces, con su fecha completa y sus horarios libres.
+        var conHoras = CeldasConHoras(tabla);
+        Assert.Equal(
+            DiasHabiles(new DateOnly(2026, 11, 3), new DateOnly(2026, 11, 30)).Select(f => f.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)),
+            conHoras.Select(c => c.Fecha));
+        Assert.All(conHoras, c => Assert.Equal($"/reservar/horario?tipo={Primera}&fecha={c.Fecha}", c.Href));
+        Assert.Contains("aria-label=\"Martes 3 de noviembre, 5 horarios libres\"", conHoras[0].Html, StringComparison.Ordinal);
+        Assert.Contains("aria-current=\"true\"", conHoras[0].Html, StringComparison.Ordinal);
+
+        // Hoy, sábados y domingos: deshabilitados, sin enlace, con su fecha completa para lectores de pantalla.
+        Assert.Contains("Lunes 2 de noviembre, no disponible", tabla, StringComparison.Ordinal);
+        Assert.Contains("Sábado 7 de noviembre, no disponible", semanas[1][5], StringComparison.Ordinal);
+        Assert.Contains("Domingo 8 de noviembre, no disponible", semanas[1][6], StringComparison.Ordinal);
+        Assert.Contains("Con horarios libres", html, StringComparison.Ordinal);
+        Assert.Contains("Lleno o no disponible", html, StringComparison.Ordinal);
+
+        // La nota sale de las reglas; "Hasta el" del último día de HorariosLibres.
+        Assert.Contains("Hora del centro de México · desde mañana y hasta 2 meses", html, StringComparison.Ordinal);
+        Assert.Contains("Hasta el 1 de enero", html, StringComparison.Ordinal);
+
+        // Mes siguiente: un enlace al primer día de diciembre con horas; no hay mes anterior en la ventana.
+        Assert.Equal($"/reservar/horario?tipo={Primera}&fecha=2026-12-01", Assert.Single(MesSiguiente().Matches(html)).Groups["href"].Value);
+        Assert.Empty(MesAnterior().Matches(html));
+        SinScripts(html);
+    }
+
+    [Fact]
+    public async Task En_escritorio_el_mes_siguiente_muestra_diciembre_con_su_mes_anterior()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+
+        var html = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}&fecha=2026-12-01");
+        var tabla = Assert.Single(Calendario().Matches(html)).Value;
+
+        Assert.Contains("<caption class=\"visually-hidden\">Diciembre 2026</caption>", tabla, StringComparison.Ordinal);
+        Assert.Equal("2026-12-01", CeldasConHoras(tabla)[0].Fecha);
+        Assert.Equal($"/reservar/horario?tipo={Primera}&fecha=2026-11-03", Assert.Single(MesAnterior().Matches(html)).Groups["href"].Value);
+        Assert.Equal($"/reservar/horario?tipo={Primera}&fecha=2027-01-01", Assert.Single(MesSiguiente().Matches(html)).Groups["href"].Value);
+    }
+
+    [Fact]
+    public async Task En_escritorio_un_sabado_abierto_aparece_habilitado_en_su_columna()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        await escenario.InsertarCustomAsync(new DateOnly(2026, 11, 7), "sábado abierto", (new TimeOnly(10, 0), new TimeOnly(11, 0)));
+        using var cliente = escenario.Web.CreateClient();
+
+        var html = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}");
+        var semanas = Semanas(Assert.Single(Calendario().Matches(html)).Value);
+
+        var sabado = Assert.Single(CeldasConHoras(semanas[1][5]));
+        Assert.Equal("2026-11-07", sabado.Fecha);
+        Assert.Contains("aria-label=\"Sábado 7 de noviembre, 2 horarios libres\"", sabado.Html, StringComparison.Ordinal);
+
+        // El siguiente sigue cerrado.
+        Assert.Contains("Sábado 14 de noviembre, no disponible", semanas[2][5], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task En_escritorio_un_dia_lleno_se_ve_Lleno_y_si_la_direccion_lo_pide_dice_que_no_tiene_horarios()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        TimeOnly[] horas = [new(15, 30), new(16, 0), new(16, 30), new(17, 0), new(17, 30)];
+        for (var i = 0; i < horas.Length; i++)
+        {
+            var comando = ReservaEnLineaTests.Comando(new DateOnly(2026, 11, 3), horas[i]);
+            comando.Telefono = $"444 555 {1000 + i}";
+            Assert.True((await escenario.AgendarAsync(comando)).EsExito);
+        }
+
+        using var cliente = escenario.Web.CreateClient();
+
+        // Sin fecha: el martes se ve "Lleno", no se puede elegir y el elegido es el miércoles.
+        var html = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}");
+        var tabla = Assert.Single(Calendario().Matches(html)).Value;
+        var lleno = Assert.Single(CeldasLlenas().Matches(tabla)).Value;
+        Assert.Contains("<span class=\"visually-hidden\">Martes 3 de noviembre, </span>", lleno, StringComparison.Ordinal);
+        Assert.Contains("Lleno", lleno, StringComparison.Ordinal);
+        Assert.DoesNotContain(CeldasConHoras(tabla), c => c.Fecha == "2026-11-03");
+        Assert.Contains("aria-current=\"true\"", Assert.Single(CeldasConHoras(tabla), c => c.Fecha == "2026-11-04").Html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Este día ya no tiene horarios libres.", html, StringComparison.Ordinal);
+
+        // Con la fecha del martes en la dirección: el escritorio lo dice y no hay hora que continuar.
+        var delMartes = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}&fecha=2026-11-03&hora=16:00");
+        Assert.Contains("Este día ya no tiene horarios libres. Elige otro día en el calendario.", delMartes, StringComparison.Ordinal);
+        var martes = Assert.Single(CeldasLlenas().Matches(delMartes)).Value;
+        Assert.Contains("dsm-calendario__dia--elegido", martes, StringComparison.Ordinal);
+        Assert.Contains("aria-current=\"true\"", martes, StringComparison.Ordinal);
+        Assert.DoesNotContain("/reservar/datos", delMartes, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task En_escritorio_cambiar_el_tipo_conserva_el_dia_elegido()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+
+        var html = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}&fecha=2026-11-05&hora=16:30");
+
+        // Los tipos reservables, en su orden; el actual marcado; la fecha se conserva, la hora no.
+        var tipos = Tipos().Matches(html).ToList();
+        Assert.Equal(
+            [$"/reservar/horario?tipo={Primera}&fecha=2026-11-05", $"/reservar/horario?tipo={Seguimiento}&fecha=2026-11-05"],
+            tipos.Select(t => t.Groups["href"].Value));
+        Assert.Contains("aria-current=\"true\"", tipos[0].Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("aria-current", tipos[1].Value, StringComparison.Ordinal);
+
+        var seguimiento = await PedirAsync(cliente, tipos[1].Groups["href"].Value);
+
+        Assert.Contains("Consulta de seguimiento · 30 min", seguimiento, StringComparison.Ordinal);
+        Assert.Contains("aria-current=\"true\"", Assert.Single(CeldasConHoras(seguimiento), c => c.Fecha == "2026-11-05").Html, StringComparison.Ordinal);
+        var horas = Horas(seguimiento);
+        Assert.Equal(TardeCompleta, horas.Select(h => h.Texto));
+        Assert.All(horas, h => Assert.StartsWith($"/reservar/horario?tipo={Seguimiento}&fecha=2026-11-05&hora=", h.Href, StringComparison.Ordinal));
+        Assert.Contains("Elige una hora", seguimiento, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task En_escritorio_cambiar_a_un_tipo_sin_horarios_ese_dia_no_elige_otro_dia()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        await escenario.EjecutarAsync($"update agenda.tipo_de_visita set duracion_min = 45 where id = '{Seguimiento}'");
+        await escenario.InsertarCustomAsync(new DateOnly(2026, 11, 4), "tarde corta", (new TimeOnly(15, 30), new TimeOnly(16, 0)));
+        using var cliente = escenario.Web.CreateClient();
+
+        // En Primera consulta el miércoles 4 tiene horario; el enlace a Seguimiento conserva esa fecha.
+        var primera = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}&fecha=2026-11-04");
+        var aSeguimiento = Assert.Single(Tipos().Matches(primera), t => t.Groups["href"].Value.Contains(Seguimiento, StringComparison.Ordinal)).Groups["href"].Value;
+        Assert.Equal($"/reservar/horario?tipo={Seguimiento}&fecha=2026-11-04", aSeguimiento);
+
+        var html = await PedirAsync(cliente, aSeguimiento);
+
+        Assert.Contains("Este día no tiene horarios para este tipo de consulta. Elige otro día en el calendario.", html, StringComparison.Ordinal);
+        var tabla = Assert.Single(Calendario().Matches(html)).Value;
+        Assert.Contains("<caption class=\"visually-hidden\">Noviembre 2026</caption>", tabla, StringComparison.Ordinal);
+        Assert.DoesNotContain("aria-current", tabla, StringComparison.Ordinal);
+        Assert.Contains("Miércoles 4 de noviembre, no disponible", tabla, StringComparison.Ordinal);
+        Assert.Contains("<dd>Elige una hora</dd>", Assert.Single(TuCita().Matches(html)).Value, StringComparison.Ordinal);
+        Assert.DoesNotContain("/reservar/datos", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task En_escritorio_el_panel_Tu_cita_muestra_consulta_fecha_y_hora_y_lugar_con_Continuar()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+
+        var sinHora = Assert.Single(TuCita().Matches(await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}&fecha=2026-11-05"))).Value;
+        Assert.Contains("Elige una hora", sinHora, StringComparison.Ordinal);
+        Assert.Empty(EnlaceContinuar().Matches(sinHora));
+
+        var html = await PedirAsync(cliente, $"/reservar/horario?tipo={Primera}&fecha=2026-11-05&hora=16:30");
+        var panel = Assert.Single(TuCita().Matches(html)).Value;
+
+        Assert.Contains(">Tu cita</h2>", panel, StringComparison.Ordinal);
+        Assert.Contains("<dd>Primera consulta · 30 min</dd>", panel, StringComparison.Ordinal);
+        Assert.Contains("<dd>Jueves 5 de noviembre, 4:30 pm</dd>", panel, StringComparison.Ordinal);
+        Assert.Contains("<dd>Hospital Star Médica, consultorio 101</dd>", panel, StringComparison.Ordinal);
+
+        // Un solo "Continuar", el del panel: el mismo en los dos anchos.
+        Assert.Equal(
+            $"/reservar/datos?tipo={Primera}&fecha=2026-11-05&hora=16:30",
+            Assert.Single(EnlaceContinuar().Matches(panel)).Groups["href"].Value);
+        Assert.Single(EnlaceContinuar().Matches(html));
+    }
+
     private static async Task AfirmarTipoInvalidoAsync(HttpClient cliente, string ruta)
     {
         var html = await PedirAsync(cliente, ruta);
@@ -352,6 +544,44 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
 
     private static List<(string Href, string Texto, string Html)> Horas(string html) =>
         [.. EnlaceDeHora().Matches(html).Select(m => (m.Groups["href"].Value, m.Groups["texto"].Value.Trim(), m.Value))];
+
+    private static List<(string Href, string Fecha, string Html)> CeldasConHoras(string html) =>
+        [.. CeldaConHoras().Matches(html).Select(m => (m.Groups["href"].Value, m.Groups["fecha"].Value, m.Value))];
+
+    // Las filas del cuerpo del calendario, cada una con el HTML de sus siete celdas.
+    private static List<List<string>> Semanas(string tabla) =>
+        [.. Fila().Matches(tabla[tabla.IndexOf("<tbody>", StringComparison.Ordinal)..])
+            .Select(f => Celda().Matches(f.Value).Select(c => c.Groups["celda"].Value).ToList())];
+
+    [GeneratedRegex("""<table class="dsm-calendario__tabla">.*?</table>""", RegexOptions.Singleline)]
+    private static partial Regex Calendario();
+
+    [GeneratedRegex("""<th scope="col"><abbr title="[^"]+">(?<corto>[^<]+)</abbr></th>""")]
+    private static partial Regex EncabezadoDeDia();
+
+    [GeneratedRegex("""<tr>.*?</tr>""", RegexOptions.Singleline)]
+    private static partial Regex Fila();
+
+    [GeneratedRegex("""<td>(?<celda>.*?)</td>""", RegexOptions.Singleline)]
+    private static partial Regex Celda();
+
+    [GeneratedRegex("""<a href="(?<href>/reservar/horario\?tipo=[^"&]+&fecha=(?<fecha>[0-9-]+))" class="dsm-calendario__dia"[^>]*>.*?</a>""", RegexOptions.Singleline)]
+    private static partial Regex CeldaConHoras();
+
+    [GeneratedRegex("""<span class="dsm-calendario__dia dsm-calendario__dia--lleno[^"]*"[^>]*>.*?Lleno</span>""", RegexOptions.Singleline)]
+    private static partial Regex CeldasLlenas();
+
+    [GeneratedRegex("""<a href="(?<href>[^"]+)" class="dsm-calendario__vecino" aria-label="Mes anterior[^"]*">""")]
+    private static partial Regex MesAnterior();
+
+    [GeneratedRegex("""<a href="(?<href>[^"]+)" class="dsm-calendario__vecino" aria-label="Mes siguiente[^"]*">""")]
+    private static partial Regex MesSiguiente();
+
+    [GeneratedRegex("""<a href="(?<href>[^"]+)" class="dsm-tipo"[^>]*>""")]
+    private static partial Regex Tipos();
+
+    [GeneratedRegex("""<div class="dsm-tu-cita[^"]*">.*?Sin cuenta\. Tu cita queda confirmada al instante\.</p>""", RegexOptions.Singleline)]
+    private static partial Regex TuCita();
 
     [GeneratedRegex("""<a(?=[^>]*class="[^"]*\bbtn-primary\b)[^>]*href="(?<href>[^"]+)"[^>]*>\s*Agendar una cita\s*</a>""")]
     private static partial Regex EnlaceAgendar();

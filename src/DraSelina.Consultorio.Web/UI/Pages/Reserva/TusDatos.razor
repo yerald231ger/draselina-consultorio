@@ -9,6 +9,7 @@
 @using Microsoft.AspNetCore.Http
 @inject ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea> Agendar
 @inject IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>> Horarios
+@inject IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>> Tipos
 @inject IClock Reloj
 @inject IContenidoApi Contenido
 @inject VerificacionAntiBots AntiBots
@@ -27,6 +28,10 @@
     Antes del handler, la verificación anti-bots (VerificacionAntiBots, FR-7): el campo trampa vacío y al menos 3 s
     desde que se pintó el formulario. El instante protegido viaja oculto y se conserva al volver desde HorarioTomado.
     Si no pasa, no se reserva y vuelve aquí con el aviso genérico, sin decir por qué ni registrar nada (AD-23).
+
+    En escritorio (mockup WebDatos, ticket 12) el formulario va a la izquierda y el panel "Tu cita" (consulta, fecha y
+    hora, lugar, "Cambiar") a la derecha, con "Confirmar cita"; arriba, "Volver a horarios". El panel va dentro del
+    formulario: el mismo botón de envío en los dos anchos. En el teléfono no cambia nada.
 *@
 
 <PageTitle>Tus datos · Dra. Selina Medina Castillo</PageTitle>
@@ -37,7 +42,7 @@
 }
 else if (_tomado)
 {
-    <HorarioTomado Tipo="_horarioTomado" Desde="@(Comando!.Fecha ?? DateOnly.MinValue)" Dias="_diasLibres" Datos="Comando!" Pintado="@_pintado" AlElegir="VolverATusDatos" />
+    <HorarioTomado Tipo="_horarioTomado" Consulta="_consulta" Desde="@(Comando!.Fecha ?? DateOnly.MinValue)" Dias="_diasLibres" Datos="Comando!" Pintado="@_pintado" AlElegir="VolverATusDatos" />
 }
 else if (_horario is not { } horario)
 {
@@ -51,7 +56,15 @@ else if (_horario is not { } horario)
 }
 else
 {
-    <section class="dsm-contenedor dsm-reserva">
+    <section class="dsm-contenedor dsm-reserva dsm-reserva--ancha">
+        <a href="@RutaDeHorario(horario)" class="dsm-volver dsm-solo-escritorio">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 12H5M11 6l-6 6 6 6"></path>
+            </svg>
+            Volver a horarios
+        </a>
+
         <div class="dsm-paso" aria-label="Paso 3 de 3">
             <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
             <div class="dsm-paso__barra dsm-paso__barra--hecha"></div>
@@ -60,7 +73,7 @@ else
         <div class="dsm-rotulo">Paso 3 de 3</div>
         <h1 class="dsm-titulo-de-paso">Tus datos</h1>
 
-        <div class="dsm-horario-elegido">
+        <div class="dsm-horario-elegido dsm-solo-movil">
             <svg class="dsm-horario-elegido__icono" width="20" height="20" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="16" rx="2"></rect>
@@ -82,60 +95,85 @@ else
             </div>
         }
 
-        <EditForm Model="Comando" FormName="datos" OnValidSubmit="EnviarAsync" class="dsm-formulario">
+        <EditForm Model="Comando" FormName="datos" OnValidSubmit="EnviarAsync" class="dsm-formulario dsm-reserva__columnas dsm-reserva__columnas--datos">
             @* La misma solicitud en cada envío de este formulario (AD-27). *@
             <input type="hidden" name="Comando.SolicitudId" value="@Comando!.SolicitudId" />
             <CamposAntiBots Pintado="@_pintado" />
 
-            <ErroresDelResultado Resultado="_resultado">
-                <Campo Para="() => Comando!.Nombre" Etiqueta="Nombre completo"
-                       Ayuda="Si agendas para otra persona, escribe el nombre del paciente."
-                       autocomplete="name" placeholder="Como aparece en tu identificación" />
+            <div class="dsm-reserva__principal">
+                <ErroresDelResultado Resultado="_resultado">
+                    <Campo Para="() => Comando!.Nombre" Etiqueta="Nombre completo"
+                           Ayuda="Si agendas para otra persona, escribe el nombre del paciente."
+                           autocomplete="name" placeholder="Como aparece en tu identificación" />
 
-                <Campo Para="() => Comando!.Telefono" Etiqueta="Celular" Tipo="tel"
-                       Ayuda="Tu celular de México, 10 dígitos."
-                       inputmode="tel" autocomplete="tel-national" placeholder="10 dígitos" />
+                    <Campo Para="() => Comando!.Telefono" Etiqueta="Celular" Tipo="tel"
+                           Ayuda="Tu celular de México, 10 dígitos."
+                           inputmode="tel" autocomplete="tel-national" placeholder="10 dígitos" />
 
-                <Campo Para="() => Comando!.Correo" Etiqueta="Correo (opcional)" Tipo="email"
-                       Ayuda="Ahí te llegan la confirmación, el recordatorio y el enlace para cambiar tu cita."
-                       autocomplete="email" placeholder="nombre@correo.com" />
+                    <Campo Para="() => Comando!.Correo" Etiqueta="Correo (opcional)" Tipo="email"
+                           Ayuda="Ahí te llegan la confirmación, el recordatorio y el enlace para cambiar tu cita."
+                           autocomplete="email" placeholder="nombre@correo.com" />
 
-                @* El área del motivo: el Campo solo hace texto de una línea. *@
-                <div class="dsm-campo">
-                    <label for="Motivo" class="dsm-campo__etiqueta">Motivo de la consulta</label>
-                    <InputTextArea id="Motivo" @bind-Value="Comando!.Motivo" rows="3"
-                                   class="dsm-campo__control dsm-campo__control--area"
-                                   placeholder="Ej. dolor de rodilla derecha desde hace dos semanas"
-                                   aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.Motivo), conAyuda: true)"
-                                   autofocus="@LlevaElFoco(nameof(AgendarCitaEnLinea.Motivo))" />
-                    <div id="Motivo-ayuda" class="dsm-campo__ayuda">Una o dos líneas bastan; la doctora lo revisa contigo en consulta.</div>
-                    @foreach (var (mensaje, i) in Mensajes(nameof(AgendarCitaEnLinea.Motivo)).Select((m, i) => (m, i)))
-                    {
-                        <div id="Motivo-error-@(i + 1)" class="dsm-campo__error">@mensaje</div>
-                    }
+                    @* El área del motivo: el Campo solo hace texto de una línea. *@
+                    <div class="dsm-campo">
+                        <label for="Motivo" class="dsm-campo__etiqueta">Motivo de la consulta</label>
+                        <InputTextArea id="Motivo" @bind-Value="Comando!.Motivo" rows="3"
+                                       class="dsm-campo__control dsm-campo__control--area"
+                                       placeholder="Ej. dolor de rodilla derecha desde hace dos semanas"
+                                       aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.Motivo), conAyuda: true)"
+                                       autofocus="@LlevaElFoco(nameof(AgendarCitaEnLinea.Motivo))" />
+                        <div id="Motivo-ayuda" class="dsm-campo__ayuda">Una o dos líneas bastan; la doctora lo revisa contigo en consulta.</div>
+                        @foreach (var (mensaje, i) in Mensajes(nameof(AgendarCitaEnLinea.Motivo)).Select((m, i) => (m, i)))
+                        {
+                            <div id="Motivo-error-@(i + 1)" class="dsm-campo__error">@mensaje</div>
+                        }
+                    </div>
+
+                    @* La casilla del Consentimiento (AD-24). El Aviso se abre en otra pestaña para no perder lo escrito. *@
+                    <div class="dsm-campo">
+                        <label class="dsm-casilla" for="Consentimiento">
+                            <InputCheckbox id="Consentimiento" @bind-Value="Comando!.Consentimiento" class="dsm-casilla__control"
+                                           aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.Consentimiento), conAyuda: false)"
+                                           autofocus="@LlevaElFoco(nameof(AgendarCitaEnLinea.Consentimiento))" />
+                            <span class="dsm-casilla__texto">
+                                Acepto el <a href="/aviso-de-privacidad" target="_blank" class="dsm-enlace-en-texto">Aviso de privacidad</a> y doy mi consentimiento expreso para el uso de mis
+                                datos de salud con el fin de agendar mi cita.
+                            </span>
+                        </label>
+                        @foreach (var (mensaje, i) in Mensajes(nameof(AgendarCitaEnLinea.Consentimiento)).Select((m, i) => (m, i)))
+                        {
+                            <div id="Consentimiento-error-@(i + 1)" class="dsm-campo__error">@mensaje</div>
+                        }
+                    </div>
+                </ErroresDelResultado>
+            </div>
+
+            <div class="dsm-tu-cita">
+                <div class="dsm-tu-cita__cabeza dsm-solo-escritorio">
+                    <h2 class="dsm-seccion">Tu cita</h2>
+                    <a href="@RutaDeHorario(horario)" class="dsm-tu-cita__cambiar">Cambiar</a>
                 </div>
-
-                @* La casilla del Consentimiento (AD-24). El Aviso se abre en otra pestaña para no perder lo escrito. *@
-                <div class="dsm-campo">
-                    <label class="dsm-casilla" for="Consentimiento">
-                        <InputCheckbox id="Consentimiento" @bind-Value="Comando!.Consentimiento" class="dsm-casilla__control"
-                                       aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.Consentimiento), conAyuda: false)"
-                                       autofocus="@LlevaElFoco(nameof(AgendarCitaEnLinea.Consentimiento))" />
-                        <span class="dsm-casilla__texto">
-                            Acepto el <a href="/aviso-de-privacidad" target="_blank" class="dsm-enlace-en-texto">Aviso de privacidad</a> y doy mi consentimiento expreso para el uso de mis
-                            datos de salud con el fin de agendar mi cita.
-                        </span>
-                    </label>
-                    @foreach (var (mensaje, i) in Mensajes(nameof(AgendarCitaEnLinea.Consentimiento)).Select((m, i) => (m, i)))
+                <dl class="dsm-tu-cita__datos dsm-solo-escritorio">
+                    @if (_consulta is { } consulta)
                     {
-                        <div id="Consentimiento-error-@(i + 1)" class="dsm-campo__error">@mensaje</div>
+                        <div>
+                            <dt>Consulta</dt>
+                            <dd>@consulta.Nombre · @consulta.DuracionMin min</dd>
+                        </div>
                     }
+                    <div>
+                        <dt>Fecha y hora</dt>
+                        <dd>@FormatoDeCita.Largo(horario.Fecha), @FormatoDeCita.Hora(horario.Hora)</dd>
+                    </div>
+                    <div>
+                        <dt>Lugar</dt>
+                        <dd>@Contenido.DatosDelConsultorio.Lugar</dd>
+                    </div>
+                </dl>
+                <div class="dsm-barra-de-accion">
+                    <button type="submit" class="btn btn-primary dsm-accion-principal">Confirmar cita</button>
+                    <p class="dsm-barra-de-accion__nota">Queda confirmada al instante, sin esperar aprobación.</p>
                 </div>
-            </ErroresDelResultado>
-
-            <div class="dsm-barra-de-accion">
-                <button type="submit" class="btn btn-primary dsm-accion-principal">Confirmar cita</button>
-                <p class="dsm-barra-de-accion__nota">Queda confirmada al instante, sin esperar aprobación.</p>
             </div>
         </EditForm>
     </section>
@@ -157,6 +195,7 @@ else
     ];
 
     private (TipoDeVisitaId Tipo, DateOnly Fecha, TimeOnly Hora)? _horario;
+    private TipoDeVisitaReservable? _consulta;
     private Resultado? _resultado;
     private CitaAgendadaEnLinea? _confirmada;
     private string? _aviso;
@@ -210,7 +249,7 @@ else
         _tomado = OtraHora is true;
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         _horario =
             Guid.TryParse(Tipo, out var tipo)
@@ -219,7 +258,21 @@ else
             && FechaAceptable(fecha)
                 ? (new TipoDeVisitaId(tipo), fecha, hora)
                 : null;
+
+        // El nombre y la duración del panel "Tu cita" en escritorio; un tipo que no está en la lista no tiene fila.
+        _consulta = null;
+        if (_horario is { } horario)
+        {
+            var tipos = await Tipos.HandleAsync(new TiposDeVisitaReservables(), HttpContext?.RequestAborted ?? CancellationToken.None);
+            _consulta = tipos.EsExito ? tipos.Valor.FirstOrDefault(t => t.Id == horario.Tipo) : null;
+        }
     }
+
+    // Volver a Día y hora con el horario elegido ("Volver a horarios", "Cambiar"): solo tipo, fecha y hora.
+    private static string RutaDeHorario((TipoDeVisitaId Tipo, DateOnly Fecha, TimeOnly Hora) horario) =>
+        string.Create(
+            CultureInfo.InvariantCulture,
+            $"/reservar/horario?tipo={horario.Tipo}&fecha={horario.Fecha:yyyy-MM-dd}&hora={horario.Hora:HH:mm}");
 
     // Solo de hoy (fecha local del consultorio) a un año después, inclusive. Así una dirección escrita a mano no
     // llega al handler con una hora local inexistente de un cambio de horario pasado (Ciudad de México no tiene

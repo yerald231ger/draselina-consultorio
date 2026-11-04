@@ -131,7 +131,6 @@ covers = ["CAP-1", "CAP-2"]
 after = [5, 8, 9, 10, 11]
 hitl = true
 risk = "low"
-unknown = "¿El calendario de escritorio muestra siete columnas siempre o solo los días con atención del mes?"
 
 [[entry]]
 id = 13
