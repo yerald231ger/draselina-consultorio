@@ -589,6 +589,70 @@ a:hover {
   margin-top: var(--dsm-spacing-9);
 }
 
+/* La frase bajo el título de Cita confirmada: hoy solo la de "sin correo". */
+.dsm-confirmada__nota {
+  margin: 0;
+  font-size: var(--dsm-body-font-size);
+  line-height: var(--dsm-body-line-height);
+  color: var(--dsm-muted);
+}
+
+/* "Guarda este enlace": el Enlace de gestión completo, como texto seleccionable (sin scripts no hay "Copiar"). */
+.dsm-enlace-de-gestion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  margin-top: var(--dsm-spacing-9);
+  padding: var(--dsm-spacing-7);
+  border-radius: var(--dsm-rounded-xl);
+  background: var(--dsm-tint);
+}
+
+.dsm-enlace-de-gestion__encabezado {
+  display: flex;
+  gap: var(--dsm-spacing-4);
+  align-items: flex-start;
+}
+
+.dsm-enlace-de-gestion__icono {
+  flex: none;
+  margin-top: 1px;
+  color: var(--dsm-primary);
+}
+
+.dsm-enlace-de-gestion__texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+}
+
+.dsm-enlace-de-gestion__titulo {
+  margin: 0;
+  font-size: var(--dsm-body-font-size);
+  font-weight: 700;
+}
+
+.dsm-enlace-de-gestion__ayuda {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  line-height: var(--dsm-body-small-line-height);
+  color: var(--dsm-ink-soft);
+}
+
+.dsm-enlace-de-gestion__direccion {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin: 0;
+  padding: var(--dsm-spacing-4) var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-md);
+  background: var(--dsm-surface);
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
 /* Un enlace dentro de un texto corrido: la casilla del Consentimiento, el mensaje de WhatsApp. */
 .dsm-enlace-en-texto {
   font-weight: 700;

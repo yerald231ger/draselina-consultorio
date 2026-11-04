@@ -16,6 +16,9 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
     /// <summary>El índice único de <c>agenda.cita.solicitud_id</c>; los nulos, de las Citas del consultorio, no chocan (AD-27).</summary>
     public const string IndiceDeSolicitud = "ux_cita_solicitud_id";
 
+    /// <summary>El índice único de <c>agenda.cita.token_hash</c>: dos Citas no comparten Enlace de gestión (AD-19).</summary>
+    public const string IndiceDeTokenHash = "ux_cita_token_hash";
+
     /// <summary>
     /// La única forma de configurar este contexto: la usan la aplicación, el MigrationService y las
     /// herramientas de EF Core, para que el historial de migraciones quede siempre en el esquema del módulo (AD-25).
@@ -163,8 +166,7 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
             reglas.HasData(AgendaDeAtencionSembrada.Reglas);
         });
 
-        // agenda.cita, sin token_hash: llega con su historia. La restricción de exclusión la crea
-        // la migración con SQL explícito (AD-25).
+        // agenda.cita. La restricción de exclusión la crea la migración con SQL explícito (AD-25).
         modelBuilder.Entity<Cita>(cita =>
         {
             cita.ToTable("cita", t =>
@@ -182,6 +184,9 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
                     "ck_cita_cancelacion",
                     "(estado = 'Cancelada') = (motivo_de_cancelacion IS NOT NULL) "
                     + "AND (estado = 'Cancelada') = (cancelada_en IS NOT NULL)");
+
+                // AD-19: SHA-256, 32 bytes.
+                t.HasCheckConstraint("ck_cita_token_hash", "octet_length(token_hash) = 32");
             });
 
             cita.HasKey(c => c.Id);
@@ -233,6 +238,10 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
             // AD-27: nulo en las del consultorio; en PostgreSQL los nulos no chocan en un índice único.
             cita.Property(c => c.SolicitudId).HasColumnName("solicitud_id");
             cita.HasIndex(c => c.SolicitudId).IsUnique().HasDatabaseName(IndiceDeSolicitud);
+
+            // AD-19, RN-22: solo el hash del token derivado; el token no se guarda en ninguna columna.
+            cita.Property(c => c.TokenHash).HasColumnName("token_hash").HasColumnType("bytea").IsRequired();
+            cita.HasIndex(c => c.TokenHash).IsUnique().HasDatabaseName(IndiceDeTokenHash);
 
             // Los índices (inicio) y (paciente_id, inicio) van sobre columnas del rango y los crea la migración con SQL
             // explícito, como la restricción de exclusión.

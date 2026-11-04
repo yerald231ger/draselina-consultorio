@@ -28,6 +28,12 @@ public sealed class Arnes : IAsyncLifetime
     /// <summary>La misma versión mayor de PostgreSQL que levanta el AppHost.</summary>
     public const string Imagen = "postgres:18.3";
 
+    /// <summary>La clave del Enlace de gestión que reciben las webs de las pruebas (AD-19).</summary>
+    public const string ClaveDeEnlace = "clave-de-enlace-de-las-pruebas-de-integracion";
+
+    /// <summary>La URL base del Enlace de gestión que reciben las webs de las pruebas.</summary>
+    public const string UrlBaseDeEnlace = "https://citas.prueba.mx";
+
     private PostgreSqlContainer? _contenedor;
     private string? _cadenaDeConexion;
 
@@ -115,6 +121,13 @@ public sealed class Arnes : IAsyncLifetime
         new Web(cadenaDeConexion, reloj: null);
 
     /// <summary>
+    /// La web en memoria contra la base de la corrida, sin la clave del Enlace de gestión en su configuración: para
+    /// comprobar que así no arranca.
+    /// </summary>
+    public WebApplicationFactory<Program> ArrancarWebSinClaveDeEnlace() =>
+        new Web(CadenaDeConexion, reloj: null, conClave: false);
+
+    /// <summary>
     /// Arranca la web en memoria sin el servicio que entrega eventos en segundo plano y con el reloj de la prueba.
     /// La prueba da cada vuelta de entrega cuando quiere, con <see cref="DarUnaVueltaDeEntregaAsync"/>, y mueve el
     /// tiempo con <paramref name="reloj"/>. Se usa contra una base propia (<see cref="CrearBaseMigradaAsync"/>).
@@ -139,11 +152,20 @@ public sealed class Arnes : IAsyncLifetime
 
     // Una sola fábrica por llamada, que desecha quien la pidió.
     // Con reloj de prueba, la web no entrega eventos por su cuenta: las vueltas las da la prueba.
-    private sealed class Web(string cadenaDeConexion, RelojDePrueba? reloj, TimeSpan? limitePorHandler = null) : WebApplicationFactory<Program>
+    private sealed class Web(
+        string cadenaDeConexion,
+        RelojDePrueba? reloj,
+        TimeSpan? limitePorHandler = null,
+        bool conClave = true) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseSetting($"ConnectionStrings:{BaseDeDatos.Nombre}", cadenaDeConexion);
+            builder.UseSetting("EnlaceDeGestion:UrlBase", UrlBaseDeEnlace);
+            if (conClave)
+            {
+                builder.UseSetting("EnlaceDeGestion:Clave", ClaveDeEnlace);
+            }
 
             builder.ConfigureServices(servicios =>
             {

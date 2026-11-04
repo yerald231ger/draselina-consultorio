@@ -22,6 +22,9 @@ public sealed class Pacientes(PacientesDbContext db) : IPacientes
             .Select(p => p.Id)
             .ToListAsync(cancellationToken);
 
+    public Task<bool> TieneCorreoAsync(PatientId paciente, CancellationToken cancellationToken) =>
+        db.Pacientes.AsNoTracking().AnyAsync(p => p.Id == paciente && p.Correo != null, cancellationToken);
+
     public void Agregar(Paciente paciente) => db.Pacientes.Add(paciente);
 
     public async Task<GuardadoDePaciente> GuardarAsync(CancellationToken cancellationToken)

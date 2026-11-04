@@ -72,6 +72,12 @@ public sealed class AgendarCitaEnLinea : ICommand<CitaAgendadaEnLinea>
 /// <param name="DuracionMin">Duración en minutos.</param>
 /// <param name="Lugar">Hospital y consultorio, de Contenido.</param>
 /// <param name="Direccion">Calle, número, colonia y ciudad, de Contenido.</param>
+/// <param name="EnlaceDeGestion">El Enlace de gestión, de <see cref="IAgendaApi.ObtenerEnlaceDeGestion"/> (AD-19). Solo
+/// se pinta; nunca se registra (AD-23).</param>
+/// <param name="UmbralDeReprogramacionMin">Hasta cuántos minutos antes del inicio se puede reprogramar, de las reglas
+/// de reserva (RN-17). Hoy 120.</param>
+/// <param name="ConCorreo">El Paciente tiene correo guardado en Pacientes, aunque no lo haya escrito esta vez (RN-30):
+/// decide entre "con correo" y "sin correo" en Cita confirmada.</param>
 public sealed record CitaAgendadaEnLinea(
     CitaId CitaId,
     DateOnly Fecha,
@@ -79,7 +85,18 @@ public sealed record CitaAgendadaEnLinea(
     string TipoDeVisita,
     int DuracionMin,
     string Lugar,
-    string Direccion);
+    string Direccion,
+    string EnlaceDeGestion,
+    int UmbralDeReprogramacionMin,
+    bool ConCorreo)
+{
+    // El enlace no se escribe al registrar la confirmación (AD-23).
+    private bool PrintMembers(System.Text.StringBuilder texto)
+    {
+        texto.Append($"CitaId = {CitaId}, Fecha = {Fecha}, Hora = {Hora}, TipoDeVisita = {TipoDeVisita}, DuracionMin = {DuracionMin}");
+        return true;
+    }
+}
 
 /// <summary>El conjunto cerrado de códigos de fallo esperado de Agenda.</summary>
 public static class CodigosDeAgenda

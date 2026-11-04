@@ -528,6 +528,16 @@ El AppHost de Aspire arranca, en este orden:
 3. `web`: la aplicación, en <http://localhost:5080>. Arranca solo si `migraciones` terminó con código 0. La web
    nunca crea ni migra nada (AD-25).
 
+La clave del Enlace de gestión (AD-19) es el parámetro secreto del AppHost `clave-enlace-de-gestion`; el AppHost
+se la pasa a la web como `EnlaceDeGestion__Clave`, junto con su propia dirección como `EnlaceDeGestion__UrlBase`.
+Si no se da `Parameters:clave-enlace-de-gestion`, Aspire genera una nueva en cada arranque, así que los enlaces de
+gestión cambian entre arranques (como la base, que también parte vacía). Para enlaces estables, da una clave de al
+menos 32 caracteres por la variable de entorno `Parameters__clave-enlace-de-gestion` al arrancar el AppHost, o por
+user-secrets: la primera vez `./dotnet.sh user-secrets init --project src/DraSelina.Consultorio.AppHost` (agrega un
+`UserSecretsId` al proyecto) y después
+`./dotnet.sh user-secrets set "Parameters:clave-enlace-de-gestion" "<clave>" --project src/DraSelina.Consultorio.AppHost`.
+La clave nunca va en el repositorio.
+
 El panel de Aspire queda en <http://localhost:15080>; la dirección con el token de entrada sale en la consola
 (`Login to the dashboard at ...`). Ahí se ven los tres recursos con su estado, sus registros y las trazas: pide
 una página a la web y aparece su traza `GET /`.

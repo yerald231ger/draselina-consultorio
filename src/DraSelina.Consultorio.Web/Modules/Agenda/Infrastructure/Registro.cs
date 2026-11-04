@@ -4,6 +4,7 @@ using DraSelina.Consultorio.Agenda.Features;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace DraSelina.Consultorio.Agenda.Infrastructure;
 
@@ -12,12 +13,15 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure;
 /// Cada handler se registra aquí, uno por línea, por su interfaz (AD-10):
 /// <c>.AddScoped&lt;ICommandHandler&lt;MiComando, T&gt;, MiComandoHandler&gt;()</c>, y el de un evento:
 /// <c>.AddScoped&lt;IEventHandler&lt;MiEvento&gt;, MiHandler&gt;()</c>.
+/// La clave y la URL base del Enlace de gestión se leen de la sección <c>EnlaceDeGestion</c> de la configuración y se
+/// validan al arrancar el host (AD-19): sin ellas la web no arranca.
 /// </summary>
 public static class Registro
 {
     public static IServiceCollection AddAgenda(this IServiceCollection servicios, string cadenaDeConexion) =>
         servicios
             .AddDbContext<AgendaDbContext>(opciones => AgendaDbContext.Configurar(opciones, cadenaDeConexion))
+            .AddEnlaceDeGestion()
             .AddScoped<ITransaccionDeAgenda, TransaccionDeAgenda>()
             .AddScoped<IOutboxDeAgenda, OutboxDeAgenda>()
             .AddScoped<IBitacoraDeAgenda, BitacoraDeAgenda>()
@@ -31,4 +35,16 @@ public static class Registro
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
             .AddScoped<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>, HorariosLibresHandler>()
             .AddScoped<IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>>, TiposDeVisitaReservablesHandler>();
+
+    private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
+    {
+        servicios.AddOptions<OpcionesDeEnlaceDeGestion>()
+            .BindConfiguration(OpcionesDeEnlaceDeGestion.Seccion)
+            .ValidateOnStart();
+
+        return servicios
+            .AddSingleton<IValidateOptions<OpcionesDeEnlaceDeGestion>, ValidacionDeOpcionesDeEnlaceDeGestion>()
+            .AddSingleton(proveedor => proveedor.GetRequiredService<IOptions<OpcionesDeEnlaceDeGestion>>().Value.ClaveDeGestion())
+            .AddSingleton<IAgendaApi, AgendaApi>();
+    }
 }

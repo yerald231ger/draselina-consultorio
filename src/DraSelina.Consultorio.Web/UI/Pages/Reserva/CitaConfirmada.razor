@@ -1,9 +1,15 @@
 @using DraSelina.Consultorio.Agenda.Contracts
 
 @*
-    Cita confirmada (mockup Confirmada): fecha y hora en grande, tipo y duración, lugar y dirección, y "Volver al
-    inicio". Sin enlace de gestión ni archivo de calendario: llegan con sus historias. Se pinta en la misma
-    respuesta del envío de Tus datos, sin redirección: así ninguna dirección lleva el id de la Cita.
+    Cita confirmada (mockup Confirmada): fecha y hora en grande, tipo y duración, lugar y dirección, el Enlace de
+    gestión con "Guarda este enlace" (FR-5, AD-19) y "Volver al inicio". Sin archivo de calendario: llega con su
+    historia. Se pinta en la misma respuesta del envío de Tus datos, sin redirección: así ninguna dirección lleva el id
+    de la Cita.
+
+    El enlace va completo como texto seleccionable; sin scripts no hay botón "Copiar". El "2 horas" sale del umbral de
+    las reglas de reserva. Con correo no hay todavía frase del correo ni del recordatorio: nada se envía hasta la
+    épica 4. Con o sin correo lo dice Pacientes (el Paciente puede tener uno guardado de antes). Sin correo, la frase de "sin correo" y el panel del enlace sube antes de la tarjeta (EXPERIENCE.md,
+    "Confirmada, sin correo").
 *@
 
 <section class="dsm-contenedor dsm-confirmada" aria-labelledby="cita-confirmada">
@@ -15,7 +21,16 @@
             </svg>
         </div>
         <h1 id="cita-confirmada" class="dsm-titulo-de-estado">Tu cita está confirmada</h1>
+        @if (!Cita.ConCorreo)
+        {
+            <p class="dsm-confirmada__nota">No recibirás recordatorio. Guarda este enlace o agrega la cita a tu calendario.</p>
+        }
     </div>
+
+    @if (!Cita.ConCorreo)
+    {
+        @Enlace
+    }
 
     <div class="dsm-tarjeta">
         <div class="dsm-tarjeta__seccion dsm-confirmada__cuando">
@@ -36,6 +51,11 @@
         </div>
     </div>
 
+    @if (Cita.ConCorreo)
+    {
+        @Enlace
+    }
+
     <div class="dsm-confirmada__pie">
         <a href="/" class="dsm-enlace-fuerte">Volver al inicio</a>
     </div>
@@ -44,4 +64,19 @@
 @code {
     [Parameter, EditorRequired]
     public CitaAgendadaEnLinea Cita { get; set; } = null!;
+
+    private RenderFragment Enlace => @<div class="dsm-enlace-de-gestion" role="group" aria-labelledby="guarda-este-enlace">
+        <div class="dsm-enlace-de-gestion__encabezado">
+            <svg class="dsm-enlace-de-gestion__icono" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path>
+                <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path>
+            </svg>
+            <div class="dsm-enlace-de-gestion__texto">
+                <h2 id="guarda-este-enlace" class="dsm-enlace-de-gestion__titulo">Guarda este enlace</h2>
+                <p class="dsm-enlace-de-gestion__ayuda">Con él puedes reprogramar @FormatoDeCita.HastaAntes(Cita.UmbralDeReprogramacionMin) o cancelar en cualquier momento. No necesitas cuenta.</p>
+            </div>
+        </div>
+        <p class="dsm-enlace-de-gestion__direccion">@Cita.EnlaceDeGestion</p>
+    </div>;
 }

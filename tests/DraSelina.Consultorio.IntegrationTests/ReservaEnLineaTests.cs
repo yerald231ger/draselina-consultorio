@@ -958,10 +958,10 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
             EjecutarAsync(
                 $"""
                 insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, origen, nota,
-                    consentimiento_en, consentimiento_version_aviso, consentimiento_canal, creada_en)
+                    consentimiento_en, consentimiento_version_aviso, consentimiento_canal, creada_en, token_hash)
                 values (gen_random_uuid(), {(pacienteId is { } id ? $"'{id}'" : "gen_random_uuid()")}, '{TiposDeVisitaSembrados.PrimeraConsulta}',
                     '{HoraLocal.AUtc(fecha, inicio):O}', '{HoraLocal.AUtc(fecha, fin):O}', 'Agendada', 'consultorio',
-                    'Pidió por WhatsApp', now(), '2026-11-borrador', 'externo', now())
+                    'Pidió por WhatsApp', now(), '2026-11-borrador', 'externo', now(), sha256(uuid_send(gen_random_uuid())))
                 """);
 
         /// <summary>Una agenda custom escrita directo en la base; sin tramos, ese día no se atiende.</summary>

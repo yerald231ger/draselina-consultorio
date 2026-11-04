@@ -31,6 +31,13 @@ public interface IPacientesApi
     /// <param name="telefono">Celular de México, en la misma forma que acepta <see cref="BuscarOCrearAsync"/>.</param>
     /// <returns>Sus <see cref="PatientId"/>; vacía si no hay ninguno o si el teléfono no es válido.</returns>
     Task<IReadOnlyList<PatientId>> ConTelefonoAsync(string telefono, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Si el Paciente tiene un correo guardado (RN-30): a él le llegarán los avisos. Solo contesta sí o no; el correo
+    /// no sale de Pacientes (RN-29). No registra nada.
+    /// </summary>
+    /// <returns>Falso si no tiene correo o si no existe.</returns>
+    Task<bool> TieneCorreoAsync(PatientId paciente, CancellationToken cancellationToken);
 }
 
 /// <summary>El conjunto cerrado de códigos de fallo esperado de Pacientes.</summary>

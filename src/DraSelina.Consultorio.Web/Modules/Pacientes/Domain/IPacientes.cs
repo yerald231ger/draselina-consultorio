@@ -17,6 +17,9 @@ public interface IPacientes
     /// <summary>Los ids de los Pacientes con ese teléfono, con cualquier nombre (INV-P3). Sin rastrear.</summary>
     Task<IReadOnlyList<PatientId>> ConTelefonoAsync(Telefono telefono, CancellationToken cancellationToken);
 
+    /// <summary>Si el Paciente tiene correo guardado; falso si no existe. Sin rastrear.</summary>
+    Task<bool> TieneCorreoAsync(PatientId paciente, CancellationToken cancellationToken);
+
     void Agregar(Paciente paciente);
 
     /// <summary>

@@ -13,6 +13,7 @@ public sealed class Cita
     {
         Rango = null!;
         Consentimiento = null!;
+        TokenHash = null!;
     }
 
     public CitaId Id { get; private set; }
@@ -53,6 +54,12 @@ public sealed class Cita
     public Guid? SolicitudId { get; private set; }
 
     /// <summary>
+    /// SHA-256 del token de su Enlace de gestión, 32 bytes (AD-19, RN-22). El token no se guarda: se deriva de la
+    /// clave del host y del id cada vez que hace falta (<see cref="EnlaceDeGestion.Derivar"/>).
+    /// </summary>
+    public byte[] TokenHash { get; private set; }
+
+    /// <summary>
     /// Agenda una Cita en línea: la crea el Paciente desde el sitio. Cumple INV-C1 a C5, C7, C9 a C11. La rejilla y la
     /// ventana son las de <see cref="CalculadoraDeDisponibilidad"/> (T-21). Rechaza también si el teléfono ya alcanzó el
     /// tope semanal (RN-18): el conteo lo hace el llamador; la Cita solo compara (T-1).
@@ -68,6 +75,8 @@ public sealed class Cita
     /// <param name="citasDeLaSemana">Las Citas Agendadas, de cualquier origen, de los Pacientes que comparten el
     /// teléfono, en la semana de calendario local (lunes a domingo) de <paramref name="inicio"/> (RN-18).</param>
     /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    /// <param name="clave">La clave del host con la que se deriva su Enlace de gestión; la Cita guarda solo el hash del
+    /// token (AD-19).</param>
     /// <param name="cita">La Cita, si no hubo rechazo.</param>
     /// <returns>Nulo si se agendó; si no, por qué no.</returns>
     /// <exception cref="ArgumentException">Si falta un dato que el llamador debía haber validado antes, o si los
@@ -82,12 +91,14 @@ public sealed class Cita
         ReglasDeAgenda reglas,
         int citasDeLaSemana,
         DateTimeOffset now,
+        ClaveDeGestion clave,
         out Cita? cita)
     {
         // INV-C1, C9, C11: datos que la validación de forma ya exigió. Faltar uno aquí es un error de programación.
         ArgumentNullException.ThrowIfNull(tipo);
         ArgumentNullException.ThrowIfNull(consentimiento);
         ArgumentNullException.ThrowIfNull(reglas);
+        ArgumentNullException.ThrowIfNull(clave);
         ArgumentException.ThrowIfNullOrWhiteSpace(motivoDeConsulta);
         ArgumentOutOfRangeException.ThrowIfNegative(citasDeLaSemana);
         if (solicitud == Guid.Empty)
@@ -145,9 +156,10 @@ public sealed class Cita
             return RechazoAlAgendar.TopeSemanal;
         }
 
+        var id = CitaId.Nuevo();
         cita = new Cita
         {
-            Id = CitaId.Nuevo(),
+            Id = id,
             PacienteId = paciente,
             TipoDeVisitaId = tipo.Id,
             Rango = RangoDeTiempo.Crear(inicio, inicio + tipo.Duracion),
@@ -157,6 +169,7 @@ public sealed class Cita
             Consentimiento = consentimiento,
             CreadaEn = now.ToUniversalTime(),
             SolicitudId = solicitud,
+            TokenHash = EnlaceDeGestion.Derivar(clave, id).Hash,
         };
 
         return null;

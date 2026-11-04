@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.Agenda.Infrastructure;
+using DraSelina.Consultorio.Kernel;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DraSelina.Consultorio.IntegrationTests;
 
@@ -61,6 +64,102 @@ public sealed partial class TusDatosTests(Arnes arnes)
         // En la dirección solo viajan tipo, fecha y hora; nunca los datos del Paciente (AD-11, AD-23).
         Assert.Equal(Ruta(), accion);
         Assert.Equal(["fecha", "hora", "tipo"], ParametrosDe(accion));
+    }
+
+    [Fact]
+    public async Task Con_correo_Cita_confirmada_muestra_Guarda_este_enlace_despues_de_la_tarjeta_y_ninguna_frase_de_correo()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
+        var confirmacion = Confirmacion(html);
+
+        Assert.Contains("Guarda este enlace", confirmacion, StringComparison.Ordinal);
+        Assert.Contains(
+            "Con él puedes reprogramar hasta 2 horas antes o cancelar en cualquier momento. No necesitas cuenta.",
+            confirmacion,
+            StringComparison.Ordinal);
+        var enlace = Assert.Single(Enlaces().Matches(confirmacion)).Value;
+        Assert.Equal(enlace, await EnlaceDeLaCitaAsync(escenario));
+        Assert.True(
+            confirmacion.IndexOf("dsm-tarjeta", StringComparison.Ordinal) < confirmacion.IndexOf("Guarda este enlace", StringComparison.Ordinal),
+            "Con correo el panel va después de la tarjeta.");
+
+        // Nada se envía todavía (épica 4): ni frase de correo ni de recordatorio; tampoco la de sin correo.
+        Assert.DoesNotContain("correo", confirmacion, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("recordatorio", confirmacion, StringComparison.OrdinalIgnoreCase);
+
+        // Sin scripts no hay "Copiar"; el enlace es texto, no un vínculo a /c/ (la página es de la épica 3).
+        Assert.DoesNotContain("Copiar", confirmacion, StringComparison.Ordinal);
+        Assert.DoesNotContain($"href=\"{enlace}", confirmacion, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Sin_correo_Cita_confirmada_dice_que_no_habra_recordatorio_y_sube_el_panel_del_enlace()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+        var datos = Datos();
+        datos["Comando.Correo"] = "";
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
+        var confirmacion = Confirmacion(html);
+
+        Assert.Contains(
+            "No recibirás recordatorio. Guarda este enlace o agrega la cita a tu calendario.", confirmacion, StringComparison.Ordinal);
+        Assert.Equal(await EnlaceDeLaCitaAsync(escenario), Assert.Single(Enlaces().Matches(confirmacion)).Value);
+        Assert.True(
+            confirmacion.IndexOf("dsm-enlace-de-gestion", StringComparison.Ordinal) < confirmacion.IndexOf("dsm-tarjeta", StringComparison.Ordinal),
+            "Sin correo el panel va antes de la tarjeta.");
+    }
+
+    [Fact]
+    public async Task Un_Paciente_con_correo_guardado_que_lo_deja_en_blanco_no_ve_la_frase_de_sin_correo()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        await escenario.PacienteDeAnaAsync();
+        using var cliente = escenario.Web.CreateClient();
+        var datos = Datos();
+        datos["Comando.Correo"] = "";
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
+        var confirmacion = Confirmacion(html);
+
+        Assert.Contains("Guarda este enlace", confirmacion, StringComparison.Ordinal);
+        Assert.DoesNotContain("No recibirás recordatorio", confirmacion, StringComparison.Ordinal);
+        Assert.True(
+            confirmacion.IndexOf("dsm-tarjeta", StringComparison.Ordinal) < confirmacion.IndexOf("dsm-enlace-de-gestion", StringComparison.Ordinal),
+            "Con correo guardado el panel va después de la tarjeta.");
+    }
+
+    [Fact]
+    public async Task Reenviar_la_misma_solicitud_sin_el_correo_muestra_la_misma_confirmacion_con_correo()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+        var (accion, campos) = await LlenarAsync(cliente, Ruta(), Datos());
+
+        var primera = await PostAsync(cliente, accion, campos);
+        campos["Comando.Correo"] = "";
+        var segunda = await PostAsync(cliente, accion, campos);
+
+        Assert.DoesNotContain("No recibirás recordatorio", Confirmacion(primera), StringComparison.Ordinal);
+        Assert.Equal(Confirmacion(primera), Confirmacion(segunda));
+        Assert.Single(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task El_texto_de_reprogramar_sale_del_umbral_de_las_reglas()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        await escenario.EjecutarAsync("update agenda.reglas_de_reserva set umbral_cancelacion_tardia_min = 60");
+        using var cliente = escenario.Web.CreateClient();
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
+
+        Assert.Contains("Con él puedes reprogramar hasta 1 hora antes o cancelar", Confirmacion(html), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -423,6 +522,13 @@ public sealed partial class TusDatosTests(Arnes arnes)
         return html[inicio..fin];
     }
 
+    // El enlace de la Cita única del escenario, armado por Agenda.
+    private static async Task<string> EnlaceDeLaCitaAsync(ReservaEnLineaTests.Escenario escenario)
+    {
+        var id = await escenario.EscalarAsync<Guid>("select id from agenda.cita");
+        return escenario.Web.Services.GetRequiredService<IAgendaApi>().ObtenerEnlaceDeGestion(new CitaId(id));
+    }
+
     private static List<string> ParametrosDe(string ruta) =>
         [.. ruta[(ruta.IndexOf('?') + 1)..].Split('&').Select(par => par.Split('=')[0]).Order(StringComparer.Ordinal)];
 
@@ -433,6 +539,9 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
     [GeneratedRegex("""(?<apertura><form[^>]*>).*?</form>""", RegexOptions.Singleline)]
     private static partial Regex Formulario();
+
+    [GeneratedRegex(@"https://citas\.prueba\.mx/c/[A-Za-z0-9_-]{43}")]
+    private static partial Regex Enlaces();
 
     [GeneratedRegex(@"\baction=""(?<accion>[^""]*)""")]
     private static partial Regex Accion();

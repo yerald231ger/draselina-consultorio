@@ -48,5 +48,18 @@ public static class FormatoDeCita
         return $"{doce}:{hora.Minute:00} {(hora.Hour < 12 ? "am" : "pm")}";
     }
 
+    /// <summary>
+    /// "hasta 2 horas antes", "hasta 1 hora antes", "hasta 90 minutos antes"; con 0, "hasta la hora de tu cita". Es el
+    /// umbral de reprogramación de las reglas de reserva, en minutos.
+    /// </summary>
+    public static string HastaAntes(int minutos) => minutos switch
+    {
+        <= 0 => "hasta la hora de tu cita",
+        60 => "hasta 1 hora antes",
+        _ when minutos % 60 == 0 => $"hasta {minutos / 60} horas antes",
+        1 => "hasta 1 minuto antes",
+        _ => $"hasta {minutos} minutos antes",
+    };
+
     private static string Mayuscula(string texto) => char.ToUpperInvariant(texto[0]) + texto[1..];
 }

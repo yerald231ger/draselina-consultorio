@@ -72,6 +72,11 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("tipo_de_visita_id");
 
+                    b.Property<byte[]>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("token_hash");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Consentimiento", "DraSelina.Consultorio.Agenda.Domain.Cita.Consentimiento#Consentimiento", b1 =>
                         {
                             b1.IsRequired();
@@ -112,6 +117,10 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
 
                     b.HasIndex("TipoDeVisitaId");
 
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cita_token_hash");
+
                     b.ToTable("cita", "agenda", t =>
                         {
                             t.HasCheckConstraint("ck_cita_cancelacion", "(estado = 'Cancelada') = (motivo_de_cancelacion IS NOT NULL) AND (estado = 'Cancelada') = (cancelada_en IS NOT NULL)");
@@ -125,6 +134,8 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure.Migrations
                             t.HasCheckConstraint("ck_cita_origen", "origen IN ('en_linea', 'consultorio')");
 
                             t.HasCheckConstraint("ck_cita_rango", "fin > inicio");
+
+                            t.HasCheckConstraint("ck_cita_token_hash", "octet_length(token_hash) = 32");
                         });
                 });
 

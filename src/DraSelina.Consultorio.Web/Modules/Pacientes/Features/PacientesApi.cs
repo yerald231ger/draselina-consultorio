@@ -79,6 +79,10 @@ public sealed class PacientesApi(ITransaccionDePacientes transaccion, IPacientes
             ? await pacientes.ConTelefonoAsync(tel, cancellationToken)
             : [];
 
+    // Solo lectura, como ConTelefonoAsync.
+    public Task<bool> TieneCorreoAsync(PatientId paciente, CancellationToken cancellationToken) =>
+        pacientes.TieneCorreoAsync(paciente, cancellationToken);
+
     // libphonenumber decide si el número existe en el plan de numeración de México y lo da en E.164; el dominio
     // solo acepta esa forma.
     private static Telefono? TelefonoDeMexico(string? texto)

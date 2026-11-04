@@ -51,3 +51,4 @@ El módulo Notificaciones completo: plantillas, canal de correo detrás de `INot
 - Waits on epic-gestion-por-el-paciente because: necesita `CitaReprogramada` y `CitaCancelada`.
 - Assumption: los correos no tienen mockup; se construyen desde la tabla de `EXPERIENCE.md`.
 - Open question: si el Motivo de consulta viaja en la Agenda del día y a qué hora sale cuando hay Citas por la mañana (spec, Open Questions).
+- Traspaso de la épica 2 (entrada 9, Gerardo, 2026-11-03): Cita confirmada no muestra todavía la frase "Te enviamos los detalles a tu correo. Un día antes, a las 9:00 am, te llegará un recordatorio." ni el estado "Recordatorio omitido" (EXPERIENCE.md). Esta épica los agrega cuando los correos existan, con la hora real del Recordatorio.

@@ -19,7 +19,9 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// registran nombre, teléfono, correo ni motivo (AD-23). Un comando cuya solicitud ya tiene Cita devuelve esa Cita, sin
 /// crear otra ni dejar otra bitácora u otro evento (AD-27, RN-21): se busca antes de todo, otra vez después del
 /// candado (un envío repetido de la misma fecha hace fila detrás del primero) y, si dos envíos de la misma solicitud
-/// chocan al guardar, después de deshacer.
+/// chocan al guardar, después de deshacer. La Cita guarda solo el hash de su Enlace de gestión; el enlace lo arma
+/// <see cref="IAgendaApi"/> para la confirmación, también la de una Cita que ya existía, y no va a la bitácora, al
+/// evento ni a los registros (AD-19, AD-23).
 /// </summary>
 public sealed class AgendarCitaEnLineaHandler(
     ITiposDeVisita tiposDeVisita,
@@ -34,7 +36,9 @@ public sealed class AgendarCitaEnLineaHandler(
     IBitacoraDeAgenda bitacora,
     IOutboxDeAgenda outbox,
     IActorActual actorActual,
-    IClock reloj) : ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>
+    IClock reloj,
+    ClaveDeGestion claveDeGestion,
+    IAgendaApi agendaApi) : ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>
 {
     public async Task<Resultado<CitaAgendadaEnLinea>> HandleAsync(
         AgendarCitaEnLinea comando,
@@ -102,7 +106,7 @@ public sealed class AgendarCitaEnLineaHandler(
 
         var rechazo = Cita.Agendar(
             solicitud,
-            paciente.Valor, tipo, inicio, comando.Motivo!, consentimiento, reglas, citasDeLaSemana, ahora, out var cita);
+            paciente.Valor, tipo, inicio, comando.Motivo!, consentimiento, reglas, citasDeLaSemana, ahora, claveDeGestion, out var cita);
         if (rechazo is not null)
         {
             await tx.DeshacerAsync(cancellationToken);
@@ -131,12 +135,14 @@ public sealed class AgendarCitaEnLineaHandler(
 
         await tx.ConfirmarAsync(cancellationToken);
 
-        return Confirmacion(cita!, tipo);
+        return Confirmacion(cita!, tipo, reserva, await pacientes.TieneCorreoAsync(cita!.PacienteId, cancellationToken));
     }
 
     // Lo que pinta Cita confirmada, igual para la Cita recién creada y para la que ya tenía la solicitud. Fecha y hora
-    // locales salen del inicio guardado (AD-17); la duración, del rango, que no se recalcula (INV-C3).
-    private CitaAgendadaEnLinea Confirmacion(Cita cita, TipoDeVisita tipo)
+    // locales salen del inicio guardado (AD-17); la duración, del rango, que no se recalcula (INV-C3). El enlace se
+    // deriva otra vez: el mismo para la misma Cita (AD-19). El umbral de reprogramación es el de hoy (RN-17). Con o sin
+    // correo lo dice Pacientes, por el Paciente de la Cita, no el formulario de este envío (RN-30).
+    private CitaAgendadaEnLinea Confirmacion(Cita cita, TipoDeVisita tipo, ReglasDeReserva reserva, bool conCorreo)
     {
         var (fecha, hora) = HoraLocal.DesdeUtc(cita.Rango.Inicio);
         var consultorio = contenido.DatosDelConsultorio;
@@ -147,7 +153,10 @@ public sealed class AgendarCitaEnLineaHandler(
             tipo.Nombre,
             (int)(cita.Rango.Fin - cita.Rango.Inicio).TotalMinutes,
             consultorio.Lugar,
-            $"{consultorio.Direccion}, {consultorio.Ciudad}");
+            $"{consultorio.Direccion}, {consultorio.Ciudad}",
+            agendaApi.ObtenerEnlaceDeGestion(cita.Id),
+            reserva.UmbralCancelacionTardiaMin,
+            conCorreo);
     }
 
     private async Task<Resultado<CitaAgendadaEnLinea>> ConfirmacionAsync(Cita cita, CancellationToken cancellationToken)
@@ -155,7 +164,8 @@ public sealed class AgendarCitaEnLineaHandler(
         // El tipo existe: la llave foránea lo protege (Restrict). Su nombre puede haber cambiado; se muestra el de hoy.
         var tipo = await tiposDeVisita.ObtenerAsync(cita.TipoDeVisitaId, cancellationToken)
                    ?? throw new InvalidOperationException($"La Cita {cita.Id} apunta a un tipo de visita que no existe.");
-        return Confirmacion(cita, tipo);
+        var reserva = await reglasDeReserva.ObtenerAsync(cancellationToken);
+        return Confirmacion(cita, tipo, reserva, await pacientes.TieneCorreoAsync(cita.PacienteId, cancellationToken));
     }
 
     // RN-24 y AD-3, dentro de la transacción y después de guardar la Cita sin traslape: si la Cita no se confirma,
