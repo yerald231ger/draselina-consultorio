@@ -103,7 +103,7 @@ Reglas:
 | Resumen de selección | Barra inferior (móvil), panel "Tu cita" (escritorio) | Siempre refleja lo elegido. Sin hora elegida dice "Elige una hora" y "Continuar" queda deshabilitado `[ASSUMPTION]`. |
 | Barra de progreso | Los tres pasos | Informativa; no es navegación. Se regresa con la flecha o con "Cambiar". |
 | Formulario de datos | Tus datos | Nombre ("Si agendas para otra persona, escribe el nombre del paciente"), celular (+52 fijo, 10 dígitos), correo opcional, motivo (una o dos líneas), Consentimiento, verificación anti-bots. Valida al salir del campo y al enviar `[ASSUMPTION]`. |
-| Enlace de gestión | Cita confirmada | "Copiar" copia el enlace completo y lo confirma en el mismo botón ("Copiado") `[ASSUMPTION]`. |
+| Enlace de gestión | Cita confirmada | El enlace completo se muestra como texto seleccionable en el panel "Guarda este enlace", con el plazo para reprogramar tomado de las reglas. Sin scripts no hay botón "Copiar": el Paciente lo selecciona y copia con el gesto de su teléfono. |
 | Agregar a mi calendario | Cita confirmada | Entrega un evento con fecha, lugar y el Enlace de gestión. |
 | Acciones de la Cita | Tu cita | "Reprogramar" visible solo hasta 2 horas antes; "Cancelar cita" siempre. |
 | Contacto por WhatsApp | Tu cita, sitio | Abre la conversación con el Consultorio. |
@@ -291,7 +291,7 @@ Ninguna impide pasar a arquitectura; se avanza con los supuestos indexados abajo
 
 - Foundation — el Administrador trabaja en escritorio.
 - IA — el sitio es una página con secciones; navegación de administración de cuatro entradas.
-- Component Patterns — "Continuar" deshabilitado sin hora; validación al salir del campo; "Copiado".
+- Component Patterns — "Continuar" deshabilitado sin hora; validación al salir del campo.
 - State Patterns (Paciente) — sin horarios en la ventana; textos de error; tope semanal; variante sin correo; cancelación normal; enlace no válido.
 - State Patterns (Administrador) — todos los tratamientos.
 - Accessibility — ampliación al 200 %.
