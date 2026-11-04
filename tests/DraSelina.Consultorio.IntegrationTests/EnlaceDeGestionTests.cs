@@ -44,7 +44,8 @@ public sealed class EnlaceDeGestionTests(Arnes arnes)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         var resultado = await escenario.AgendarAsync(ReservaEnLineaTests.Comando());
-        var api = escenario.Web.Services.GetRequiredService<IAgendaApi>();
+        await using var ambito = escenario.Web.Services.CreateAsyncScope();
+        var api = ambito.ServiceProvider.GetRequiredService<IAgendaApi>();
 
         var primero = api.ObtenerEnlaceDeGestion(resultado.Valor.CitaId);
         var segundo = api.ObtenerEnlaceDeGestion(resultado.Valor.CitaId);
@@ -136,8 +137,9 @@ public sealed class EnlaceDeGestionTests(Arnes arnes)
         Assert.Contains("EnlaceDeGestion:Clave", Mensajes(error), StringComparison.Ordinal);
     }
 
+    // Solo para armar enlaces: el archivo de calendario, que lee la base, no se pide aquí.
     private static AgendaApi Api(string clave) =>
-        new(Options.Create(new OpcionesDeEnlaceDeGestion { Clave = clave, UrlBase = Arnes.UrlBaseDeEnlace }));
+        new(Options.Create(new OpcionesDeEnlaceDeGestion { Clave = clave, UrlBase = Arnes.UrlBaseDeEnlace }), null!, null!, null!);
 
     private static string Token(string enlace) => enlace[(enlace.LastIndexOf("/c/", StringComparison.Ordinal) + 3)..];
 

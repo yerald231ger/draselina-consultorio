@@ -64,6 +64,28 @@ public sealed class EnlaceDeGestion
         return new EnlaceDeGestion(Base64Url(token), SHA256.HashData(token));
     }
 
+    /// <summary>
+    /// El hash con el que se busca la Cita de un token que llega en una dirección (AD-19): SHA-256 de sus 32 bytes.
+    /// Nulo si el token no es base64url sin relleno de 32 bytes: ese token no es de ninguna Cita.
+    /// </summary>
+    public static byte[]? HashDelToken(string? token)
+    {
+        if (token is not { Length: 43 })
+        {
+            return null;
+        }
+
+        Span<byte> bytes = stackalloc byte[33];
+        var base64 = token.Replace('-', '+').Replace('_', '/') + "=";
+        if (!Convert.TryFromBase64String(base64, bytes, out var escritos) || escritos != 32
+            || Base64Url(bytes[..32].ToArray()) != token)
+        {
+            return null;
+        }
+
+        return SHA256.HashData(bytes[..32]);
+    }
+
     public override string ToString() => "EnlaceDeGestion(oculto)";
 
     private static string Base64Url(byte[] bytes) =>

@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.Kernel;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DraSelina.Consultorio.IntegrationTests;
@@ -94,6 +95,52 @@ public sealed partial class TusDatosTests(Arnes arnes)
         Assert.DoesNotContain("Copiar", confirmacion, StringComparison.Ordinal);
         Assert.DoesNotContain($"href=\"{enlace}", confirmacion, StringComparison.Ordinal);
         Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("ana@correo.com")]
+    [InlineData("")]
+    public async Task Cita_confirmada_enlaza_Agregar_a_mi_calendario_al_archivo_bajo_el_Enlace_de_gestion(string correo)
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.Web.CreateClient();
+        var datos = Datos();
+        datos["Comando.Correo"] = correo;
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
+        var confirmacion = Confirmacion(html);
+
+        var calendario = $"{new Uri(await EnlaceDeLaCitaAsync(escenario)).AbsolutePath}/calendario.ics";
+        Assert.Matches(@"^/c/[A-Za-z0-9_-]{43}/calendario\.ics$", calendario);
+        var vinculo = Assert.Single(
+            Vinculos().Matches(confirmacion), v => v.Groups["texto"].Value.Contains("Agregar a mi calendario", StringComparison.Ordinal));
+        Assert.Equal(calendario, vinculo.Groups["href"].Value);
+        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+
+        // El vínculo lleva a la descarga.
+        using var respuesta = await cliente.GetAsync(calendario, Cancelacion);
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.Equal("text/calendar", respuesta.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task Con_una_URL_base_con_ruta_Agregar_a_mi_calendario_apunta_a_la_ruta_del_endpoint()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        await using var web = escenario.Web.WithWebHostBuilder(b => b.UseSetting("EnlaceDeGestion:UrlBase", "https://citas.prueba.mx/citas"));
+        using var cliente = web.CreateClient();
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
+        var confirmacion = Confirmacion(html);
+
+        var token = new Uri(await EnlaceDeLaCitaAsync(escenario)).Segments[^1];
+        Assert.Contains($"https://citas.prueba.mx/citas/c/{token}", confirmacion, StringComparison.Ordinal);
+        var vinculo = Assert.Single(
+            Vinculos().Matches(confirmacion), v => v.Groups["texto"].Value.Contains("Agregar a mi calendario", StringComparison.Ordinal));
+        Assert.Equal($"/c/{token}/calendario.ics", vinculo.Groups["href"].Value);
+
+        using var respuesta = await cliente.GetAsync(vinculo.Groups["href"].Value, Cancelacion);
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
     }
 
     [Fact]
@@ -526,7 +573,8 @@ public sealed partial class TusDatosTests(Arnes arnes)
     private static async Task<string> EnlaceDeLaCitaAsync(ReservaEnLineaTests.Escenario escenario)
     {
         var id = await escenario.EscalarAsync<Guid>("select id from agenda.cita");
-        return escenario.Web.Services.GetRequiredService<IAgendaApi>().ObtenerEnlaceDeGestion(new CitaId(id));
+        await using var ambito = escenario.Web.Services.CreateAsyncScope();
+        return ambito.ServiceProvider.GetRequiredService<IAgendaApi>().ObtenerEnlaceDeGestion(new CitaId(id));
     }
 
     private static List<string> ParametrosDe(string ruta) =>
@@ -542,6 +590,9 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
     [GeneratedRegex(@"https://citas\.prueba\.mx/c/[A-Za-z0-9_-]{43}")]
     private static partial Regex Enlaces();
+
+    [GeneratedRegex("""<a[^>]*href="(?<href>[^"]*)"[^>]*>(?<texto>.*?)</a>""", RegexOptions.Singleline)]
+    private static partial Regex Vinculos();
 
     [GeneratedRegex(@"\baction=""(?<accion>[^""]*)""")]
     private static partial Regex Accion();

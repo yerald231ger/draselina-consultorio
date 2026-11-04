@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
+    private const string EnlaceDeGestionPath = "/c";
 
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -63,11 +65,22 @@ public static class Extensions
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
                     .AddAspNetCoreInstrumentation(tracing =>
+                    {
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>
                             !context.Request.Path.StartsWithSegments(HealthEndpointPath)
-                            && !context.Request.Path.StartsWithSegments(AlivenessEndpointPath)
-                    )
+                            && !context.Request.Path.StartsWithSegments(AlivenessEndpointPath);
+
+                        // El token del Enlace de gestión nunca va a las trazas (AD-23): la ruta /c/<token>/... se
+                        // registra como /c/{token}/...
+                        tracing.EnrichWithHttpRequest = (actividad, solicitud) =>
+                        {
+                            if (RutaEnmascarada(solicitud.Path) is { } enmascarada)
+                            {
+                                actividad.SetTag("url.path", enmascarada);
+                            }
+                        };
+                    })
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation();
@@ -76,6 +89,23 @@ public static class Extensions
         builder.AddOpenTelemetryExporters();
 
         return builder;
+    }
+
+    /// <summary>
+    /// La ruta del Enlace de gestión con el token cambiado por <c>{token}</c>: <c>/c/abc/calendario.ics</c> da
+    /// <c>/c/{token}/calendario.ics</c> (AD-23). Nula si la ruta no es de un Enlace de gestión.
+    /// </summary>
+    public static string? RutaEnmascarada(PathString ruta)
+    {
+        if (!ruta.StartsWithSegments(EnlaceDeGestionPath, StringComparison.OrdinalIgnoreCase, out var resto))
+        {
+            return null;
+        }
+
+        var despuesDelToken = resto.Value is { Length: > 1 } valor && valor.IndexOf('/', 1) is var corte and >= 0
+            ? valor[corte..]
+            : "";
+        return $"{EnlaceDeGestionPath}/{{token}}{despuesDelToken}";
     }
 
     private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder

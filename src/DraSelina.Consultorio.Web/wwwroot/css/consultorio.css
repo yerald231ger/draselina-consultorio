@@ -589,6 +589,38 @@ a:hover {
   margin-top: var(--dsm-spacing-9);
 }
 
+/* Botón secundario: blanco con borde vino de 2 px ("Agregar a mi calendario"); 54 px, radio lg, tipografía button. */
+.dsm-boton-secundario {
+  --bs-btn-color: var(--dsm-primary);
+  --bs-btn-bg: var(--dsm-surface);
+  --bs-btn-border-color: var(--dsm-primary);
+  --bs-btn-border-width: 2px;
+  --bs-btn-hover-color: var(--dsm-primary-hover);
+  --bs-btn-hover-bg: var(--dsm-tint);
+  --bs-btn-hover-border-color: var(--dsm-primary-hover);
+  --bs-btn-active-color: var(--dsm-primary-hover);
+  --bs-btn-active-bg: var(--dsm-tint);
+  --bs-btn-active-border-color: var(--dsm-primary-hover);
+  --bs-btn-focus-box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--dsm-primary) 50%, transparent);
+  --bs-btn-font-family: var(--dsm-font-family);
+  --bs-btn-font-size: var(--dsm-button-font-size);
+  --bs-btn-font-weight: var(--dsm-button-font-weight);
+  --bs-btn-border-radius: var(--dsm-rounded-lg);
+  --bs-btn-padding-x: 24px;
+  --bs-btn-padding-y: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dsm-spacing-3);
+  min-height: 54px;
+}
+
+/* "Agregar a mi calendario", bajo la tarjeta de la Cita: ancho completo. */
+.dsm-confirmada__calendario {
+  width: 100%;
+  margin-top: var(--dsm-spacing-7);
+}
+
 /* La frase bajo el título de Cita confirmada: hoy solo la de "sin correo". */
 .dsm-confirmada__nota {
   margin: 0;

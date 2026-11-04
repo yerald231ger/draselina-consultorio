@@ -12,4 +12,10 @@ public interface IAgendaApi
     /// quien lo valida (épica 3).
     /// </summary>
     string ObtenerEnlaceDeGestion(CitaId citaId);
+
+    /// <summary>
+    /// El archivo de calendario de la Cita (FR-5), el mismo que se descarga con su Enlace de gestión (<see cref="ArchivoDeCalendarioPorEnlace"/>): para que
+    /// Notificaciones lo adjunte (AD-20). Nulo si la Cita no existe, no está Agendada o su inicio ya pasó.
+    /// </summary>
+    Task<ArchivoDeCalendario?> ObtenerArchivoDeCalendarioAsync(CitaId citaId, CancellationToken cancellationToken);
 }

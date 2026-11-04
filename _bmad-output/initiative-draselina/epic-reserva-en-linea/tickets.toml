@@ -109,7 +109,6 @@ covers = ["CAP-2"]
 after = [9]
 hitl = false
 risk = "medium"
-unknown = "¿Cómo obtiene su actor un endpoint de Minimal API, donde Blazor no fija el estado de autenticación? (épica 1, pregunta abierta de la entrada 7)."
 
 [[entry]]
 id = 11

@@ -118,4 +118,9 @@ public static class CodigosDeAgenda
 
     /// <summary>Ese teléfono ya tiene el máximo de Citas de la semana de la Cita (RN-18, AD-13).</summary>
     public const string TopeSemanal = "agenda.tope_semanal";
+
+    /// <summary>
+    /// No hay Cita para ese Enlace de gestión, o no está Agendada, o su inicio ya pasó; no se dice cuál (RN-22).
+    /// </summary>
+    public const string CitaNoEncontrada = "agenda.cita_no_encontrada";
 }

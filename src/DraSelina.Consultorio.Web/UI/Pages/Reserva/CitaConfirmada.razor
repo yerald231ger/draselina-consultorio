@@ -2,9 +2,11 @@
 
 @*
     Cita confirmada (mockup Confirmada): fecha y hora en grande, tipo y duración, lugar y dirección, el Enlace de
-    gestión con "Guarda este enlace" (FR-5, AD-19) y "Volver al inicio". Sin archivo de calendario: llega con su
-    historia. Se pinta en la misma respuesta del envío de Tus datos, sin redirección: así ninguna dirección lleva el id
+    gestión con "Guarda este enlace" (FR-5, AD-19), "Agregar a mi calendario" y "Volver al inicio". Se pinta en la misma respuesta del envío de Tus datos, sin redirección: así ninguna dirección lleva el id
     de la Cita.
+
+    "Agregar a mi calendario" es un vínculo, sin scripts, al archivo de calendario bajo el Enlace de gestión
+    (/c/<token>/calendario.ics, armado con el token), relativo al sitio que sirvió la página; va después de la tarjeta, con o sin correo.
 
     El enlace va completo como texto seleccionable; sin scripts no hay botón "Copiar". El "2 horas" sale del umbral de
     las reglas de reserva. Con correo no hay todavía frase del correo ni del recordatorio: nada se envía hasta la
@@ -51,6 +53,15 @@
         </div>
     </div>
 
+    <a href="@Calendario" class="btn dsm-boton-secundario dsm-confirmada__calendario">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
+            <path d="M3.5 10h17M8 3v4M16 3v4"></path>
+        </svg>
+        Agregar a mi calendario
+    </a>
+
     @if (Cita.ConCorreo)
     {
         @Enlace
@@ -64,6 +75,10 @@
 @code {
     [Parameter, EditorRequired]
     public CitaAgendadaEnLinea Cita { get; set; } = null!;
+
+    // /c/<token>/calendario.ics, con el token del último segmento del Enlace de gestión: la ruta del endpoint, aunque la
+    // URL base del enlace lleve una ruta propia.
+    private string Calendario => $"/c/{Cita.EnlaceDeGestion.TrimEnd('/')[(Cita.EnlaceDeGestion.TrimEnd('/').LastIndexOf('/') + 1)..]}/calendario.ics";
 
     private RenderFragment Enlace => @<div class="dsm-enlace-de-gestion" role="group" aria-labelledby="guarda-este-enlace">
         <div class="dsm-enlace-de-gestion__encabezado">

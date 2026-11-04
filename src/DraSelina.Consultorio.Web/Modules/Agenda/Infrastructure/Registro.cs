@@ -2,6 +2,10 @@ using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Agenda.Features;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using System.Text;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -9,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace DraSelina.Consultorio.Agenda.Infrastructure;
 
 /// <summary>
-/// Lo que el host registra de Agenda: su contexto, su puerto de transacción, su outbox, su bitácora, su candado por fecha, sus puertos y sus handlers.
+/// Lo que el host registra de Agenda: su contexto, su puerto de transacción, su outbox, su bitácora, su candado por fecha, sus puertos, sus handlers y su único endpoint HTTP.
 /// Cada handler se registra aquí, uno por línea, por su interfaz (AD-10):
 /// <c>.AddScoped&lt;ICommandHandler&lt;MiComando, T&gt;, MiComandoHandler&gt;()</c>, y el de un evento:
 /// <c>.AddScoped&lt;IEventHandler&lt;MiEvento&gt;, MiHandler&gt;()</c>.
@@ -32,8 +36,12 @@ public static class Registro
             .AddScoped<IReglasDeReserva, ReglasDeReservaPersistidas>()
             .AddScoped<ICitasActivas, CitasActivas>()
             .AddScoped<ITiposDeVisitaReservables, TiposDeVisitaReservablesPersistidos>()
+            .AddScoped<ICitasDelCalendario, CitasDelCalendario>()
+            .AddScoped<AgendaApi>()
+            .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
             .AddScoped<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>, HorariosLibresHandler>()
+            .AddScoped<IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario>, ArchivoDeCalendarioPorEnlaceHandler>()
             .AddScoped<IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>>, TiposDeVisitaReservablesHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
@@ -44,7 +52,38 @@ public static class Registro
 
         return servicios
             .AddSingleton<IValidateOptions<OpcionesDeEnlaceDeGestion>, ValidacionDeOpcionesDeEnlaceDeGestion>()
-            .AddSingleton(proveedor => proveedor.GetRequiredService<IOptions<OpcionesDeEnlaceDeGestion>>().Value.ClaveDeGestion())
-            .AddSingleton<IAgendaApi, AgendaApi>();
+            .AddSingleton(proveedor => proveedor.GetRequiredService<IOptions<OpcionesDeEnlaceDeGestion>>().Value.ClaveDeGestion());
     }
+
+    /// <summary>
+    /// Lo que Agenda sirve por HTTP, solo donde un formulario no alcanza (AD-10): el archivo de calendario de una Cita,
+    /// en <see cref="RutaDelCalendario"/>. Se llega con el token del Enlace de gestión, nunca con el id (AD-19). Es una
+    /// lectura sin actor, bitácora, transacción ni eventos (Gerardo, 2026-11-03). Lo que no sea una Cita Agendada futura
+    /// responde 404 sin decir por qué (RN-22). La telemetría enmascara la ruta (AD-23, ServiceDefaults).
+    /// </summary>
+    public static IEndpointRouteBuilder MapAgenda(this IEndpointRouteBuilder rutas)
+    {
+        rutas.MapGet(RutaDelCalendario, async (
+            string token,
+            IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario> consulta,
+            HttpContext contexto,
+            CancellationToken cancelacion) =>
+        {
+            // Lleva el Enlace de gestión: ni el navegador ni un intermediario lo guardan.
+            contexto.Response.Headers.CacheControl = "no-store";
+
+            var resultado = await consulta.HandleAsync(new ArchivoDeCalendarioPorEnlace(token), cancelacion);
+            return resultado.EsExito
+                ? Results.File(
+                    Encoding.UTF8.GetBytes(resultado.Valor.Contenido),
+                    ArchivoDeCalendario.TipoDeContenido,
+                    ArchivoDeCalendario.NombreDeArchivo)
+                : Results.NotFound();
+        });
+
+        return rutas;
+    }
+
+    /// <summary>La ruta del archivo de calendario: bajo el Enlace de gestión.</summary>
+    public const string RutaDelCalendario = "/c/{token}/calendario.ics";
 }

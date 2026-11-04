@@ -67,6 +67,28 @@ public class EnlaceDeGestionTests
         Assert.Throws<ArgumentException>(() => ClaveDeGestion.Crear(new byte[31]));
     }
 
+    [Fact]
+    public void El_hash_de_un_token_es_el_que_guarda_su_Cita()
+    {
+        var enlace = EnlaceDeGestion.Derivar(Clave, CitaId.Nuevo());
+
+        Assert.Equal(enlace.Hash, EnlaceDeGestion.HashDelToken(enlace.Token));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("corto")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA%")]
+    [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB")]
+    public void Un_token_que_no_es_base64url_de_32_bytes_no_tiene_hash(string? token)
+    {
+        Assert.Null(EnlaceDeGestion.HashDelToken(token));
+    }
+
     private static byte[] Bytes(string base64Url)
     {
         var base64 = base64Url.Replace('-', '+').Replace('_', '/');
