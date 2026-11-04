@@ -1123,3 +1123,13 @@ button.dsm-hora {
   font-size: var(--dsm-help-font-size);
   color: var(--dsm-muted);
 }
+
+/* Campo trampa de Tus datos (anti-bots): fuera de pantalla, nunca visible ni enfocable para una persona. */
+.dsm-fuera-de-pantalla {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

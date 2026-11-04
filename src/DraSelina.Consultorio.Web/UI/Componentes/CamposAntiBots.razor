@@ -1,0 +1,20 @@
+@using DraSelina.Consultorio.UI.Pages.Reserva
+
+@*
+    Los campos de la verificación anti-bots de Tus datos (VerificacionAntiBots). El instante protegido en que se pintó
+    el formulario, oculto. Y el campo trampa: fuera de pantalla, fuera del orden de tabulación, sin autocompletar y
+    oculto a lectores de pantalla. Una persona no lo ve ni lo llena; si llega con valor, no se reserva.
+*@
+
+<input type="hidden" name="@VerificacionAntiBots.CampoDePintado" value="@Pintado" />
+<div class="dsm-fuera-de-pantalla" aria-hidden="true">
+    <label for="@VerificacionAntiBots.CampoTrampa">Sitio web</label>
+    <input type="text" id="@VerificacionAntiBots.CampoTrampa" name="@VerificacionAntiBots.CampoTrampa"
+           tabindex="-1" autocomplete="off" />
+</div>
+
+@code {
+    /// <summary>El instante protegido en que se pintó el formulario la primera vez.</summary>
+    [Parameter, EditorRequired]
+    public string Pintado { get; set; } = "";
+}

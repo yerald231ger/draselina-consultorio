@@ -25,7 +25,6 @@ C4Context
   System(citas, "Sistema de citas", "Sitio del consultorio, reserva en línea y administración de la agenda")
 
   System_Ext(correo, "Proveedor de correo", "Azure Communication Services Email")
-  System_Ext(antibots, "Verificación anti-bots", "Cloudflare Turnstile")
   System_Ext(mapas, "Mapa", "Google Maps, abierto por enlace")
 
   Rel(paciente, citas, "Reserva y gestiona su cita en", "HTTPS")
@@ -34,7 +33,6 @@ C4Context
   Rel(correo, paciente, "Entrega correos a")
   Rel(correo, selina, "Entrega la agenda del día a")
   Rel(correo, admin, "Entrega alertas de cancelación tardía a")
-  Rel(citas, antibots, "Valida que la reserva es humana con", "HTTPS")
   Rel(paciente, mapas, "Abre la ubicación en")
 
   UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
@@ -52,20 +50,18 @@ C4Container
   Person(admin, "Administrador", "Administra la agenda")
 
   System_Boundary(citas, "Sistema de citas") {
-    Container(web, "Aplicación web", "Blazor Web App, .NET 10", "Sitio y reserva en SSR estático; administración en Interactive Server; módulos y mensajería en el mismo proceso")
+    Container(web, "Aplicación web", "Blazor Web App, .NET 10", "Sitio y reserva en SSR estático; administración en Interactive Server; módulos y mensajería en el mismo proceso; verificación anti-bots y límite de frecuencia propios")
     Container(mig, "Servicio de migraciones", ".NET 10, EF Core", "Aplica migraciones y datos iniciales; corre antes que la aplicación")
     ContainerDb(db, "Base de datos", "PostgreSQL con btree_gist", "Esquemas agenda, pacientes, notificaciones e identidad")
   }
 
   System_Ext(correo, "Proveedor de correo", "Azure Communication Services Email")
-  System_Ext(antibots, "Verificación anti-bots", "Cloudflare Turnstile")
 
   Rel(paciente, web, "Navega y envía formularios a", "HTTPS")
   Rel(admin, web, "Opera con conexión viva en", "HTTPS, SignalR")
   Rel(web, db, "Lee y escribe en", "Npgsql, EF Core")
   Rel(mig, db, "Crea y actualiza el esquema de", "Npgsql, EF Core")
   Rel(web, correo, "Envía correos con", "HTTPS")
-  Rel(web, antibots, "Verifica el token de reserva con", "HTTPS")
 
   UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```

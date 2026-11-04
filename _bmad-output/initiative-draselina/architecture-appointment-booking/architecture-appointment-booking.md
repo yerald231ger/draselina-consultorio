@@ -316,7 +316,7 @@ Versiones verificadas en la web el 2026-10-04.
 | Scrutor | 6.1.0 (la versión de Cypma.Cop) |
 | libphonenumber-csharp | última estable al crear la solución |
 | Correo: Azure Communication Services Email | servicio |
-| Anti-bots: Cloudflare Turnstile | servicio |
+| Anti-bots: campo trampa y tiempo mínimo protegido en Tus datos, más el limitador de frecuencia de ASP.NET Core por IP; sin scripts ni servicios de terceros | propio |
 
 ## Structural Seed
 

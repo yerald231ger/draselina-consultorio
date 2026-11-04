@@ -44,6 +44,6 @@ Para escribir una historia: toma la capacidad, lee sus `FR-n` en el PRD (consecu
 
 ## Cómo del PRD que no es regla
 
-- FR-7: limitador de frecuencia de ASP.NET Core y Cloudflare Turnstile.
+- FR-7: limitador de frecuencia de ASP.NET Core por IP (10 envíos cada 10 min y 60 visitas por minuto, en configuración) y verificación anti-bots sin scripts (campo trampa y tiempo mínimo de 3 s, protegido).
 - FR-29: marcado schema.org `Physician` y Perfil de Negocio de Google.
 - Pruebas: xUnit v3, bUnit y Testcontainers (arquitectura, Stack); recorridos con Playwright solo en local (addendum).

@@ -1,0 +1,23 @@
+@*
+    Demasiados intentos (FR-7, CAP-5): lo que ve quien pasa el límite de frecuencia de las páginas de reserva. No es
+    una ruta: el host la pinta con App y el layout del sitio, con estado 429, en lugar de la página pedida. Un mensaje
+    amable, nunca un error técnico.
+*@
+
+<PageTitle>Demasiados intentos · Dra. Selina Medina Castillo</PageTitle>
+
+<section class="dsm-contenedor dsm-reserva">
+    <h1 class="dsm-titulo-de-paso">Demasiados intentos</h1>
+    <div class="dsm-aviso" role="alert">
+        <p class="dsm-aviso__mensaje">@Mensaje</p>
+    </div>
+    <a href="/" class="dsm-enlace-fuerte">Volver al inicio</a>
+</section>
+
+@code {
+    /// <summary>La política de límite de frecuencia que piden las páginas de reserva; el host la define.</summary>
+    public const string Politica = "reserva";
+
+    /// <summary>El texto que ve el Paciente (Gerardo, 2026-11-04).</summary>
+    public const string Mensaje = "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.";
+}

@@ -31,7 +31,7 @@ Selina deja de administrar su agenda por WhatsApp; la señal es la del spec (sec
 Corte por resultado, no por módulo. Fuera: todo lo de la sección Non-goals del spec, y el aprovisionamiento y despliegue a Azure, diferidos por la arquitectura. Camino trazador: un Paciente reserva una Cita en línea y la ve confirmada (épica 2), sobre la plataforma de la épica 1.
 
 - Touch point: proveedor de correo (Azure Communication Services) — se consume detrás de `INotificationChannel`; owner: epic-notificaciones
-- Touch point: verificación anti-bots (Cloudflare Turnstile) — se consume en las páginas de reserva; owner: epic-reserva-en-linea
+- Verificación anti-bots propia (campo trampa, tiempo mínimo y límite de frecuencia), sin servicio externo; la construye epic-reserva-en-linea (entrada 11). Cloudflare Turnstile se descartó (Gerardo, 2026-11-04).
 - Touch point: mapa — solo un enlace externo; owner: epic-sitio-del-consultorio
 
 ## References

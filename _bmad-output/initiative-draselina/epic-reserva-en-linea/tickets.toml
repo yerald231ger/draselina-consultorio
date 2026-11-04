@@ -120,7 +120,6 @@ covers = ["CAP-5"]
 after = [8]
 hitl = false
 risk = "medium"
-unknown = "¿Turnstile, con una excepción a \"sin scripts ni CDN\" solo en Tus datos, o una defensa sin scripts de terceros (campo trampa, tiempo mínimo de envío y límite de frecuencia)? ¿Y qué límite de frecuencia se usa?"
 
 [[entry]]
 id = 12

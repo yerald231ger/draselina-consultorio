@@ -4,6 +4,7 @@ using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
 using DraSelina.Consultorio.UI;
+using DraSelina.Consultorio.UI.Pages.Reserva;
 using DraSelina.Consultorio.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +42,12 @@ builder.Services
 
 builder.Services.AddRazorComponents();
 
+// Protección de las páginas de reserva (FR-7, CAP-5), sin scripts ni servicios de terceros: el límite de frecuencia
+// por IP (LimiteDeFrecuencia.cs, valores en configuración) y la verificación anti-bots de Tus datos.
+builder.Services
+    .AddLimiteDeFrecuencia(builder.Configuration)
+    .AddSingleton<VerificacionAntiBots>();
+
 // Los decoradores de los handlers (la validación de forma de AD-12 y el rechazo sin Administrador de AD-22) se
 // aplican al construir el contenedor, sobre todo lo registrado hasta entonces. La lista está en
 // DecoradoresDeHandlers.cs.
@@ -48,6 +55,8 @@ builder.Host.UseServiceProviderFactory(contexto => DecoradoresDeHandlers.Fabrica
 
 var app = builder.Build();
 
+// Solo lo aplican los endpoints que piden su política: las páginas de reserva.
+app.UseRateLimiter();
 app.UseAntiforgery();
 
 app.MapStaticAssets();

@@ -11,8 +11,9 @@
 
     Sin scripts (AD-11): cada hora es un botón de este formulario, que se envía por POST a Tus datos con
     ?tipo=&fecha=&hora= de la hora elegida (formaction). Nombre, celular, correo, motivo, la casilla y el SolicitudId
-    viajan en campos ocultos del cuerpo, nunca en la dirección. Tus datos los pinta llenos y no reserva: el Paciente
-    confirma de nuevo con la misma solicitud. Los días van como <details> para no pintar todas las horas abiertas.
+    viajan en campos ocultos del cuerpo, nunca en la dirección, con el instante protegido de la verificación
+    anti-bots. Tus datos los pinta llenos y no reserva: el Paciente confirma de nuevo con la misma solicitud. Los
+    días van como <details> para no pintar todas las horas abiertas.
     Solo se muestran el día del horario perdido y los 6 siguientes de la ventana (Gerardo, 2026-11-03); para otros
     días, un enlace a Día y hora, donde los datos se escriben de nuevo (no viajan en la dirección).
 *@
@@ -34,6 +35,8 @@
         <AntiforgeryToken />
         <input type="hidden" name="@CampoDeEleccion" value="true" />
         <input type="hidden" name="Comando.SolicitudId" value="@Datos.SolicitudId" />
+        @* El instante en que se pintó Tus datos la primera vez: al volver, la verificación anti-bots lo mide desde ahí. *@
+        <input type="hidden" name="@VerificacionAntiBots.CampoDePintado" value="@Pintado" />
         <input type="hidden" name="Comando.Nombre" value="@Datos.Nombre" />
         <input type="hidden" name="Comando.Telefono" value="@Datos.Telefono" />
         @if (Datos.Correo is { } correo)
@@ -138,6 +141,10 @@
     /// <summary>Lo que el Paciente escribió, con su SolicitudId: viaja oculto en el cuerpo.</summary>
     [Parameter, EditorRequired]
     public AgendarCitaEnLinea Datos { get; set; } = null!;
+
+    /// <summary>El instante protegido en que se pintó Tus datos (<see cref="VerificacionAntiBots"/>): viaja oculto.</summary>
+    [Parameter, EditorRequired]
+    public string Pintado { get; set; } = "";
 
     /// <summary>Se elige una hora: Tus datos vuelve a pintar el formulario, sin reservar.</summary>
     [Parameter]

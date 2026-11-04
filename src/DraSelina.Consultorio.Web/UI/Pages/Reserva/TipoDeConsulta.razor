@@ -1,4 +1,6 @@
 @page "/reservar"
+@attribute [EnableRateLimiting(DemasiadosIntentos.Politica)]
+@using Microsoft.AspNetCore.RateLimiting
 @using DraSelina.Consultorio.Agenda.Contracts
 @using DraSelina.Consultorio.BuildingBlocks.Contracts
 @using DraSelina.Consultorio.Contenido.Contracts

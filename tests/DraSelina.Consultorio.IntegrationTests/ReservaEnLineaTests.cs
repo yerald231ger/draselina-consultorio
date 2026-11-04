@@ -8,6 +8,7 @@ using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -862,20 +863,49 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
     /// <summary>Una base migrada propia y la web en memoria sobre ella, con el reloj en <see cref="Ahora"/>.</summary>
     internal sealed class Escenario : IAsyncDisposable
     {
-        private Escenario(string cadena, WebApplicationFactory<Program> web)
+        private Escenario(string cadena, RelojDePrueba reloj, WebApplicationFactory<Program> web)
         {
             Cadena = cadena;
+            Reloj = reloj;
             Web = web;
         }
 
         public string Cadena { get; }
 
+        /// <summary>El reloj de la web: solo avanza cuando la prueba lo mueve.</summary>
+        public RelojDePrueba Reloj { get; }
+
         public WebApplicationFactory<Program> Web { get; }
+
+        /// <summary>Lo que tarda una persona en llenar un formulario: más que el tiempo mínimo de la verificación anti-bots.</summary>
+        public static readonly TimeSpan LoQueTardaUnaPersona = TimeSpan.FromSeconds(20);
 
         public static async Task<Escenario> CrearAsync(Arnes arnes)
         {
             var cadena = await arnes.CrearBaseMigradaAsync(TestContext.Current.CancellationToken);
-            return new Escenario(cadena, arnes.ArrancarWebSinEntregaAutomatica(cadena, new RelojDePrueba(Ahora)));
+            var reloj = new RelojDePrueba(Ahora);
+            return new Escenario(cadena, reloj, arnes.ArrancarWebSinEntregaAutomatica(cadena, reloj));
+        }
+
+        /// <summary>
+        /// Un cliente con cookies, como <c>CreateClient</c>, que se toma su tiempo como una persona: antes de cada
+        /// envío (POST) mueve el reloj <see cref="LoQueTardaUnaPersona"/>. Con <paramref name="web"/>, sobre otra
+        /// fábrica de este escenario (con el mismo reloj).
+        /// </summary>
+        public HttpClient ClienteDeUnaPersona(WebApplicationFactory<Program>? web = null) =>
+            (web ?? Web).CreateDefaultClient(new CookieContainerHandler(), new TardaComoUnaPersona(Reloj));
+
+        private sealed class TardaComoUnaPersona(RelojDePrueba reloj) : DelegatingHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage peticion, CancellationToken cancelacion)
+            {
+                if (peticion.Method == HttpMethod.Post)
+                {
+                    reloj.Avanzar(LoQueTardaUnaPersona);
+                }
+
+                return base.SendAsync(peticion, cancelacion);
+            }
         }
 
         /// <summary>

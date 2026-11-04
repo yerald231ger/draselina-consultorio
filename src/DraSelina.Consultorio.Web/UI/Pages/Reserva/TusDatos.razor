@@ -1,4 +1,6 @@
 @page "/reservar/datos"
+@attribute [EnableRateLimiting(DemasiadosIntentos.Politica)]
+@using Microsoft.AspNetCore.RateLimiting
 @using System.Globalization
 @using DraSelina.Consultorio.Agenda.Contracts
 @using DraSelina.Consultorio.BuildingBlocks.Contracts
@@ -9,9 +11,10 @@
 @inject IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>> Horarios
 @inject IClock Reloj
 @inject IContenidoApi Contenido
+@inject VerificacionAntiBots AntiBots
 
 @*
-    Reserva 3 · Tus datos (mockup Datos, sin el espacio de la verificación anti-bots). Tipo, fecha y hora llegan en la
+    Reserva 3 · Tus datos (mockup Datos). Tipo, fecha y hora llegan en la
     cadena de consulta (?tipo=<TipoDeVisitaId>&fecha=AAAA-MM-DD&hora=HH:mm); nombre, celular, correo y motivo viajan
     solo en el cuerpo del formulario (AD-11). El formulario se envía a la misma dirección, con la misma cadena de
     consulta. Al confirmar, la misma respuesta pinta Cita confirmada.
@@ -20,6 +23,10 @@
     (AD-27). Si el horario se ocupó al confirmar, la respuesta pinta HorarioTomado: el aviso y los horarios libres
     restantes. Elegir uno envía el formulario "otra-hora" a esta página con la nueva cadena de consulta; ese envío no
     reserva: vuelve a pintar Tus datos con los datos llenos y la misma solicitud.
+
+    Antes del handler, la verificación anti-bots (VerificacionAntiBots, FR-7): el campo trampa vacío y al menos 3 s
+    desde que se pintó el formulario. El instante protegido viaja oculto y se conserva al volver desde HorarioTomado.
+    Si no pasa, no se reserva y vuelve aquí con el aviso genérico, sin decir por qué ni registrar nada (AD-23).
 *@
 
 <PageTitle>Tus datos · Dra. Selina Medina Castillo</PageTitle>
@@ -30,7 +37,7 @@
 }
 else if (_tomado)
 {
-    <HorarioTomado Tipo="_horarioTomado" Desde="@(Comando!.Fecha ?? DateOnly.MinValue)" Dias="_diasLibres" Datos="Comando!" AlElegir="VolverATusDatos" />
+    <HorarioTomado Tipo="_horarioTomado" Desde="@(Comando!.Fecha ?? DateOnly.MinValue)" Dias="_diasLibres" Datos="Comando!" Pintado="@_pintado" AlElegir="VolverATusDatos" />
 }
 else if (_horario is not { } horario)
 {
@@ -78,6 +85,7 @@ else
         <EditForm Model="Comando" FormName="datos" OnValidSubmit="EnviarAsync" class="dsm-formulario">
             @* La misma solicitud en cada envío de este formulario (AD-27). *@
             <input type="hidden" name="Comando.SolicitudId" value="@Comando!.SolicitudId" />
+            <CamposAntiBots Pintado="@_pintado" />
 
             <ErroresDelResultado Resultado="_resultado">
                 <Campo Para="() => Comando!.Nombre" Etiqueta="Nombre completo"
@@ -136,6 +144,9 @@ else
 @code {
     private static readonly IReadOnlyList<string> SinMensajes = [];
 
+    /// <summary>El aviso cuando el envío no pasa la verificación anti-bots: no dice por qué (Gerardo, 2026-11-04).</summary>
+    public const string AvisoGenerico = "No pudimos agendar tu cita. Inténtalo de nuevo.";
+
     // Las propiedades que pintan sus errores con Campo, en orden de lectura. Si alguna tiene error, ella lleva el foco.
     private static readonly string[] ConCampo =
     [
@@ -153,6 +164,7 @@ else
     private bool _tomado;
     private TipoDeVisitaId _horarioTomado;
     private IReadOnlyList<DiaConHorarios> _diasLibres = [];
+    private string _pintado = "";
 
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
@@ -170,6 +182,14 @@ else
     [SupplyParameterFromForm]
     public AgendarCitaEnLinea? Comando { get; set; }
 
+    /// <summary>El instante protegido en que se pintó el formulario; llega con el envío de "datos" y el de "otra-hora".</summary>
+    [SupplyParameterFromForm(Name = VerificacionAntiBots.CampoDePintado)]
+    public string? Pintado { get; set; }
+
+    /// <summary>El campo trampa: una persona lo deja vacío.</summary>
+    [SupplyParameterFromForm(Name = VerificacionAntiBots.CampoTrampa)]
+    public string? Trampa { get; set; }
+
     /// <summary>Solo llega con el envío de <see cref="HorarioTomado"/>: el Paciente eligió otra hora.</summary>
     [SupplyParameterFromForm(FormName = HorarioTomado.NombreDelFormulario, Name = HorarioTomado.CampoDeEleccion)]
     public bool? OtraHora { get; set; }
@@ -181,6 +201,9 @@ else
         // Al pintar el formulario por primera vez; en un envío llega en el cuerpo y se conserva. Uno con ceros, escrito
         // a mano, no se cambia aquí: la validación lo rechaza sin reservar y EnviarAsync pone uno nuevo después.
         Comando.SolicitudId ??= Guid.CreateVersion7();
+
+        // El instante del primer pintado se conserva en cada envío; ausente o alterado, se pinta de nuevo.
+        _pintado = AntiBots.EsLegitimo(Pintado) ? Pintado! : AntiBots.Pintar();
 
         // El envío de "otra-hora" se despacha al formulario que lo pintó: el primer pintado lo tiene que llevar.
         // VolverATusDatos lo quita antes de responder, así la respuesta es Tus datos.
@@ -217,6 +240,16 @@ else
         }
 
         Comando ??= new();
+
+        // Un envío que no parece de una persona no llega al handler: ni Paciente ni Cita, y no se dice por qué.
+        if (!AntiBots.Pasa(Pintado, Trampa))
+        {
+            _resultado = null;
+            _aviso = AvisoGenerico;
+            _conWhatsApp = false;
+            return;
+        }
+
         Comando.TipoDeVisitaId = horario.Tipo;
         Comando.Fecha = horario.Fecha;
         Comando.Hora = horario.Hora;

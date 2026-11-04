@@ -23,7 +23,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task El_GET_pinta_el_formulario_con_el_horario_elegido_y_sin_ningun_script()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
 
         using var respuesta = await cliente.GetAsync(Ruta(), Cancelacion);
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
@@ -47,7 +47,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task El_POST_guarda_la_Cita_y_responde_Cita_confirmada_con_fecha_hora_y_direccion()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
 
         var (accion, html) = await EnviarAsync(cliente, Ruta(), Datos());
 
@@ -71,7 +71,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Con_correo_Cita_confirmada_muestra_Guarda_este_enlace_despues_de_la_tarjeta_y_ninguna_frase_de_correo()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
 
         var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
         var confirmacion = Confirmacion(html);
@@ -103,7 +103,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Cita_confirmada_enlaza_Agregar_a_mi_calendario_al_archivo_bajo_el_Enlace_de_gestion(string correo)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.Correo"] = correo;
 
@@ -128,7 +128,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         await using var web = escenario.Web.WithWebHostBuilder(b => b.UseSetting("EnlaceDeGestion:UrlBase", "https://citas.prueba.mx/citas"));
-        using var cliente = web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona(web);
 
         var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
         var confirmacion = Confirmacion(html);
@@ -147,7 +147,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Sin_correo_Cita_confirmada_dice_que_no_habra_recordatorio_y_sube_el_panel_del_enlace()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.Correo"] = "";
 
@@ -167,7 +167,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         await escenario.PacienteDeAnaAsync();
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.Correo"] = "";
 
@@ -185,7 +185,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Reenviar_la_misma_solicitud_sin_el_correo_muestra_la_misma_confirmacion_con_correo()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var (accion, campos) = await LlenarAsync(cliente, Ruta(), Datos());
 
         var primera = await PostAsync(cliente, accion, campos);
@@ -202,7 +202,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         await escenario.EjecutarAsync("update agenda.reglas_de_reserva set umbral_cancelacion_tardia_min = 60");
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
 
         var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
 
@@ -213,7 +213,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Un_celular_imposible_vuelve_al_formulario_con_el_mensaje_bajo_el_campo_y_sin_guardar()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.Telefono"] = "12345";
 
@@ -233,7 +233,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Sin_Consentimiento_el_aviso_aparece_junto_a_la_casilla()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos.Remove("Comando.Consentimiento");
 
@@ -248,7 +248,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Cada_vez_que_se_pinta_el_formulario_lleva_una_solicitud_nueva()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
 
         var primera = SolicitudDe(WebUtility.HtmlDecode(await cliente.GetStringAsync(Ruta(), Cancelacion)));
         var segunda = SolicitudDe(WebUtility.HtmlDecode(await cliente.GetStringAsync(Ruta(), Cancelacion)));
@@ -260,7 +260,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Una_solicitud_con_ceros_escrita_a_mano_no_reserva_ni_falla_y_vuelve_con_una_solicitud_nueva()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.SolicitudId"] = Guid.Empty.ToString();
 
@@ -277,7 +277,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Confirmar_dos_veces_el_mismo_formulario_da_una_Cita_y_la_misma_confirmacion()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var (accion, campos) = await LlenarAsync(cliente, Ruta(), Datos());
 
         var primera = await PostAsync(cliente, accion, campos);
@@ -305,7 +305,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
             await escenario.InsertarCitaDelConsultorioAsync(miercoles, inicio, inicio.AddMinutes(30));
         }
 
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.Nombre"] = "Mariana López";
 
@@ -345,7 +345,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         Assert.True((await escenario.AgendarAsync(ReservaEnLineaTests.Comando())).EsExito);
 
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var (_, html) = await EnviarAsync(cliente, Ruta(), Datos());
 
         // El martes 3 del horario perdido y los 6 días hábiles siguientes de la ventana: hasta el miércoles 11.
@@ -368,7 +368,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         Assert.True((await escenario.AgendarAsync(ReservaEnLineaTests.Comando())).EsExito);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.Nombre"] = "Mariana López";
         var (accion, campos) = await LlenarAsync(cliente, Ruta(), datos);
@@ -409,7 +409,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         await escenario.AgendarTresAsync();
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var datos = Datos();
         datos["Comando.Nombre"] = "Mariana López";
 
@@ -436,7 +436,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Un_horario_fuera_de_la_rejilla_o_de_la_ventana_muestra_el_aviso_sin_error_tecnico(string fecha, string hora)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var ruta = $"/reservar/datos?tipo={TiposDeVisitaSembrados.PrimeraConsulta}&fecha={fecha}&hora={hora}";
 
         var (_, html) = await EnviarAsync(cliente, ruta, Datos());
@@ -470,7 +470,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
     public async Task Una_fecha_fuera_de_hoy_a_un_anio_no_pinta_el_formulario_ni_guarda_nada(string fecha, string hora)
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
-        using var cliente = escenario.Web.CreateClient();
+        using var cliente = escenario.ClienteDeUnaPersona();
         var ruta = $"/reservar/datos?tipo={TiposDeVisitaSembrados.PrimeraConsulta}&fecha={fecha}&hora={hora}";
 
         using var respuesta = await cliente.GetAsync(ruta, Cancelacion);

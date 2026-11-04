@@ -54,4 +54,4 @@ Contenido que pertenece a arquitectura, diseño de solución o planeación, no a
 - **Cita manual fuera de horario (FR-15).** El plan prohíbe a `AgendarPorConsultorio` salir de 3:30–6:00, de lunes a viernes y agendar sobre un bloqueo. El PRD lo permite con nota obligatoria; solo quedan dos reglas duras: sin traslape y no en el pasado.
 - **Margen entre Citas.** El plan prevé `BufferMin` por Tipo de visita; el PRD no lo pide porque las cinco Citas de 30 min llenan exactamente la franja actual. Queda como punto de extensión.
 - **Mecanismos de búsqueda.** Marcado schema.org Physician y Perfil de Negocio de Google son el cómo de FR-29.
-- **Protección contra abuso.** Limitador de frecuencia de ASP.NET Core y Cloudflare Turnstile son el cómo de FR-7.
+- **Protección contra abuso.** El limitador de frecuencia de ASP.NET Core por IP y una verificación anti-bots sin scripts de terceros (campo trampa y tiempo mínimo entre pintar y enviar Tus datos) son el cómo de FR-7; Turnstile se reconsidera si aparece abuso real.

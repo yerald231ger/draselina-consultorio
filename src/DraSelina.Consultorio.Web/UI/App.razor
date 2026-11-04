@@ -13,7 +13,25 @@
 </head>
 
 <body>
-    <Routes />
+    @if (Pagina is null)
+    {
+        <Routes />
+    }
+    else
+    {
+        <LayoutView Layout="typeof(LayoutPublico)">
+            <DynamicComponent Type="Pagina" />
+        </LayoutView>
+    }
 </body>
 
 </html>
+
+@code {
+    /// <summary>
+    /// Una página que se pinta sin pasar por las rutas, con el layout del sitio. Solo la pasa el host cuando responde
+    /// sin llegar a la página pedida (la de <see cref="DemasiadosIntentos"/>); nula, App pinta la ruta.
+    /// </summary>
+    [Parameter]
+    public Type? Pagina { get; set; }
+}
