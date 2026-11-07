@@ -10,12 +10,14 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// <summary>
 /// Tu cita por Enlace de gestión. Una consulta: no abre transacción ni cambia estado. Busca por el hash del token; una
 /// Cita cuyo inicio ya pasó no se muestra, cualquiera que sea su estado (RN-22, RN-31). El nombre lo da Pacientes
-/// (RN-29) y el lugar, Contenido (AD-15).
+/// (RN-29) y el lugar, Contenido (AD-15). Si se puede reprogramar lo dice el umbral de las reglas de reserva (RN-17):
+/// Agendada y con al menos ese umbral antes del inicio, el mismo corte de <see cref="Cita.Reprogramar"/>.
 /// </summary>
 public sealed class CitaPorEnlaceHandler(
     ICitasDelEnlace citas,
     IPacientesApi pacientes,
     IContenidoApi contenido,
+    IReglasDeReserva reglasDeReserva,
     IClock reloj) : IQueryHandler<CitaPorEnlace, CitaDelEnlace>
 {
     public async Task<Resultado<CitaDelEnlace>> HandleAsync(CitaPorEnlace consulta, CancellationToken cancellationToken)
@@ -27,7 +29,8 @@ public sealed class CitaPorEnlaceHandler(
             ? await citas.PorTokenHashAsync(hash, cancellationToken)
             : null;
 
-        if (cita is null || cita.Inicio <= reloj.UtcNow || Estado(cita) is not { } estado)
+        var ahora = reloj.UtcNow;
+        if (cita is null || cita.Inicio <= ahora || Estado(cita) is not { } estado)
         {
             return Resultado.Fallo(CodigosDeAgenda.CitaNoEncontrada).Como<CitaDelEnlace>();
         }
@@ -35,6 +38,10 @@ public sealed class CitaPorEnlaceHandler(
         // Toda Cita tiene su Paciente: si Pacientes no lo conoce, es un error de programación.
         var nombre = await pacientes.NombreAsync(cita.PacienteId, cancellationToken)
                      ?? throw new InvalidOperationException("La Cita apunta a un Paciente que Pacientes no conoce.");
+
+        // RN-17: con 120, a 120 minutos todavía se puede; a 119, ya no.
+        var umbral = (await reglasDeReserva.ObtenerAsync(cancellationToken)).UmbralCancelacionTardiaMin;
+        var puedeReprogramar = estado == EstadoDelEnlace.Agendada && cita.Inicio - ahora >= TimeSpan.FromMinutes(umbral);
 
         var (fecha, hora) = HoraLocal.DesdeUtc(cita.Inicio);
         return Resultado.Exito(new CitaDelEnlace(
@@ -44,7 +51,11 @@ public sealed class CitaPorEnlaceHandler(
             (int)(cita.Fin - cita.Inicio).TotalMinutes,
             nombre,
             contenido.DatosDelConsultorio.Lugar,
-            estado));
+            estado,
+            cita.Id,
+            cita.TipoDeVisitaId,
+            puedeReprogramar,
+            umbral));
     }
 
     // Una Cita marcada No se presentó tiene su inicio en el pasado; si no, tampoco se muestra.

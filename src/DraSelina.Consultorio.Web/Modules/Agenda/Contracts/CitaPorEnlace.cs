@@ -1,4 +1,5 @@
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Kernel;
 
 namespace DraSelina.Consultorio.Agenda.Contracts;
 
@@ -22,6 +23,15 @@ public sealed record CitaPorEnlace(string Token) : IQuery<CitaDelEnlace>
 /// <param name="Paciente">El nombre del Paciente, tal como se guardó (RN-29). Nunca va a registros (AD-23).</param>
 /// <param name="Lugar">Hospital y consultorio, de Contenido.</param>
 /// <param name="Estado">Cómo se ve la Cita en Tu cita.</param>
+/// <param name="CitaId">
+/// Solo para pedir <see cref="HorariosLibres"/> sin la propia Cita: la interfaz nunca lo pinta ni lo pone en una
+/// dirección (AD-19, AD-23).
+/// </param>
+/// <param name="TipoDeVisitaId">El tipo de la Cita: al reprogramar no cambia.</param>
+/// <param name="PuedeReprogramar">
+/// Agendada y con al menos <paramref name="UmbralMin"/> minutos antes de su inicio (RN-17).
+/// </param>
+/// <param name="UmbralMin">El umbral de reprogramación de las reglas de reserva, en minutos.</param>
 public sealed record CitaDelEnlace(
     DateOnly Fecha,
     TimeOnly Hora,
@@ -29,12 +39,18 @@ public sealed record CitaDelEnlace(
     int DuracionMin,
     string Paciente,
     string Lugar,
-    EstadoDelEnlace Estado)
+    EstadoDelEnlace Estado,
+    CitaId CitaId,
+    TipoDeVisitaId TipoDeVisitaId,
+    bool PuedeReprogramar,
+    int UmbralMin)
 {
     // El nombre del Paciente no se escribe al registrar la Cita (AD-23).
     private bool PrintMembers(System.Text.StringBuilder texto)
     {
-        texto.Append($"Fecha = {Fecha}, Hora = {Hora}, TipoDeVisita = {TipoDeVisita}, DuracionMin = {DuracionMin}, Estado = {Estado}");
+        texto.Append(
+            $"Fecha = {Fecha}, Hora = {Hora}, TipoDeVisita = {TipoDeVisita}, DuracionMin = {DuracionMin}, Estado = {Estado}, "
+            + $"CitaId = {CitaId}, TipoDeVisitaId = {TipoDeVisitaId}, PuedeReprogramar = {PuedeReprogramar}, UmbralMin = {UmbralMin}");
         return true;
     }
 }

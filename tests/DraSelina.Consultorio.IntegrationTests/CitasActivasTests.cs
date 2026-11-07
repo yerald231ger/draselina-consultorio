@@ -42,7 +42,7 @@ public sealed class CitasActivasTests(Arnes arnes)
 
     private static async Task<TimeOnly[]> IniciosAsync(CitasActivas citas, TimeOnly desde, TimeOnly hasta)
     {
-        var rangos = await citas.EntreAsync(HoraLocal.AUtc(Martes, desde), HoraLocal.AUtc(Martes, hasta), Cancelacion);
+        var rangos = await citas.EntreAsync(HoraLocal.AUtc(Martes, desde), HoraLocal.AUtc(Martes, hasta), aparte: null, Cancelacion);
         return [.. rangos.Select(r => HoraLocal.DesdeUtc(r.Inicio).Hora).Order()];
     }
 
@@ -55,8 +55,8 @@ public sealed class CitasActivasTests(Arnes arnes)
         await using var db = Contexto(cadena);
         var instante = HoraLocal.AUtc(Martes, new(16, 30));
 
-        Assert.Empty(await new CitasActivas(db).EntreAsync(instante, instante, Cancelacion));
-        Assert.Empty(await new CitasActivas(db).EntreAsync(instante, instante.AddMinutes(-10), Cancelacion));
+        Assert.Empty(await new CitasActivas(db).EntreAsync(instante, instante, aparte: null, Cancelacion));
+        Assert.Empty(await new CitasActivas(db).EntreAsync(instante, instante.AddMinutes(-10), aparte: null, Cancelacion));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class CitasActivasTests(Arnes arnes)
         await using (var db = Contexto(cadena, captura))
         {
             await new CitasActivas(db).EntreAsync(
-                HoraLocal.AUtc(Martes, TimeOnly.MinValue), HoraLocal.AUtc(Martes.AddDays(60), TimeOnly.MinValue), Cancelacion);
+                HoraLocal.AUtc(Martes, TimeOnly.MinValue), HoraLocal.AUtc(Martes.AddDays(60), TimeOnly.MinValue), aparte: null, Cancelacion);
         }
 
         var comando = Assert.Single(captura.Comandos);

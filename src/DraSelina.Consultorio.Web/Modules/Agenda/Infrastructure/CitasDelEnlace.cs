@@ -11,6 +11,7 @@ public sealed class CitasDelEnlace(AgendaDbContext db) : ICitasDelEnlace
         db.Citas.AsNoTracking()
             .Where(c => c.TokenHash == tokenHash)
             .Join(db.TiposDeVisita.AsNoTracking(), c => c.TipoDeVisitaId, t => t.Id,
-                (c, t) => new CitaLeidaPorEnlace(c.Rango.Inicio, c.Rango.Fin, c.Estado, c.MotivoDeCancelacion, c.PacienteId, t.Nombre))
+                (c, t) => new CitaLeidaPorEnlace(
+                    c.Id, c.Rango.Inicio, c.Rango.Fin, c.Estado, c.MotivoDeCancelacion, c.PacienteId, c.TipoDeVisitaId, t.Nombre))
             .SingleOrDefaultAsync(cancellationToken);
 }

@@ -1,0 +1,369 @@
+@page "/c/{Token}/reprogramar"
+@attribute [EnableRateLimiting(DemasiadosIntentos.Politica)]
+@using Microsoft.AspNetCore.RateLimiting
+@using System.Globalization
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@using Microsoft.AspNetCore.Http
+@inject IQueryHandler<CitaPorEnlace, CitaDelEnlace> Consulta
+@inject IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>> Horarios
+@inject IQueryHandler<VentanaDeReservaPublica, VentanaDeReservaVigente> Ventana
+@inject ICommandHandler<ReprogramarCitaPorEnlace, CitaReprogramadaPorEnlace> Reprogramacion
+@inject IContenidoApi Contenido
+
+@*
+    Reprogramar (CAP-7, FR-9, UJ-2 pasos 1 a 3; entrada 3.3). El Paciente llega desde Tu cita con su Enlace de gestión,
+    sin cuenta ni datos otra vez. El mismo selector de Día y hora (SelectorDeDiaYHora), sin paso de tipo: el tipo de la
+    Cita no cambia. Los horarios salen de HorariosLibres con la Cita aparte, así su hora y las que traslapa se ofrecen;
+    su propia hora se pinta "Tu hora actual", sin enlace. La Cita actual está a la vista arriba y en el panel.
+
+    Sin scripts (AD-11): elegir día y hora son enlaces GET con ?fecha=AAAA-MM-DD&hora=HH:mm; el token va solo en la ruta
+    (AD-23) y el CitaId nunca sale de la consulta. "Confirmar nuevo horario" es un POST con antiforgery a esta misma
+    dirección, con fecha y hora ocultas; la misma respuesta pinta Cita reprogramada, o esta página con un aviso.
+
+    Abrir o enviar pasan por las mismas salidas: enlace no válido, 404 (RN-22); Cita cancelada, la frase y "Ver mi
+    cita"; dentro del umbral (RN-17), el panel ámbar. Lleva el límite de frecuencia y, como todo bajo /c/, X-Robots-Tag
+    y no-store (Program.cs) además del meta robots (CAP-21).
+*@
+
+<HeadContent>
+    <meta name="robots" content="noindex, nofollow" />
+</HeadContent>
+
+@switch (_vista)
+{
+    case Vista.Envio:
+        @* Solo mientras se despacha el envío: el formulario con ese nombre tiene que existir en el primer pintado. La
+           respuesta es lo que deja ConfirmarAsync. *@
+        <form method="post" action="@RutaDeReprogramar" @formname="@NombreDelFormulario" @onsubmit="ConfirmarAsync">
+            <AntiforgeryToken />
+        </form>
+        break;
+
+    case Vista.NoValido:
+        <EnlaceNoValido />
+        break;
+
+    case Vista.Reprogramada when _cita is { } cita && _nuevo is { } nuevo:
+        <PageTitle>Cita reprogramada · Dra. Selina Medina Castillo</PageTitle>
+        <CitaReprogramada Token="@Token" Fecha="nuevo.Fecha" Hora="nuevo.Hora" TipoDeVisita="@cita.TipoDeVisita"
+                          DuracionMin="cita.DuracionMin" Lugar="@cita.Lugar" />
+        break;
+
+    case Vista.Cancelada:
+        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <section class="dsm-contenedor dsm-gestion" aria-labelledby="reprogramar">
+            <h1 id="reprogramar" class="dsm-titulo-de-estado">@Cancelada</h1>
+            @VerMiCita
+        </section>
+        break;
+
+    case Vista.Cerrada when _cita is { } cita:
+        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <section class="dsm-contenedor dsm-gestion" aria-labelledby="reprogramar">
+            <h1 id="reprogramar" class="dsm-titulo-de-estado">@Titulo</h1>
+            <div class="dsm-gestion__umbral">
+                <PanelDentroDelUmbral UmbralMin="cita.UmbralMin" />
+            </div>
+            @VerMiCita
+        </section>
+        break;
+
+    case Vista.NoEnLinea:
+        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <section class="dsm-contenedor dsm-gestion" aria-labelledby="reprogramar">
+            <h1 id="reprogramar" class="dsm-titulo-de-estado">@Titulo</h1>
+            <div class="dsm-aviso" role="status">
+                <p class="dsm-aviso__mensaje">@NoEnLinea <MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" /></p>
+            </div>
+            @VerMiCita
+        </section>
+        break;
+
+    case Vista.Selector when _cita is { } cita:
+        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <section class="dsm-contenedor dsm-reserva dsm-reserva--ancha dsm-horario">
+            <div class="dsm-regreso">
+                <a href="@RutaDeTuCita" class="dsm-regreso__enlace" aria-label="Regresar a tu cita">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 12H5M11 6l-6 6 6 6"></path>
+                    </svg>
+                </a>
+                <div class="dsm-regreso__texto">Tu cita</div>
+            </div>
+
+            <h1 class="dsm-titulo-de-paso">@Titulo</h1>
+
+            <div class="dsm-cita-actual">
+                <div class="dsm-cita-actual__rotulo">Tu cita actual</div>
+                <div class="dsm-cita-actual__fecha">@FormatoDeCita.Largo(cita.Fecha), @FormatoDeCita.Hora(cita.Hora)</div>
+                <div class="dsm-cita-actual__tipo">@cita.TipoDeVisita · @cita.DuracionMin min</div>
+            </div>
+
+            @if (_aviso is not null)
+            {
+                <div id="aviso" class="dsm-aviso" role="alert" tabindex="-1" autofocus>
+                    <p class="dsm-aviso__mensaje">@_aviso</p>
+                </div>
+            }
+
+            <SelectorDeDiaYHora Dias="_dias" Fecha="@_fecha" Hora="@_hora" Ruta="Ruta" Ventana="_ventana"
+                                Clase="dsm-reserva__columnas dsm-reserva__columnas--horario dsm-reserva__columnas--reprogramar"
+                                HoraActual="(cita.Fecha, cita.Hora)">
+                <Panel Context="eleccion">
+                    <div class="dsm-tu-cita dsm-barra-de-accion dsm-resumen">
+                        <h2 class="dsm-seccion dsm-solo-escritorio">Tu cita</h2>
+                        <dl class="dsm-tu-cita__datos dsm-solo-escritorio">
+                            <div>
+                                <dt>Tu cita actual</dt>
+                                <dd>@FormatoDeCita.Largo(cita.Fecha), @FormatoDeCita.Hora(cita.Hora)</dd>
+                            </div>
+                            <div>
+                                <dt>Nuevo horario</dt>
+                                <dd>@(eleccion.Hora is { } laHora ? $"{FormatoDeCita.Largo(eleccion.Dia)}, {FormatoDeCita.Hora(laHora)}" : "Elige una hora")</dd>
+                            </div>
+                            <div>
+                                <dt>Lugar</dt>
+                                <dd>@cita.Lugar</dd>
+                            </div>
+                        </dl>
+                        <div class="dsm-resumen__eleccion dsm-solo-movil">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                                <path d="M16 3v4M8 3v4M3 10h18"></path>
+                            </svg>
+                            <div class="dsm-resumen__texto">
+                                @(eleccion.Hora is { } hora ? $"Nuevo horario: {FormatoDeCita.Corto(eleccion.Dia, hora)}" : "Elige una hora")
+                            </div>
+                        </div>
+                        @if (eleccion.Hora is { } elegida)
+                        {
+                            <form method="post" action="@RutaDeReprogramar" class="dsm-reprogramar__envio"
+                                  @formname="@NombreDelFormulario" @onsubmit="ConfirmarAsync">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="Comando.Fecha" value="@Invariante($"{eleccion.Dia:yyyy-MM-dd}")" />
+                                <input type="hidden" name="Comando.Hora" value="@Invariante($"{elegida:HH:mm}")" />
+                                <button type="submit" class="btn btn-primary dsm-accion-principal">@Confirmar</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="btn btn-primary dsm-accion-principal disabled" aria-disabled="true">@Confirmar</span>
+                        }
+                        <p class="dsm-barra-de-accion__nota dsm-solo-escritorio">Es la misma cita, con el mismo enlace.</p>
+                    </div>
+                </Panel>
+            </SelectorDeDiaYHora>
+        </section>
+        break;
+}
+
+@code {
+    /// <summary>El nombre del formulario de "Confirmar nuevo horario".</summary>
+    public const string NombreDelFormulario = "reprogramar";
+
+    /// <summary>El título de la página. [ASSUMPTION: textos]</summary>
+    public const string Titulo = "Reprogramar tu cita";
+
+    /// <summary>El botón que envía el nuevo horario. [ASSUMPTION: textos]</summary>
+    public const string Confirmar = "Confirmar nuevo horario";
+
+    /// <summary>El aviso cuando otra Cita tomó el horario un instante antes.</summary>
+    public const string AvisoOcupado = "Ese horario se acaba de ocupar. Elige otro.";
+
+    /// <summary>El aviso cuando el horario ya pasó o salió de la agenda o de la ventana. [ASSUMPTION: texto]</summary>
+    public const string AvisoNoDisponible = "Ese horario ya no está disponible. Elige otro.";
+
+    /// <summary>Lo que se ve al reprogramar una Cita cancelada. [ASSUMPTION: texto]</summary>
+    public const string Cancelada = "Esta cita ya está cancelada.";
+
+    /// <summary>Una Cita de un tipo que no se agenda en línea. [ASSUMPTION]</summary>
+    public const string NoEnLinea = "Esta cita no se puede reprogramar en línea.";
+
+    private enum Vista
+    {
+        NoValido,
+        Envio,
+        Selector,
+        Cancelada,
+        Cerrada,
+        NoEnLinea,
+        Reprogramada,
+    }
+
+    private Vista _vista;
+    private CitaDelEnlace? _cita;
+    private IReadOnlyList<DiaConHorarios> _dias = [];
+    private VentanaDeReservaVigente? _ventana;
+    private string? _fecha;
+    private string? _hora;
+    private string? _aviso;
+    private CitaReprogramadaPorEnlace? _nuevo;
+
+    [Parameter]
+    public string Token { get; set; } = "";
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromQuery(Name = "fecha")]
+    public string? Fecha { get; set; }
+
+    [SupplyParameterFromQuery(Name = "hora")]
+    public string? Hora { get; set; }
+
+    /// <summary>Fecha y hora del nuevo horario, ocultas en el cuerpo; el token sale de la ruta, nunca del formulario.</summary>
+    [SupplyParameterFromForm(FormName = NombreDelFormulario)]
+    public ReprogramarCitaPorEnlace? Comando { get; set; }
+
+    private CancellationToken Cancelacion => HttpContext?.RequestAborted ?? CancellationToken.None;
+
+    private string RutaDeTuCita => $"/c/{Uri.EscapeDataString(Token)}";
+
+    private string RutaDeReprogramar => $"{RutaDeTuCita}/reprogramar";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Un envío lo resuelve ConfirmarAsync: el comando decide con la Cita bloqueada, no con lo que se leyó aquí.
+        if (HttpContext is { } contexto && HttpMethods.IsPost(contexto.Request.Method))
+        {
+            _vista = Vista.Envio;
+            return;
+        }
+
+        _fecha = Fecha;
+        _hora = Hora;
+        await CargarAsync();
+
+        // Sin fecha en la dirección, el día de la Cita si es de la ventana: ahí está su hora actual. Si no, el selector
+        // elige el primero con horas.
+        if (_vista == Vista.Selector && Fecha is null && _cita is { } cita && _dias.Any(d => d.Fecha == cita.Fecha))
+        {
+            _fecha = Invariante($"{cita.Fecha:yyyy-MM-dd}");
+        }
+    }
+
+    // Lo que se ve al abrir la página, y otra vez tras un envío rechazado.
+    private async Task CargarAsync()
+    {
+        var resultado = await Consulta.HandleAsync(new CitaPorEnlace(Token), Cancelacion);
+        if (!resultado.EsExito)
+        {
+            NoValido();
+            return;
+        }
+
+        _cita = resultado.Valor;
+        if (_cita.Estado != EstadoDelEnlace.Agendada)
+        {
+            _vista = Vista.Cancelada;
+            return;
+        }
+
+        if (!_cita.PuedeReprogramar)
+        {
+            _vista = Vista.Cerrada;
+            return;
+        }
+
+        // El CitaId solo viaja en la consulta: su propia hora vuelve libre y la marca el selector.
+        var horarios = await Horarios.HandleAsync(new HorariosLibres(_cita.TipoDeVisitaId, _cita.CitaId), Cancelacion);
+        if (!horarios.EsExito)
+        {
+            _vista = Vista.NoEnLinea;
+            return;
+        }
+
+        _dias = horarios.Valor;
+        var ventana = await Ventana.HandleAsync(new VentanaDeReservaPublica(), Cancelacion);
+        _ventana = ventana.EsExito ? ventana.Valor : null;
+        _vista = Vista.Selector;
+    }
+
+    private async Task ConfirmarAsync()
+    {
+        var comando = Comando ?? new ReprogramarCitaPorEnlace();
+        comando.Token = Token;
+
+        var resultado = await Reprogramacion.HandleAsync(comando, Cancelacion);
+
+        if (resultado.EsExito)
+        {
+            // La Cita como quedó, para el tipo, la duración y el lugar de la confirmación.
+            var leida = await Consulta.HandleAsync(new CitaPorEnlace(Token), Cancelacion);
+            if (!leida.EsExito)
+            {
+                NoValido();
+                return;
+            }
+
+            _cita = leida.Valor;
+            _nuevo = resultado.Valor;
+            _vista = Vista.Reprogramada;
+            return;
+        }
+
+        if (resultado is { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.CitaNoEncontrada })
+        {
+            NoValido();
+            return;
+        }
+
+        // Lo demás vuelve a la página tal como se abre ahora: cancelada, dentro del umbral o el selector, con el día
+        // que se intentó y sin hora elegida.
+        _fecha = comando.Fecha is { } fecha ? Invariante($"{fecha:yyyy-MM-dd}") : null;
+        _hora = null;
+        await CargarAsync();
+
+        if (_vista != Vista.Selector)
+        {
+            return;
+        }
+
+        if (resultado is { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.CitaNoAgendada })
+        {
+            _vista = Vista.Cancelada;
+        }
+        else if (resultado is { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.ReprogramacionCerrada })
+        {
+            _vista = Vista.Cerrada;
+        }
+        else
+        {
+            _aviso = resultado is { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.HorarioOcupado }
+                ? AvisoOcupado
+                : AvisoNoDisponible;
+        }
+    }
+
+    // El 404 se pone al empezar la respuesta, no durante el render, como en Tu cita: si no, el host de Blazor deja el
+    // cuerpo vacío y Enlace no válido se perdería.
+    private void NoValido()
+    {
+        _vista = Vista.NoValido;
+        _cita = null;
+        if (HttpContext is { } contexto)
+        {
+            contexto.Response.OnStarting(() =>
+            {
+                contexto.Response.StatusCode = StatusCodes.Status404NotFound;
+                return Task.CompletedTask;
+            });
+        }
+    }
+
+    private RenderFragment VerMiCita => @<a href="@RutaDeTuCita" class="btn dsm-boton-secundario dsm-gestion__accion">Ver mi cita</a>;
+
+    // Fecha y hora en formato invariable: el separador ":" de la hora depende de la cultura.
+    private string Ruta(DateOnly fecha, TimeOnly? hora) =>
+        hora is { } h
+            ? Invariante($"{RutaDeReprogramar}?fecha={fecha:yyyy-MM-dd}&hora={h:HH:mm}")
+            : Invariante($"{RutaDeReprogramar}?fecha={fecha:yyyy-MM-dd}");
+
+    private static string Invariante(FormattableString texto) => texto.ToString(CultureInfo.InvariantCulture);
+}

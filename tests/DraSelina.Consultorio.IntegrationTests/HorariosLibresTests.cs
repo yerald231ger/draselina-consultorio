@@ -65,6 +65,24 @@ public sealed class HorariosLibresTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task Con_la_Cita_aparte_su_horario_vuelve_libre_y_sin_ella_no()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var propia = await escenario.AgendarAsync(Martes, new TimeOnly(16, 0));
+        Assert.True(propia.EsExito, $"{propia.Forma} {propia.Codigo}");
+        Assert.True((await escenario.AgendarAsync(Martes, new TimeOnly(17, 0), "444 555 1000")).EsExito);
+
+        var sinAparte = await escenario.ConsultarAsync(TiposDeVisitaSembrados.PrimeraConsulta);
+        var conAparte = await escenario.ConsultarAsync(TiposDeVisitaSembrados.PrimeraConsulta, propia.Valor.CitaId);
+
+        Assert.Equal([new(15, 30), new(16, 30), new(17, 30)], Assert.Single(sinAparte.Valor, d => d.Fecha == Martes).Horas);
+
+        // Solo la Cita aparte deja de ocupar: la otra sigue quitando su horario.
+        Assert.True(conAparte.EsExito, $"{conAparte.Forma} {conAparte.Codigo}");
+        Assert.Equal([new(15, 30), new(16, 0), new(16, 30), new(17, 30)], Assert.Single(conAparte.Valor, d => d.Fecha == Martes).Horas);
+    }
+
+    [Fact]
     public async Task Una_Cita_Cancelada_no_quita_su_horario()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
@@ -156,12 +174,12 @@ public sealed class HorariosLibresTests(Arnes arnes)
         }
 
         /// <summary>El handler se pide al contenedor por su interfaz, en un ámbito propio, como lo hará la página.</summary>
-        public async Task<Resultado<IReadOnlyList<DiaConHorarios>>> ConsultarAsync(TipoDeVisitaId tipo)
+        public async Task<Resultado<IReadOnlyList<DiaConHorarios>>> ConsultarAsync(TipoDeVisitaId tipo, CitaId? aparte = null)
         {
             await using var ambito = _web.Services.CreateAsyncScope();
             return await ambito.ServiceProvider
                 .GetRequiredService<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>>()
-                .HandleAsync(new HorariosLibres(tipo), Cancelacion);
+                .HandleAsync(new HorariosLibres(tipo, aparte), Cancelacion);
         }
 
         /// <summary>Una Cita en línea de Primera consulta guardada por su propio handler, sin sesión.</summary>

@@ -1,0 +1,41 @@
+@using DraSelina.Consultorio.UI.Pages.Reserva
+
+@*
+    El panel ámbar de una Cita Agendada a la que le falta menos que el umbral de reprogramación (RN-17; mockup
+    Cancelar): "Faltan menos de 2 horas", con el "2 horas" del umbral de las reglas de reserva, y la tarjeta
+    "¿Buscabas otro horario?". Lo usan Tu cita y Reprogramar (entrada 3.3); Cancelar (3.4) le pone su texto dentro.
+*@
+
+<div class="dsm-umbral" role="status">
+    <svg class="dsm-umbral__icono" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7v5l3 2"></path>
+    </svg>
+    <div class="dsm-umbral__texto">
+        <div class="dsm-umbral__titulo">Faltan menos de @FormatoDeCita.Plazo(UmbralMin)</div>
+        @if (ChildContent is not null)
+        {
+            <div class="dsm-umbral__mensaje">@ChildContent</div>
+        }
+    </div>
+</div>
+
+<div class="dsm-otro-horario">
+    <div class="dsm-otro-horario__titulo">¿Buscabas otro horario?</div>
+    <div class="dsm-otro-horario__mensaje">@OtroHorario</div>
+</div>
+
+@code {
+    /// <summary>El texto de la tarjeta "¿Buscabas otro horario?" (mockup Cancelar).</summary>
+    public const string OtroHorario =
+        "A esta hora ya no se puede reprogramar. Cancela y vuelve a agendar en el horario que prefieras.";
+
+    /// <summary>El umbral de reprogramación de las reglas de reserva, en minutos.</summary>
+    [Parameter, EditorRequired]
+    public int UmbralMin { get; set; }
+
+    /// <summary>Lo que dice el panel bajo el título; sin él, solo el título.</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

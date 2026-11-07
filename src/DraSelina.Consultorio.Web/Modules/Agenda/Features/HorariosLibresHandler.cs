@@ -8,7 +8,8 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// <summary>
 /// Los horarios libres de un tipo de visita. Orquesta y no decide (T-13): lee el tipo, las reglas, la agenda de
 /// atención (custom de hoy en adelante) y las Citas activas de la ventana, y le deja el cálculo a
-/// <see cref="CalculadoraDeDisponibilidad"/> (T-21). Es una consulta: no abre transacción ni cambia estado (T-14).
+/// <see cref="CalculadoraDeDisponibilidad"/> (T-21). Con <see cref="HorariosLibres.Aparte"/>, esa Cita no cuenta entre
+/// las activas; la calculadora no cambia. Es una consulta: no abre transacción ni cambia estado (T-14).
 /// </summary>
 public sealed class HorariosLibresHandler(
     ITiposDeVisita tiposDeVisita,
@@ -33,7 +34,7 @@ public sealed class HorariosLibresHandler(
         var reglas = await reglasDeReserva.ObtenerAsync(cancellationToken);
         var agenda = await agendaAtencion.ObtenerAsync(HoraLocal.DesdeUtc(ahora).Fecha, cancellationToken);
         var (desde, hasta) = CalculadoraDeDisponibilidad.Ventana(reglas, ahora).EnUtc();
-        var citas = await citasActivas.EntreAsync(desde, hasta, cancellationToken);
+        var citas = await citasActivas.EntreAsync(desde, hasta, consulta.Aparte, cancellationToken);
 
         var dias = CalculadoraDeDisponibilidad.Calcular(agenda, citas, tipo.Duracion, reglas, ahora);
 

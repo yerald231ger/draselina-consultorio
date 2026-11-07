@@ -11,6 +11,7 @@ public sealed class CitasActivas(AgendaDbContext db) : ICitasActivas
     public async Task<IReadOnlyList<RangoDeTiempo>> EntreAsync(
         DateTimeOffset desde,
         DateTimeOffset hasta,
+        CitaId? aparte,
         CancellationToken cancellationToken)
     {
         // Un periodo vacío no traslapa nada; y tstzrange rechaza un límite inferior mayor que el superior.
@@ -22,12 +23,15 @@ public sealed class CitasActivas(AgendaDbContext db) : ICitasActivas
         // El mismo traslape de rangos semiabiertos [inicio, fin) y el mismo predicado que la restricción de exclusión
         // (AD-8): así la consulta va por su índice GiST y recorre la ventana, no el historial. Una Cita que termina
         // justo en "desde" no ocupa nada. 'Cancelada' va escrito, no como parámetro, para que PostgreSQL vea que el
-        // filtro es el del índice parcial (TextoDeEnumeraciones).
+        // filtro es el del índice parcial (TextoDeEnumeraciones). La Cita aparte se quita con un filtro más, sobre las
+        // filas que ya trajo el índice; Guid.Empty no es de ninguna Cita.
+        var excluida = aparte?.Valor ?? Guid.Empty;
         var filas = await db.Database
             .SqlQuery<FilaDeRango>($"""
                 select inicio as "Inicio", fin as "Fin" from agenda.cita
                 where estado <> 'Cancelada'
                   and tstzrange(inicio, fin, '[)') && tstzrange({desde}, {hasta}, '[)')
+                  and id <> {excluida}
                 """)
             .ToListAsync(cancellationToken);
 

@@ -1,0 +1,84 @@
+@using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@inject IContenidoApi Contenido
+
+@*
+    Cita reprogramada (entrada 3.3, UJ-2 paso 3): como Cita confirmada, la fecha y la hora nuevas en grande, el tipo, el
+    lugar y "Agregar a mi calendario", más "Ver mi cita" hacia Tu cita. Se pinta en la misma respuesta del envío de
+    Reprogramar, sin redirección. Es la misma Cita con el mismo Enlace de gestión (AD-7, RN-15): el calendario y "Ver
+    mi cita" van bajo el mismo token, que va solo en la ruta (AD-23).
+*@
+
+<section class="dsm-contenedor dsm-confirmada dsm-reprogramada" aria-labelledby="cita-reprogramada">
+    <div class="dsm-confirmada__encabezado">
+        <div class="dsm-confirmada__icono">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12.5l4.5 4.5L19 7.5"></path>
+            </svg>
+        </div>
+        <h1 id="cita-reprogramada" class="dsm-titulo-de-estado">@Titulo</h1>
+    </div>
+
+    <div class="dsm-confirmada__cita">
+        <div class="dsm-tarjeta">
+            <div class="dsm-tarjeta__seccion dsm-confirmada__cuando">
+                <div class="dsm-confirmada__dia">@FormatoDeCita.Dia(Fecha)</div>
+                <div class="dsm-confirmada__fecha">@FormatoDeCita.FechaYHora(Fecha, Hora)</div>
+                <div class="dsm-confirmada__tipo">@TipoDeVisita · @DuracionMin min · Dra. Selina Medina Castillo</div>
+            </div>
+            <div class="dsm-tarjeta__seccion dsm-lugar">
+                <svg class="dsm-lugar__icono" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path>
+                    <circle cx="12" cy="9.5" r="2.5"></circle>
+                </svg>
+                <div class="dsm-lugar__texto">
+                    <div class="dsm-lugar__nombre">@Lugar</div>
+                    <div class="dsm-lugar__direccion">@Contenido.DatosDelConsultorio.Direccion</div>
+                </div>
+            </div>
+        </div>
+
+        <a href="@($"{TuCita}/calendario.ics")" class="btn dsm-boton-secundario dsm-confirmada__calendario">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
+                <path d="M3.5 10h17M8 3v4M16 3v4"></path>
+            </svg>
+            Agregar a mi calendario
+        </a>
+    </div>
+
+    <div class="dsm-confirmada__pie">
+        <a href="@TuCita" class="dsm-enlace-fuerte">Ver mi cita</a>
+    </div>
+</section>
+
+@code {
+    /// <summary>El título de la confirmación. [ASSUMPTION: texto]</summary>
+    public const string Titulo = "Tu cita se reprogramó";
+
+    /// <summary>El token del Enlace de gestión, de la ruta de la página.</summary>
+    [Parameter, EditorRequired]
+    public string Token { get; set; } = "";
+
+    /// <summary>La fecha local nueva.</summary>
+    [Parameter, EditorRequired]
+    public DateOnly Fecha { get; set; }
+
+    /// <summary>La hora local nueva.</summary>
+    [Parameter, EditorRequired]
+    public TimeOnly Hora { get; set; }
+
+    [Parameter, EditorRequired]
+    public string TipoDeVisita { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public int DuracionMin { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Lugar { get; set; } = "";
+
+    private string TuCita => $"/c/{Uri.EscapeDataString(Token)}";
+}

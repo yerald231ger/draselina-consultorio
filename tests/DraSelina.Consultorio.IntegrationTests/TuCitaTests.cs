@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using DraSelina.Consultorio.Agenda.Contracts;
+using DraSelina.Consultorio.Agenda.Infrastructure;
+using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.UI.Pages.Gestion;
 
 namespace DraSelina.Consultorio.IntegrationTests;
@@ -41,8 +43,8 @@ public sealed class TuCitaTests(Arnes arnes)
         Assert.Contains("Agregar a mi calendario", html, StringComparison.Ordinal);
         Assert.Contains("¿Otra duda? Escríbenos por WhatsApp", html, StringComparison.Ordinal);
 
-        // Sin Reprogramar ni Cancelar todavía (3.3, 3.4), sin id, sin motivo ni contacto del Paciente, sin scripts.
-        Assert.DoesNotContain("Reprogramar", html, StringComparison.Ordinal);
+        // Reprogramar llegó con la 3.3 (ReprogramarDesdeTuCitaTests); sin Cancelar todavía (3.4), sin id, sin motivo
+        // ni contacto del Paciente, sin scripts.
         Assert.DoesNotContain("Cancelar cita", html, StringComparison.Ordinal);
         Assert.DoesNotContain(cita.CitaId.Valor.ToString(), html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(cita.CitaId.Valor.ToString("N"), html, StringComparison.OrdinalIgnoreCase);
@@ -266,7 +268,8 @@ public sealed class TuCitaTests(Arnes arnes)
         var token = new string('Q', 43);
         var cita = new CitaDelEnlace(
             new DateOnly(2026, 11, 3), new TimeOnly(16, 0), "Primera consulta", 30, "Ana Sofía López",
-            "Hospital Star Médica, consultorio 101", EstadoDelEnlace.Agendada);
+            "Hospital Star Médica, consultorio 101", EstadoDelEnlace.Agendada, CitaId.Nuevo(),
+            TiposDeVisitaSembrados.PrimeraConsulta, PuedeReprogramar: true, UmbralMin: 120);
 
         Assert.DoesNotContain(token, new CitaPorEnlace(token).ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain("Ana", cita.ToString(), StringComparison.Ordinal);

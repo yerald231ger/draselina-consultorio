@@ -52,13 +52,18 @@ public static class FormatoDeCita
     /// "hasta 2 horas antes", "hasta 1 hora antes", "hasta 90 minutos antes"; con 0, "hasta la hora de tu cita". Es el
     /// umbral de reprogramación de las reglas de reserva, en minutos.
     /// </summary>
-    public static string HastaAntes(int minutos) => minutos switch
+    public static string HastaAntes(int minutos) => minutos <= 0 ? "hasta la hora de tu cita" : $"hasta {Plazo(minutos)} antes";
+
+    /// <summary>
+    /// "2 horas", "1 hora", "90 minutos", "1 minuto": un plazo en minutos, en horas si son exactas. Lo usa el panel
+    /// "Faltan menos de 2 horas".
+    /// </summary>
+    public static string Plazo(int minutos) => minutos switch
     {
-        <= 0 => "hasta la hora de tu cita",
-        60 => "hasta 1 hora antes",
-        _ when minutos % 60 == 0 => $"hasta {minutos / 60} horas antes",
-        1 => "hasta 1 minuto antes",
-        _ => $"hasta {minutos} minutos antes",
+        60 => "1 hora",
+        > 0 when minutos % 60 == 0 => $"{minutos / 60} horas",
+        1 => "1 minuto",
+        _ => $"{minutos} minutos",
     };
 
     /// <summary>

@@ -14,16 +14,20 @@ public interface ICitasDelEnlace
 }
 
 /// <summary>Lo que Tu cita necesita de una Cita.</summary>
+/// <param name="Id">Para excluirla de sus propios horarios al reprogramar; nunca va a la interfaz como dirección.</param>
 /// <param name="Inicio">En UTC.</param>
 /// <param name="Fin">En UTC.</param>
 /// <param name="Estado">El estado guardado.</param>
 /// <param name="MotivoDeCancelacion">Solo si está Cancelada.</param>
 /// <param name="PacienteId">Para pedir el nombre a Pacientes.</param>
+/// <param name="TipoDeVisitaId">El tipo de la Cita.</param>
 /// <param name="TipoDeVisita">El nombre de hoy del tipo de visita.</param>
 public sealed record CitaLeidaPorEnlace(
+    CitaId Id,
     DateTimeOffset Inicio,
     DateTimeOffset Fin,
     EstadoCita Estado,
     MotivoDeCancelacion? MotivoDeCancelacion,
     PatientId PacienteId,
+    TipoDeVisitaId TipoDeVisitaId,
     string TipoDeVisita);

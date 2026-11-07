@@ -9,7 +9,11 @@ namespace DraSelina.Consultorio.Agenda.Contracts;
 /// <c>Fallo(</c><see cref="CodigosDeAgenda.TipoNoReservable"/><c>)</c>.
 /// </summary>
 /// <param name="TipoDeVisitaId">El tipo de visita que eligió el Paciente.</param>
-public sealed record HorariosLibres(TipoDeVisitaId TipoDeVisitaId) : IQuery<IReadOnlyList<DiaConHorarios>>;
+/// <param name="Aparte">
+/// Al reprogramar, la Cita que se mueve: no ocupa sus propios horarios, así su hora y las que traslapa vuelven como
+/// libres (Gerardo, 2026-11-06). Nulo al reservar.
+/// </param>
+public sealed record HorariosLibres(TipoDeVisitaId TipoDeVisitaId, CitaId? Aparte = null) : IQuery<IReadOnlyList<DiaConHorarios>>;
 
 /// <summary>
 /// Una fecha de la ventana con algún horario posible del tipo, con sus horas libres. Lista vacía: las Citas ocupan

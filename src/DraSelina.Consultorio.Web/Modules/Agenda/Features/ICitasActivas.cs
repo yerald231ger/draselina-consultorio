@@ -10,9 +10,14 @@ namespace DraSelina.Consultorio.Agenda.Features;
 public interface ICitasActivas
 {
     /// <summary>
-    /// Los rangos <c>[inicio, fin)</c> de las Citas no canceladas que traslapan <c>[desde, hasta)</c>, en UTC.
+    /// Los rangos <c>[inicio, fin)</c> de las Citas no canceladas que traslapan <c>[desde, hasta)</c>, en UTC, sin la
+    /// Cita <paramref name="aparte"/> si se da (la que se reprograma no ocupa sus propios horarios).
     /// </summary>
-    Task<IReadOnlyList<RangoDeTiempo>> EntreAsync(DateTimeOffset desde, DateTimeOffset hasta, CancellationToken cancellationToken);
+    Task<IReadOnlyList<RangoDeTiempo>> EntreAsync(
+        DateTimeOffset desde,
+        DateTimeOffset hasta,
+        CitaId? aparte,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Cuántas Citas <see cref="EstadoCita.Agendada"/> de esos Pacientes, de cualquier origen, empiezan en
