@@ -243,7 +243,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
   - ASP.NET Core Identity en el host, con segundo factor obligatorio y sin registro público.
   - Todo comando y consulta de administración lleva el marcador `IRequiereAdministrador` en `Contracts`. Un único decorador, que envuelve a todo handler de comando y de consulta, rechaza con `Resultado` no autorizado los que lleguen sin usuario autenticado. No se confía en que la página esté protegida.
   - El host entrega el actor por un único servicio: `Administrador` cuando hay sesión; `Paciente` cuando el comando llega con un enlace de gestión válido o desde la reserva pública; `Sistema` en los trabajos programados (Recordatorio, Agenda del día). Una política que reacciona a un evento interno usa el actor que viene en ese evento, no `Sistema`: las cancelaciones elegidas al guardar o borrar una custom quedan a nombre del `Administrador`.
-  - Las páginas de reserva llevan límite de frecuencia y verificación anti-bots, resueltos en el host antes de despachar el comando.
+  - Las páginas de reserva llevan límite de frecuencia y verificación anti-bots, resueltos en el host antes de despachar el comando. Las del Enlace de gestión (`/c/...`) llevan el mismo límite de frecuencia.
 
 ### AD-23 — Datos sensibles
 

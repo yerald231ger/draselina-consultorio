@@ -1,0 +1,67 @@
+# Historias de epic-gestion-por-el-paciente, en orden de construcción.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Tu cita con el enlace"
+description = "Camino trazador: la página Tu cita en /c/{token} (mockup Gestionar, SSR estático) con la consulta CitaPorEnlace, que busca la Cita por el hash del token y que usan las entradas 3 y 4, muestra fecha, hora, tipo, lugar y \"Agregar a mi calendario\" en sus tres estados (Agendada; cancelada por el Paciente o tarde, con \"Agendar otra cita\"; cancelada por el Consultorio, con la disculpa y \"Elegir otro horario\"); un token mal formado, inexistente o de una Cita cuyo inicio ya pasó muestra Enlace no válido; todas las páginas /c/... llevan noindex (encabezado X-Robots-Tag y meta), Cache-Control no-store y la política DemasiadosIntentos."
+verify = "Con el AppHost arriba, el enlace de Cita confirmada abre Tu cita; pruebas comprueban que el enlace de una Cita no muestra otra, que un token alterado, inexistente o de una Cita ya empezada (reloj inyectado) da Enlace no válido, que la respuesta trae noindex y que una Cita sembrada con motivo Consultorio muestra la disculpa."
+covers = ["CAP-6"]
+after = ["2.9", "2.10", "2.11"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Reprogramar en el dominio y el caso de uso"
+description = "cita.Reprogramar(nuevoRango, reglas, now) (solo Agendada, mientras falte al menos el umbral de cancelación tardía para su inicio actual, INV-C4 y C5 sobre el nuevo rango, sin tope semanal, fin con la duración del tipo de ese momento por INV-C3, mismo CitaId y token_hash) y el comando ReprogramarCitaPorEnlace (token, fecha, hora) que la entrada 3 envía: toma el candado de la fecha local nueva (AD-26) y lee los tramos después, traduce un traslape a horario ocupado, y deja bitácora Reprogramada con antes y después y CitaReprogramada (InicioAnterior, InicioNuevo, FinNuevo, sin datos personales) en la misma transacción; un token que no vale vuelve como enlace no válido y reprogramar a la hora en la que la Cita ya está devuelve éxito sin bitácora ni evento."
+verify = "Pruebas de dominio rechazan dentro del umbral, fuera de la rejilla y fuera de la ventana, y mueven una Cita aunque el teléfono tenga tres en la semana; pruebas de integración comprueban que la Cita conserva CitaId y token_hash, que quedan la bitácora con actor Paciente y CitaReprogramada pendiente en agenda.outbox, que un traslape devuelve horario ocupado sin cambiar nada y que repetir no deja una segunda bitácora."
+covers = ["CAP-7", "CAP-17"]
+after = [1, "2.4", "2.6"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Reprogramar desde Tu cita"
+description = "Tu cita muestra \"Reprogramar\" solo mientras falte al menos el umbral y, dentro de él, el panel ámbar \"Faltan menos de 2 horas\" con \"¿Buscabas otro horario?\"; /c/{token}/reprogramar reutiliza Día y hora en móvil y escritorio con la Cita actual visible y sin paso de tipo, con HorariosLibres que recibe un CitaId opcional para apartar la propia Cita y marcarla \"Tu hora actual\"; confirmar envía ReprogramarCitaPorEnlace de la entrada 2 y muestra Cita reprogramada con la nueva fecha; si el horario se ocupó, vuelve a Día y hora con el aviso y los horarios restantes, y dentro del umbral explica que hay que cancelar y volver a agendar."
+verify = "Pruebas de componente e integración: a más del umbral Tu cita ofrece Reprogramar y a menos no; la hora actual se ve y no se elige; reprogramar a otra hora muestra Cita reprogramada con la nueva fecha; un horario tomado al confirmar vuelve a Día y hora con el aviso."
+covers = ["CAP-7"]
+after = [2, "2.5", "2.8", "2.12"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Cancelar desde Tu cita"
+description = "cita.Cancelar(now, reglas) (solo Agendada y antes de su inicio; motivo Tarde si falta menos que el umbral, si no Paciente) y el comando CancelarCitaPorEnlace, que deja bitácora Cancelada y CitaCancelada (Inicio, Motivo) en la misma transacción y, si la Cita ya está Cancelada, devuelve Cita cancelada con el motivo guardado sin otra bitácora ni evento; \"Cancelar cita\" en Tu cita, la pantalla Cancelar cita (normal, y tardía con el panel ámbar y la sugerencia de volver a agendar) y Cita cancelada, que reconoce la tardía con amabilidad y ofrece \"Agendar otra cita\"."
+verify = "Pruebas de integración: cancelar a 3 horas deja motivo Paciente y a 1 hora deja Tarde; después del inicio se rechaza; quedan la bitácora con actor Paciente y CitaCancelada pendiente; el horario vuelve a aparecer en HorariosLibres; un segundo envío no deja otra bitácora ni otro evento."
+covers = ["CAP-8", "CAP-17"]
+after = [3, "2.6"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Reloj desplazado y recorrido de UJ-2"
+description = "RelojDelSistema suma Reloj:Desplazamiento, que pasa el AppHost, solo en Development (fuera de Development el host no arranca si viene puesto), y Gerardo recorre UJ-2 completo en local (Done when 1)."
+verify = "Una prueba comprueba que fuera de Development el host no arranca con el desplazamiento puesto y que en Development la hora es la real más el desplazamiento; Gerardo, desde el teléfono, reserva, reprograma tres días antes y, con el reloj desplazado, cancela a una hora de la Cita y ve la cancelación tardía."
+covers = ["CAP-6", "CAP-7", "CAP-8"]
+after = [3, 4]
+hitl = true
+risk = "low"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Refactor sweep"
+description = "Limpieza de lo aplazado en los planes y revisiones de la épica; su alcance se fija al empezar."
+verify = "Las pruebas de la épica siguen pasando y los pendientes de revisión anotados quedan cerrados o registrados."
+covers = []
+after = [1, 2, 3, 4, 5]
+hitl = false
+risk = "low"
