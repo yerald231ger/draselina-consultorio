@@ -120,7 +120,14 @@ public static class CodigosDeAgenda
     public const string TopeSemanal = "agenda.tope_semanal";
 
     /// <summary>
-    /// No hay Cita para ese Enlace de gestión, o no está Agendada, o su inicio ya pasó; no se dice cuál (RN-22).
+    /// No hay Cita para ese Enlace de gestión, o (para el archivo de calendario) no está Agendada, o su inicio ya pasó;
+    /// no se dice cuál (RN-22). Reprogramar una Cita que no está Agendada es <see cref="CitaNoAgendada"/>.
     /// </summary>
     public const string CitaNoEncontrada = "agenda.cita_no_encontrada";
+
+    /// <summary>La Cita está Cancelada o No se presentó: ya no se reprograma.</summary>
+    public const string CitaNoAgendada = "agenda.cita_no_agendada";
+
+    /// <summary>Falta menos que el umbral de cancelación tardía para el inicio de la Cita: ya no se reprograma (RN-17).</summary>
+    public const string ReprogramacionCerrada = "agenda.reprogramacion_cerrada";
 }

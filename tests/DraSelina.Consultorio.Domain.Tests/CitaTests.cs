@@ -4,7 +4,7 @@ using DraSelina.Consultorio.Kernel;
 namespace DraSelina.Consultorio.Domain.Tests;
 
 /// <summary>
-/// <see cref="Cita.Agendar"/>: INV-C1 a C5, C7, C9 a C11, sin base de datos. Las reglas son las sembradas: lunes a
+/// <see cref="Cita.Agendar"/>: INV-C1 a C5, C7, C9 a C11, y <see cref="Cita.Reprogramar"/>: RN-15, RN-17, sin base de datos. Las reglas son las sembradas: lunes a
 /// viernes de 15:30 a 18:00, anticipación de 1 día y ventana de 2 meses, tope semanal de 3.
 /// </summary>
 public class CitaTests
@@ -357,6 +357,168 @@ public class CitaTests
         Assert.Equal(3, reglas.TopeSemanalPorTelefono);
     }
 
+    // Cita.Reprogramar: la Cita Agendada el martes 3 a las 16:00 local, con el reloj en el lunes 2 a las 12:00 local.
+    // RN-15, RN-17, INV-C4 e INV-C5 sobre el rango nuevo.
+
+    private static readonly DateOnly Jueves = new(2026, 11, 5);
+
+    [Fact]
+    public void Reprogramar_mueve_la_misma_Cita_y_conserva_lo_demas()
+    {
+        var cita = Agendada();
+        var (id, token, origen, solicitud, consentimiento, motivo) =
+            (cita.Id, cita.TokenHash, cita.Origen, cita.SolicitudId, cita.Consentimiento, cita.MotivoDeConsulta);
+        var nuevo = Local(Jueves, 17, 0);
+
+        var rechazo = cita.Reprogramar(Rango(nuevo), Reglas(nuevo), Ahora);
+
+        Assert.Null(rechazo);
+        Assert.Equal(nuevo, cita.Rango.Inicio);
+        Assert.Equal(nuevo.AddMinutes(30), cita.Rango.Fin);
+        Assert.Equal(EstadoCita.Agendada, cita.Estado);
+        Assert.Equal(id, cita.Id);
+        Assert.Equal(token, cita.TokenHash);
+        Assert.Equal(EnlaceDeGestion.Derivar(Clave, cita.Id).Hash, cita.TokenHash);
+        Assert.Equal(origen, cita.Origen);
+        Assert.Equal(solicitud, cita.SolicitudId);
+        Assert.Same(consentimiento, cita.Consentimiento);
+        Assert.Equal(motivo, cita.MotivoDeConsulta);
+    }
+
+    [Fact]
+    public void Reprogramar_a_120_minutos_del_inicio_actual_todavia_se_puede()
+    {
+        var cita = Agendada();
+        var nuevo = Local(Jueves, 17, 0);
+        var aLas120 = Manana16.AddMinutes(-120);
+
+        Assert.Null(cita.Reprogramar(Rango(nuevo), Reglas(nuevo), aLas120));
+        Assert.Equal(nuevo, cita.Rango.Inicio);
+    }
+
+    [Fact]
+    public void Reprogramar_a_119_minutos_del_inicio_actual_esta_cerrado_y_no_cambia_nada()
+    {
+        var cita = Agendada();
+        var nuevo = Local(Jueves, 17, 0);
+        var aLas119 = Manana16.AddMinutes(-119);
+
+        Assert.Equal(RechazoAlReprogramar.ReprogramacionCerrada, cita.Reprogramar(Rango(nuevo), Reglas(nuevo), aLas119));
+        Assert.Equal(Manana16, cita.Rango.Inicio);
+    }
+
+    [Fact]
+    public void El_umbral_se_lee_de_las_reglas()
+    {
+        var cita = Agendada();
+        var nuevo = Local(Jueves, 17, 0);
+
+        // Con un umbral de 60, a 90 minutos todavía se puede.
+        Assert.Null(cita.Reprogramar(Rango(nuevo), Reglas(nuevo, umbralMin: 60), Manana16.AddMinutes(-90)));
+    }
+
+    [Fact]
+    public void Reprogramar_fuera_de_la_rejilla_queda_fuera_de_horario()
+    {
+        var cita = Agendada();
+        var nuevo = Local(Jueves, 16, 15);
+
+        Assert.Equal(RechazoAlReprogramar.FueraDeHorario, cita.Reprogramar(Rango(nuevo), Reglas(nuevo), Ahora));
+        Assert.Equal(Manana16, cita.Rango.Inicio);
+    }
+
+    [Fact]
+    public void Un_rango_nuevo_que_no_cabe_completo_en_el_tramo_queda_fuera_de_horario()
+    {
+        // 60 minutos desde las 17:30: el tramo termina a las 18:00. La rejilla se mide con la duración del rango.
+        var cita = Agendada();
+        var nuevo = Local(Jueves, 17, 30);
+
+        Assert.Equal(
+            RechazoAlReprogramar.FueraDeHorario,
+            cita.Reprogramar(RangoDeTiempo.Crear(nuevo, nuevo.AddMinutes(60)), Reglas(nuevo), Ahora));
+    }
+
+    [Fact]
+    public void Reprogramar_a_un_sabado_sin_custom_queda_fuera_de_horario()
+    {
+        var cita = Agendada();
+        var nuevo = Local(new DateOnly(2026, 11, 7), 16, 0);
+
+        Assert.Equal(RechazoAlReprogramar.FueraDeHorario, cita.Reprogramar(Rango(nuevo), Reglas(nuevo), Ahora));
+    }
+
+    [Fact]
+    public void Reprogramar_a_hoy_queda_fuera_de_ventana()
+    {
+        var cita = Agendada();
+        var nuevo = Local(Hoy, 16, 0);
+
+        Assert.Equal(RechazoAlReprogramar.FueraDeVentana, cita.Reprogramar(Rango(nuevo), Reglas(nuevo), Ahora));
+        Assert.Equal(Manana16, cita.Rango.Inicio);
+    }
+
+    [Fact]
+    public void Reprogramar_mas_alla_de_la_ventana_queda_fuera_de_ventana()
+    {
+        // Hoy + 2 meses + 1 día: domingo 3 de enero de 2027, abierto por una custom para que solo falle la ventana.
+        var cita = Agendada();
+        var nuevo = Local(new DateOnly(2027, 1, 3), 10, 0);
+
+        var rechazo = cita.Reprogramar(Rango(nuevo), Reglas(nuevo, [Tramo.Crear(new TimeOnly(10, 0), new TimeOnly(11, 0))]), Ahora);
+
+        Assert.Equal(RechazoAlReprogramar.FueraDeVentana, rechazo);
+    }
+
+    [Fact]
+    public void Reprogramar_a_un_momento_pasado_se_rechaza()
+    {
+        var cita = Agendada();
+        var nuevo = Local(Hoy, 11, 0);
+
+        Assert.Equal(RechazoAlReprogramar.EnElPasado, cita.Reprogramar(Rango(nuevo), Reglas(nuevo), Ahora));
+    }
+
+    [Theory]
+    [InlineData(EstadoCita.Cancelada)]
+    [InlineData(EstadoCita.NoSePresento)]
+    public void Una_Cita_que_no_esta_Agendada_no_se_reprograma(EstadoCita estado)
+    {
+        var cita = Agendada();
+        typeof(Cita).GetProperty(nameof(Cita.Estado))!.SetValue(cita, estado);
+        var nuevo = Local(Jueves, 17, 0);
+
+        Assert.Equal(RechazoAlReprogramar.CitaNoAgendada, cita.Reprogramar(Rango(nuevo), Reglas(nuevo), Ahora));
+        Assert.Equal(Manana16, cita.Rango.Inicio);
+    }
+
+    [Fact]
+    public void Reprogramar_no_aplica_el_tope_semanal()
+    {
+        // Con tope 1 y la Cita ya en la semana, moverla dentro de la misma semana sigue pudiéndose (RN-15).
+        var cita = Agendada();
+        var nuevo = Local(Jueves, 17, 0);
+
+        Assert.Null(cita.Reprogramar(Rango(nuevo), Reglas(nuevo, topeSemanal: 1), Ahora));
+    }
+
+    [Fact]
+    public void Reprogramar_con_tramos_vigentes_de_otra_fecha_es_un_error_del_llamador()
+    {
+        var cita = Agendada();
+        var nuevo = Local(Jueves, 17, 0);
+
+        Assert.Throws<ArgumentException>(() => cita.Reprogramar(Rango(nuevo), Reglas(Manana16), Ahora));
+    }
+
+    private static Cita Agendada()
+    {
+        Assert.Null(Agendar(Manana16, Reglas(Manana16), out var cita));
+        return cita!;
+    }
+
+    private static RangoDeTiempo Rango(DateTimeOffset inicio) => RangoDeTiempo.Crear(inicio, inicio.AddMinutes(30));
+
     private static DateTimeOffset Local(DateOnly fecha, int hora, int minuto) => HoraLocal.AUtc(fecha, new TimeOnly(hora, minuto));
 
     private static RechazoAlAgendar? Agendar(DateTimeOffset inicio, ReglasDeAgenda reglas, out Cita? cita, int citasDeLaSemana = 0) =>
@@ -370,7 +532,8 @@ public class CitaTests
         DateTimeOffset inicio,
         Tramo[]? custom = null,
         int anticipacionMinimaDias = 1,
-        int topeSemanal = 3)
+        int topeSemanal = 3,
+        int umbralMin = 120)
     {
         var fecha = HoraLocal.DesdeUtc(inicio).Fecha;
         var media = TimeSpan.FromMinutes(30);
@@ -385,7 +548,7 @@ public class CitaTests
             Assert.Null(agenda.RegistrarCustom(fecha, custom, "custom", media));
         }
 
-        Assert.Null(ReglasDeReserva.Crear(anticipacionMinimaDias, 2, 120, topeSemanal, out var reserva));
+        Assert.Null(ReglasDeReserva.Crear(anticipacionMinimaDias, 2, umbralMin, topeSemanal, out var reserva));
         return ReglasDeAgenda.Crear(agenda.TramosVigentes(fecha), reserva!);
     }
 

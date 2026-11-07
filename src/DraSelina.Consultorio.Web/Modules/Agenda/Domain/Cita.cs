@@ -23,7 +23,7 @@ public sealed class Cita
 
     public TipoDeVisitaId TipoDeVisitaId { get; private set; }
 
-    /// <summary><c>[Inicio, Fin)</c> en UTC. El fin se fija al crear y no se recalcula (INV-C3).</summary>
+    /// <summary><c>[Inicio, Fin)</c> en UTC. El fin se fija al crear o reprogramar y no se recalcula (INV-C3).</summary>
     public RangoDeTiempo Rango { get; private set; }
 
     public EstadoCita Estado { get; private set; }
@@ -174,6 +174,86 @@ public sealed class Cita
 
         return null;
     }
+
+    /// <summary>
+    /// Mueve la Cita a <paramref name="nuevoRango"/>: es la misma Cita, con su id, su Enlace de gestión, su origen, su
+    /// solicitud, su Consentimiento y su motivo (RN-15, AD-7). Solo si está Agendada y faltan al menos
+    /// <see cref="ReglasDeAgenda.UmbralCancelacionTardiaMin"/> minutos para su inicio actual (RN-17). Sobre el rango
+    /// nuevo cumple INV-C4 e INV-C5 con la rejilla y la ventana de <see cref="CalculadoraDeDisponibilidad"/> (T-21). No
+    /// aplica el tope semanal (RN-15) ni revisa si el tipo se agenda en línea. El fin lo fija el llamador con la
+    /// duración de hoy del tipo de visita (INV-C3): la rejilla se mide con la duración del rango.
+    /// </summary>
+    /// <param name="nuevoRango">El rango nuevo, en UTC.</param>
+    /// <param name="reglas">Los tramos vigentes de la fecha local del inicio nuevo y los valores de las reglas de
+    /// reserva (T-1).</param>
+    /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    /// <returns>Nulo si se reprogramó; si no, por qué no, y la Cita queda como estaba.</returns>
+    /// <exception cref="ArgumentException">Si los tramos vigentes no son de la fecha local del inicio nuevo.</exception>
+    public RechazoAlReprogramar? Reprogramar(RangoDeTiempo nuevoRango, ReglasDeAgenda reglas, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(nuevoRango);
+        ArgumentNullException.ThrowIfNull(reglas);
+
+        // Los tramos vigentes son los de la fecha local del inicio nuevo (AD-17); otros serían un error del llamador.
+        var (fecha, hora) = HoraLocal.DesdeUtc(nuevoRango.Inicio);
+        if (reglas.TramosVigentes.Fecha != fecha)
+        {
+            throw new ArgumentException(
+                $"Los tramos vigentes son del {reglas.TramosVigentes.Fecha:yyyy-MM-dd} y el inicio nuevo es del {fecha:yyyy-MM-dd}.",
+                nameof(reglas));
+        }
+
+        if (Estado != EstadoCita.Agendada)
+        {
+            return RechazoAlReprogramar.CitaNoAgendada;
+        }
+
+        // RN-17: el mismo umbral de la cancelación tardía. Con 120, a 120 minutos todavía se puede; a 119, ya no.
+        if (Rango.Inicio - now < TimeSpan.FromMinutes(reglas.UmbralCancelacionTardiaMin))
+        {
+            return RechazoAlReprogramar.ReprogramacionCerrada;
+        }
+
+        // INV-C4: nunca en un momento pasado. "Ya pasó" se mide desde el inicio (RN-31).
+        if (nuevoRango.Inicio <= now)
+        {
+            return RechazoAlReprogramar.EnElPasado;
+        }
+
+        // INV-C5: dentro de la ventana de reserva, la misma que ofrece la calculadora (T-21).
+        if (!CalculadoraDeDisponibilidad.Ventana(reglas, now).Contiene(fecha))
+        {
+            return RechazoAlReprogramar.FueraDeVentana;
+        }
+
+        // INV-C5: cabe completa en un tramo vigente y empieza en su rejilla, la misma de la calculadora (T-21).
+        if (!CalculadoraDeDisponibilidad.EstaEnLaRejilla(reglas.TramosVigentes, hora, nuevoRango.Fin - nuevoRango.Inicio))
+        {
+            return RechazoAlReprogramar.FueraDeHorario;
+        }
+
+        Rango = nuevoRango;
+        return null;
+    }
+}
+
+/// <summary>Por qué <see cref="Cita.Reprogramar"/> no reprogramó.</summary>
+public enum RechazoAlReprogramar
+{
+    /// <summary>La Cita está Cancelada o No se presentó.</summary>
+    CitaNoAgendada = 1,
+
+    /// <summary>Falta menos que el umbral de cancelación tardía para su inicio actual (RN-17).</summary>
+    ReprogramacionCerrada = 2,
+
+    /// <summary>El inicio nuevo ya pasó (INV-C4).</summary>
+    EnElPasado = 3,
+
+    /// <summary>El rango nuevo no cabe completo en un tramo vigente de su fecha o no empieza en la rejilla (INV-C5).</summary>
+    FueraDeHorario = 4,
+
+    /// <summary>El inicio nuevo cae antes de la anticipación mínima o después de la ventana de reserva (INV-C5).</summary>
+    FueraDeVentana = 5,
 }
 
 /// <summary>Por qué <see cref="Cita.Agendar"/> no agendó.</summary>

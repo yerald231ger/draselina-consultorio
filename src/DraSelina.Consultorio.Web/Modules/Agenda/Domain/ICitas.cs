@@ -12,6 +12,16 @@ public interface ICitas
     Task<Cita?> ObtenerPorSolicitudAsync(Guid solicitudId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// La Cita cuyo <c>token_hash</c> es <paramref name="tokenHash"/>, rastreada para cambiarla y con su fila bloqueada
+    /// hasta el fin de la transacción (<c>FOR UPDATE</c>); nula si no hay. Otro cambio a la misma Cita espera aquí y,
+    /// cuando la recibe, ya ve lo que confirmó el primero. Va siempre después del candado de fecha: fecha y luego fila,
+    /// en ese orden, para que dos cambios no se bloqueen mutuamente.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Si no hay una transacción abierta: fuera de ella el bloqueo se
+    /// soltaría en el acto.</exception>
+    Task<Cita?> ObtenerPorTokenHashParaCambiarAsync(byte[] tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Guarda lo agregado. Si una Cita choca con otra no cancelada en la restricción de exclusión, devuelve
     /// <see cref="GuardadoDeCita.HorarioOcupado"/>; si otra ya lleva su solicitud, <see cref="GuardadoDeCita.SolicitudRepetida"/>.
     /// En los dos casos la transacción queda abortada y el handler la deshace.

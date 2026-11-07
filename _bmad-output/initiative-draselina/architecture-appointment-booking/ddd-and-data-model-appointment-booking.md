@@ -868,7 +868,7 @@ Restricciones e índices:
 - Único en `token_hash`.
 - Índice en `(inicio)` para la agenda del día y la disponibilidad.
 - Índice en `(paciente_id, inicio)` para el historial y el tope semanal.
-- Control de concurrencia optimista con la columna de sistema `xmin` `[ASSUMPTION]`.
+- Concurrencia al cambiar una cita: el comando la lee con `SELECT … FOR UPDATE` dentro de su transacción, después del candado de fecha (AD-26); un segundo cambio a la misma cita espera y ve el estado ya cambiado (Gerardo, 2026-11-06, entrada 3.2). Reemplaza el `[ASSUMPTION]` de concurrencia optimista con `xmin`.
 
 La fecha local de una cita, usada para el candado por fecha (AD-26) y para decidir sus tramos vigentes, es `(inicio AT TIME ZONE 'America/Mexico_City')::date`. No se guarda.
 
