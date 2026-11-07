@@ -23,7 +23,8 @@ public sealed class Ventana
 /// <summary>
 /// Los límites de frecuencia de las páginas de reserva (FR-7, CAP-5), de la sección <c>LimiteDeFrecuencia</c> de la
 /// configuración. Por IP: envíos (POST) de Tus datos y visitas (GET) a <c>/reservar</c>, <c>/reservar/horario</c> y
-/// <c>/reservar/datos</c> (Gerardo, 2026-11-04).
+/// <c>/reservar/datos</c> (Gerardo, 2026-11-04), y a Tu cita y su archivo de calendario (<c>/c/…</c>, Gerardo,
+/// 2026-11-06).
 /// </summary>
 public sealed class OpcionesDeLimiteDeFrecuencia
 {
@@ -36,9 +37,9 @@ public sealed class OpcionesDeLimiteDeFrecuencia
 
 /// <summary>
 /// El límite de frecuencia de la reserva: una política por IP que las páginas de reserva piden con
-/// <c>[EnableRateLimiting(LimiteDeFrecuencia.Politica)]</c>. El resto del sitio, <c>/health</c>, los recursos
-/// estáticos y <c>/c/…</c> no la llevan. Al pasarlo, 429 con la página amable de <see cref="DemasiadosIntentos"/>,
-/// nunca un error técnico.
+/// <c>[EnableRateLimiting(LimiteDeFrecuencia.Politica)]</c>, y también Tu cita y el archivo de calendario bajo
+/// <c>/c/…</c> (AD-22). El resto del sitio, <c>/health</c> y los recursos estáticos no la llevan. Al pasarlo, 429 con
+/// la página amable de <see cref="DemasiadosIntentos"/>, nunca un error técnico.
 /// </summary>
 /// <remarks>
 /// La IP sale de la conexión. Detrás de un proxy habrá que leer los encabezados reenviados; se decide al preparar

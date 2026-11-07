@@ -28,4 +28,16 @@ public sealed class PacientesApiTests(Arnes arnes)
         Assert.Empty(await api.ConTelefonoAsync("12345", Cancelacion));
         Assert.Empty(await api.ConTelefonoAsync("4447777777", Cancelacion));
     }
+
+    [Fact]
+    public async Task Pacientes_da_el_nombre_tal_como_se_guardo_y_nada_si_el_Paciente_no_existe()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        await using var ambito = escenario.Web.Services.CreateAsyncScope();
+        var api = ambito.ServiceProvider.GetRequiredService<IPacientesApi>();
+        var ana = (await api.BuscarOCrearAsync("  Ana   Sofía López ", "4441234567", null, Cancelacion)).Valor;
+
+        Assert.Equal("Ana   Sofía López", await api.NombreAsync(ana, Cancelacion));
+        Assert.Null(await api.NombreAsync(DraSelina.Consultorio.Kernel.PatientId.Nuevo(), Cancelacion));
+    }
 }

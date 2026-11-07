@@ -25,6 +25,12 @@ public sealed class Pacientes(PacientesDbContext db) : IPacientes
     public Task<bool> TieneCorreoAsync(PatientId paciente, CancellationToken cancellationToken) =>
         db.Pacientes.AsNoTracking().AnyAsync(p => p.Id == paciente && p.Correo != null, cancellationToken);
 
+    public Task<string?> NombreAsync(PatientId paciente, CancellationToken cancellationToken) =>
+        db.Pacientes.AsNoTracking()
+            .Where(p => p.Id == paciente)
+            .Select(p => (string?)p.Nombre.Original)
+            .SingleOrDefaultAsync(cancellationToken);
+
     public void Agregar(Paciente paciente) => db.Pacientes.Add(paciente);
 
     public async Task<GuardadoDePaciente> GuardarAsync(CancellationToken cancellationToken)

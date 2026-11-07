@@ -20,6 +20,9 @@ public interface IPacientes
     /// <summary>Si el Paciente tiene correo guardado; falso si no existe. Sin rastrear.</summary>
     Task<bool> TieneCorreoAsync(PatientId paciente, CancellationToken cancellationToken);
 
+    /// <summary>El nombre del Paciente como lo escribió (<see cref="NombreCompleto.Original"/>); nulo si no existe. Sin rastrear.</summary>
+    Task<string?> NombreAsync(PatientId paciente, CancellationToken cancellationToken);
+
     void Agregar(Paciente paciente);
 
     /// <summary>

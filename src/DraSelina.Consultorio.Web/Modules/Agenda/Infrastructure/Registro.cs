@@ -37,12 +37,14 @@ public static class Registro
             .AddScoped<ICitasActivas, CitasActivas>()
             .AddScoped<ITiposDeVisitaReservables, TiposDeVisitaReservablesPersistidos>()
             .AddScoped<ICitasDelCalendario, CitasDelCalendario>()
+            .AddScoped<ICitasDelEnlace, CitasDelEnlace>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
             .AddScoped<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>, HorariosLibresHandler>()
             .AddScoped<IQueryHandler<VentanaDeReservaPublica, VentanaDeReservaVigente>, VentanaDeReservaPublicaHandler>()
             .AddScoped<IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario>, ArchivoDeCalendarioPorEnlaceHandler>()
+            .AddScoped<IQueryHandler<CitaPorEnlace, CitaDelEnlace>, CitaPorEnlaceHandler>()
             .AddScoped<IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>>, TiposDeVisitaReservablesHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
@@ -60,10 +62,14 @@ public static class Registro
     /// Lo que Agenda sirve por HTTP, solo donde un formulario no alcanza (AD-10): el archivo de calendario de una Cita,
     /// en <see cref="RutaDelCalendario"/>. Se llega con el token del Enlace de gestión, nunca con el id (AD-19). Es una
     /// lectura sin actor, bitácora, transacción ni eventos (Gerardo, 2026-11-03). Lo que no sea una Cita Agendada futura
-    /// responde 404 sin decir por qué (RN-22). La telemetría enmascara la ruta (AD-23, ServiceDefaults).
+    /// responde 404 sin decir por qué (RN-22). La telemetría enmascara la ruta (AD-23, ServiceDefaults). Lleva el límite
+    /// de frecuencia de Tu cita (AD-22): el host da el nombre de la política, que define la interfaz.
     /// </summary>
-    public static IEndpointRouteBuilder MapAgenda(this IEndpointRouteBuilder rutas)
+    /// <param name="politicaDeFrecuencia">La política de límite de frecuencia por IP que pide el endpoint.</param>
+    public static IEndpointRouteBuilder MapAgenda(this IEndpointRouteBuilder rutas, string politicaDeFrecuencia)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(politicaDeFrecuencia);
+
         rutas.MapGet(RutaDelCalendario, async (
             string token,
             IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario> consulta,
@@ -80,7 +86,7 @@ public static class Registro
                     ArchivoDeCalendario.TipoDeContenido,
                     ArchivoDeCalendario.NombreDeArchivo)
                 : Results.NotFound();
-        });
+        }).RequireRateLimiting(politicaDeFrecuencia);
 
         return rutas;
     }

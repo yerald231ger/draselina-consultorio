@@ -4,6 +4,7 @@ using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
 using DraSelina.Consultorio.UI;
+using DraSelina.Consultorio.UI.Pages;
 using DraSelina.Consultorio.UI.Pages.Reserva;
 using DraSelina.Consultorio.Web;
 using Microsoft.AspNetCore.Builder;
@@ -55,13 +56,27 @@ builder.Host.UseServiceProviderFactory(contexto => DecoradoresDeHandlers.Fabrica
 
 var app = builder.Build();
 
-// Solo lo aplican los endpoints que piden su política: las páginas de reserva.
+// Todo lo que cuelga del Enlace de gestión (/c/<token> y sus subrutas, el .ics incluido) lleva el token en la
+// dirección: ningún buscador lo indexa y ni el navegador ni un intermediario lo guardan (CAP-21, AD-19). Va antes del
+// límite de frecuencia para que también la respuesta 429 lo lleve.
+app.Use((contexto, siguiente) =>
+{
+    if (contexto.Request.Path.StartsWithSegments("/c"))
+    {
+        contexto.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+        contexto.Response.Headers.CacheControl = "no-store";
+    }
+
+    return siguiente(contexto);
+});
+
+// Solo lo aplican los endpoints que piden su política: las páginas de reserva, Tu cita y el archivo de calendario.
 app.UseRateLimiter();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>();
-app.MapAgenda();
+app.MapAgenda(DemasiadosIntentos.Politica);
 app.MapDefaultEndpoints();
 
 app.Run();

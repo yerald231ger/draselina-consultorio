@@ -1,0 +1,143 @@
+@page "/c/{Token}"
+@attribute [EnableRateLimiting(DemasiadosIntentos.Politica)]
+@using Microsoft.AspNetCore.RateLimiting
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@using Microsoft.AspNetCore.Http
+@inject IQueryHandler<CitaPorEnlace, CitaDelEnlace> Consulta
+@inject IContenidoApi Contenido
+
+@*
+    Tu cita (mockup Gestionar, CAP-6, FR-8): lo que ve el Paciente al abrir su Enlace de gestión, sin cuenta. Se busca
+    por el token (AD-19), en SSR estático y sin scripts (AD-11). Tres estados (Gerardo, 2026-11-06): Agendada, con
+    "Agregar a mi calendario"; Cancelada por el Paciente (a tiempo o tarde) y Cancelada por el Consultorio, cada una con
+    su frase y el camino para agendar otra. Lo demás es Enlace no válido, con 404 y sin decir por qué (RN-22). Ni el
+    CitaId ni el motivo de consulta aparecen (AD-23). Reprogramar y Cancelar llegan con las entradas 3.3 y 3.4.
+
+    Toda respuesta bajo /c/ lleva X-Robots-Tag y no-store (Program.cs); la página, además, el meta robots (CAP-21).
+*@
+
+<HeadContent>
+    <meta name="robots" content="noindex, nofollow" />
+</HeadContent>
+
+@if (_cita is not { } cita)
+{
+    <EnlaceNoValido />
+}
+else
+{
+    <PageTitle>Tu cita · Dra. Selina Medina Castillo</PageTitle>
+
+    <section class="dsm-contenedor dsm-gestion" aria-labelledby="tu-cita">
+        <h1 id="tu-cita" class="dsm-titulo-de-estado">Tu cita</h1>
+
+        <div class="dsm-tarjeta">
+            <div class="dsm-tarjeta__seccion dsm-gestion__cuando">
+                @if (cita.Estado == EstadoDelEnlace.Agendada)
+                {
+                    <span class="dsm-chip-de-estado">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12.5l4.5 4.5L19 7.5"></path>
+                        </svg>
+                        Agendada
+                    </span>
+                }
+                else
+                {
+                    <span class="dsm-chip-de-estado dsm-chip-de-estado--cancelada">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6L6 18"></path>
+                        </svg>
+                        Cancelada
+                    </span>
+                }
+                <div class="dsm-gestion__fecha">@FormatoDeCita.Largo(cita.Fecha), @FormatoDeCita.Hora(cita.Hora)</div>
+                <div class="dsm-gestion__tipo">@cita.TipoDeVisita · @cita.DuracionMin min</div>
+            </div>
+            <dl class="dsm-tarjeta__seccion dsm-filas">
+                <div class="dsm-fila">
+                    <dt>Paciente</dt>
+                    <dd>@cita.Paciente</dd>
+                </div>
+                <div class="dsm-fila">
+                    <dt>Lugar</dt>
+                    <dd>@cita.Lugar</dd>
+                </div>
+            </dl>
+        </div>
+
+        @switch (cita.Estado)
+        {
+            case EstadoDelEnlace.Agendada:
+                <a href="@Calendario" class="btn dsm-boton-secundario dsm-gestion__accion">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect>
+                        <path d="M3.5 10h17M8 3v4M16 3v4"></path>
+                    </svg>
+                    Agregar a mi calendario
+                </a>
+                break;
+            case EstadoDelEnlace.CanceladaPorElPaciente:
+                <p class="dsm-gestion__nota">@CanceladaPorElPaciente</p>
+                <a href="/reservar" class="btn btn-primary dsm-accion-principal dsm-gestion__accion">Agendar otra cita</a>
+                break;
+            default:
+                <p class="dsm-gestion__nota">@CanceladaPorElConsultorio</p>
+                <a href="/reservar" class="btn btn-primary dsm-accion-principal dsm-gestion__accion">Elegir otro horario</a>
+                break;
+        }
+
+        <div class="dsm-gestion__contacto">
+            <div>¿Otra duda? Escríbenos por WhatsApp</div>
+            @if (MensajeDeWhatsApp.DigitosDe(Contenido.WhatsApp) is { } digitos)
+            {
+                <a href="https://wa.me/52@(digitos)" class="dsm-enlace-fuerte">@MensajeDeWhatsApp.Legible(digitos)</a>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    /// <summary>La frase de una Cita que canceló el Paciente.</summary>
+    public const string CanceladaPorElPaciente = "Cancelaste esta cita.";
+
+    /// <summary>La frase de una Cita que canceló el Consultorio.</summary>
+    public const string CanceladaPorElConsultorio =
+        "Lo sentimos: el consultorio tuvo que cancelar tu cita. Elige otro horario cuando te acomode.";
+
+    private CitaDelEnlace? _cita;
+
+    [Parameter]
+    public string Token { get; set; } = "";
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    private CancellationToken Cancelacion => HttpContext?.RequestAborted ?? CancellationToken.None;
+
+    // Relativo al sitio, como en Cita confirmada: el endpoint del archivo de calendario bajo el mismo token.
+    private string Calendario => $"/c/{Uri.EscapeDataString(Token)}/calendario.ics";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var resultado = await Consulta.HandleAsync(new CitaPorEnlace(Token), Cancelacion);
+        _cita = resultado.EsExito ? resultado.Valor : null;
+
+        // El 404 se pone al empezar la respuesta, no durante el render: un 404 puesto durante el render hace que el
+        // host de Blazor deje el cuerpo vacío (para que lo pinte una página de estado), y Enlace no válido se perdería.
+        if (_cita is null && HttpContext is { } contexto)
+        {
+            contexto.Response.OnStarting(() =>
+            {
+                contexto.Response.StatusCode = StatusCodes.Status404NotFound;
+                return Task.CompletedTask;
+            });
+        }
+    }
+}

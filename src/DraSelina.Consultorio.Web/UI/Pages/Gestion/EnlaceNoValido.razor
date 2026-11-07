@@ -1,0 +1,17 @@
+@*
+    Enlace no válido: lo que ve quien abre un Enlace de gestión que no lleva a una Cita que se pueda ver. No dice por
+    qué (RN-22): un enlace inexistente, alterado, mal formado o de una Cita que ya empezó se ven igual. La página que lo
+    pinta responde 404 y pone el meta robots. Lo usan Tu cita, Reprogramar y Cancelar.
+*@
+
+<PageTitle>Enlace no válido · Dra. Selina Medina Castillo</PageTitle>
+
+<section class="dsm-contenedor dsm-gestion" aria-labelledby="enlace-no-valido">
+    <h1 id="enlace-no-valido" class="dsm-titulo-de-estado">@Titulo</h1>
+    <a href="/reservar" class="btn btn-primary dsm-accion-principal dsm-gestion__accion">Agendar cita</a>
+</section>
+
+@code {
+    /// <summary>El texto que ve el Paciente.</summary>
+    public const string Titulo = "Este enlace ya no está disponible";
+}

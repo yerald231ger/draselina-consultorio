@@ -3,7 +3,7 @@
     sin número mientras no se conozca (Gerardo, 2026-11-02). Un enlace externo permitido (EXPERIENCE.md).
 *@
 
-@if (Digitos is { } digitos)
+@if (DigitosDe(WhatsApp) is { } digitos)
 {
     <text>Escríbenos por WhatsApp al </text><a href="https://wa.me/52@(digitos)" class="dsm-enlace-en-texto">@Legible(digitos)</a><text> y te ayudamos.</text>
 }
@@ -17,10 +17,12 @@ else
     [Parameter]
     public string? WhatsApp { get; set; }
 
-    // Solo los dígitos, si son 10; con cualquier otra cosa se pinta sin número antes que con un enlace roto.
-    private string? Digitos =>
-        new string((WhatsApp ?? "").Where(char.IsAsciiDigit).ToArray()) is { Length: 10 } digitos ? digitos : null;
+    /// <summary>
+    /// Solo los dígitos, si son 10; nulo con cualquier otra cosa: se pinta sin número antes que con un enlace roto.
+    /// </summary>
+    public static string? DigitosDe(string? whatsApp) =>
+        new string((whatsApp ?? "").Where(char.IsAsciiDigit).ToArray()) is { Length: 10 } digitos ? digitos : null;
 
-    // "444 123 4567".
-    private static string Legible(string digitos) => $"{digitos[..3]} {digitos[3..6]} {digitos[6..]}";
+    /// <summary>"444 123 4567".</summary>
+    public static string Legible(string digitos) => $"{digitos[..3]} {digitos[3..6]} {digitos[6..]}";
 }

@@ -1553,3 +1553,99 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   line-height: var(--dsm-body-line-height);
   color: var(--dsm-muted);
 }
+
+/* Tu cita y Enlace no válido (mockup Gestionar): una columna, también en escritorio. */
+.dsm-gestion {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  padding-top: 28px;
+}
+
+.dsm-gestion__cuando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-3);
+}
+
+.dsm-gestion__fecha {
+  font-size: var(--dsm-step-title-font-size);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.dsm-gestion__tipo {
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-gestion__accion {
+  margin-top: var(--dsm-spacing-9);
+}
+
+.dsm-boton-secundario.dsm-gestion__accion {
+  width: 100%;
+}
+
+.dsm-gestion__nota {
+  margin: var(--dsm-spacing-9) 0 0;
+  font-size: var(--dsm-body-font-size);
+  line-height: var(--dsm-body-line-height);
+  color: var(--dsm-ink-soft);
+}
+
+.dsm-gestion__contacto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dsm-spacing-2);
+  margin-top: 32px;
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+}
+
+/* Chip de estado de una Cita: "Agendada", "Cancelada". */
+.dsm-chip-de-estado {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--dsm-spacing-2);
+  padding: var(--dsm-spacing-1) var(--dsm-spacing-4);
+  border-radius: var(--dsm-rounded-full);
+  background: var(--dsm-tint);
+  color: var(--dsm-primary-strong);
+  font-size: var(--dsm-help-font-size);
+  font-weight: 700;
+}
+
+.dsm-chip-de-estado--cancelada {
+  background: var(--dsm-field-readonly);
+  color: var(--dsm-danger);
+}
+
+/* Filas etiqueta-valor de una tarjeta: la etiqueta a la izquierda, el valor a la derecha. */
+.dsm-filas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+}
+
+.dsm-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--dsm-spacing-5);
+}
+
+.dsm-fila dt {
+  font-weight: 400;
+  color: var(--dsm-muted);
+}
+
+.dsm-fila dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}

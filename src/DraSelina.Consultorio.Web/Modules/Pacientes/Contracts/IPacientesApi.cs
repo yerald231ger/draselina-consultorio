@@ -38,6 +38,13 @@ public interface IPacientesApi
     /// </summary>
     /// <returns>Falso si no tiene correo o si no existe.</returns>
     Task<bool> TieneCorreoAsync(PatientId paciente, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// El nombre del Paciente tal como se guardó: el que se muestra al propio Paciente en Tu cita (RN-29). Quien lo
+    /// recibe no lo escribe en registros (AD-23). No registra nada.
+    /// </summary>
+    /// <returns>Nulo si el Paciente no existe.</returns>
+    Task<string?> NombreAsync(PatientId paciente, CancellationToken cancellationToken);
 }
 
 /// <summary>El conjunto cerrado de códigos de fallo esperado de Pacientes.</summary>
