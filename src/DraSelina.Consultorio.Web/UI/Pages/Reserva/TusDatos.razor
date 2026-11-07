@@ -276,12 +276,11 @@ else
 
     // Solo de hoy (fecha local del consultorio) a un año después, inclusive. Así una dirección escrita a mano no
     // llega al handler con una hora local inexistente de un cambio de horario pasado (Ciudad de México no tiene
-    // ninguna desde 2023) ni con una fecha que desborda al sumar la duración. La zona se lee aquí porque la interfaz
-    // no usa Agenda.Domain (HoraLocal); es la misma de AD-17.
+    // ninguna desde 2023) ni con una fecha que desborda al sumar la duración. La zona es la del Kernel, la misma que
+    // usa Agenda.Domain (HoraLocal), porque la interfaz no usa ese dominio (AD-17).
     private bool FechaAceptable(DateOnly fecha)
     {
-        var zona = TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
-        var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, zona).DateTime);
+        var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
         return fecha >= hoy && fecha <= hoy.AddYears(1);
     }
 

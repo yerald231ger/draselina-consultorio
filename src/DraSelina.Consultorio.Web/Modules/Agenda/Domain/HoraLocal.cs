@@ -1,15 +1,15 @@
+using DraSelina.Consultorio.Kernel;
+
 namespace DraSelina.Consultorio.Agenda.Domain;
 
 /// <summary>
-/// La hora local del consultorio, <c>America/Mexico_City</c> (AD-17). Las fechas y horas que ve el Paciente son
-/// locales; los instantes que se guardan, UTC.
+/// La hora local del consultorio, la de <see cref="ZonaDelConsultorio"/> (AD-17). Las fechas y horas que ve el
+/// Paciente son locales; los instantes que se guardan, UTC.
 /// </summary>
 public static class HoraLocal
 {
-    public const string IdDeZona = "America/Mexico_City";
-
     /// <summary>La zona del consultorio.</summary>
-    public static TimeZoneInfo Zona { get; } = TimeZoneInfo.FindSystemTimeZoneById(IdDeZona);
+    public static TimeZoneInfo Zona => ZonaDelConsultorio.Zona;
 
     /// <summary>El instante UTC de una fecha y hora locales del consultorio.</summary>
     public static DateTimeOffset AUtc(DateOnly fecha, TimeOnly hora)

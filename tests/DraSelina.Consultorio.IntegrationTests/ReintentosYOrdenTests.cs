@@ -34,8 +34,11 @@ public sealed class ReintentosYOrdenTests(Arnes arnes)
     [Fact]
     public async Task Un_handler_que_no_termina_a_tiempo_se_cancela_cuenta_como_fallido_y_no_detiene_a_los_demas()
     {
-        // Límite corto para la prueba; el handler tardaría un minuto si nadie lo cancelara.
-        await using var escenario = await EscenarioDeEntrega.CrearAsync(arnes, limitePorHandler: TimeSpan.FromMilliseconds(300));
+        // Límite corto para la prueba; el handler colgado tardaría un minuto si nadie lo cancelara. El límite vale
+        // también para el handler sano, que en una web recién arrancada hace sus primeras dos consultas: con la
+        // máquina cargada eso pasó de 300 ms y lo cancelaba. Con 5 s le sobra, y queda muy lejos del minuto del
+        // colgado y de la cota de 20 s de la vuelta.
+        await using var escenario = await EscenarioDeEntrega.CrearAsync(arnes, limitePorHandler: TimeSpan.FromSeconds(5));
         var publicadoEn = escenario.Reloj.UtcNow;
         var colgado = await escenario.PublicarAsync(id => new EventoDePrueba(id, DemoraMs: 60_000), claveDeOrden: Guid.CreateVersion7());
         var siguiente = await escenario.PublicarAsync(id => new EventoDePrueba(id), claveDeOrden: Guid.CreateVersion7());

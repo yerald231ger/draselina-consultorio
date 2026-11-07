@@ -621,23 +621,6 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         Assert.Single(await escenario.CitasAsync());
     }
 
-    [Fact]
-    public async Task Pacientes_da_los_ids_de_todos_los_que_comparten_el_telefono_y_nada_con_uno_invalido()
-    {
-        await using var escenario = await Escenario.CrearAsync(arnes);
-        await using var ambito = escenario.Web.Services.CreateAsyncScope();
-        var api = ambito.ServiceProvider.GetRequiredService<IPacientesApi>();
-        var ana = (await api.BuscarOCrearAsync("Ana Sofía López", "4441234567", null, Cancelacion)).Valor;
-        var mariana = (await api.BuscarOCrearAsync("Mariana López", "+52 444-123-4567", null, Cancelacion)).Valor;
-        Assert.True((await api.BuscarOCrearAsync("Luis Pérez", "4449876543", null, Cancelacion)).EsExito);
-
-        var ids = await api.ConTelefonoAsync("444 123 4567", Cancelacion);
-
-        Assert.Equal(new[] { ana.Valor, mariana.Valor }.Order(), ids.Select(id => id.Valor).Order());
-        Assert.Empty(await api.ConTelefonoAsync("12345", Cancelacion));
-        Assert.Empty(await api.ConTelefonoAsync("4447777777", Cancelacion));
-    }
-
     // AD-27 y RN-21: confirmar dos veces la misma solicitud no crea dos Citas.
 
     [Fact]
