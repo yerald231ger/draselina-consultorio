@@ -56,3 +56,4 @@ Las superficies Tu cita, Cancelar cita, Cita cancelada, Cita reprogramada y Enla
 - Decision: un solo carril, 1 → 2 → 3 → 4 → 5 → 6, porque cada entrada cambia `Cita.cs`, la página Tu cita o el caso de uso de la anterior; la 4 espera a la 3 solo por esa colisión (2026-11-06).
 - Decision: el recorrido de UJ-2 (Done when 1) lo hace Gerardo en la entrada 5, con el reloj desplazado (2026-11-06).
 - Decision: AD-22 se amplía: las páginas del Enlace de gestión (`/c/...`) llevan el mismo límite de frecuencia que las de reserva; la trazabilidad (FR-7) lo dice también (Gerardo, 2026-11-06).
+- Decision (entrada 5): Gerardo recorrió UJ-2 en local desde el teléfono: reservó, reprogramó y, con el reloj desplazado a una hora de la Cita, canceló y vio la cancelación tardía: funciona (Done when 1) (Gerardo, 2026-11-07).
