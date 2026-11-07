@@ -39,7 +39,7 @@ if (builder.Configuration.GetConnectionString(BaseDeDatos.Nombre) is { } cadena)
     // Este proceso actúa como Sistema; ActorDelHost no sirve aquí porque lee la autenticación de la web.
     builder.Services
         .AddContenido()
-        .AddSingleton<IClock, RelojDelSistema>()
+        .AddSingleton<IClock>(new RelojDelSistema())
         .AddSingleton<IActorActual, ActorSistema>();
 }
 

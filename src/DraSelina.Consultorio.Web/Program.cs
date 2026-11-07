@@ -8,8 +8,10 @@ using DraSelina.Consultorio.UI.Pages;
 using DraSelina.Consultorio.UI.Pages.Reserva;
 using DraSelina.Consultorio.Web;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +31,20 @@ builder.Services
 
 // El reloj de la aplicación, y la entrega de eventos entre módulos (AD-3): un servicio en segundo plano entrega
 // los eventos de cada outbox dado de alta aquí. Hoy solo publica Agenda.
+// El reloj solo se desplaza en Development: Reloj:Desplazamiento en appsettings.Development.local.json, que no va al
+// repositorio (.gitignore) y se recarga al guardarlo. En otro entorno un desplazamiento distinto de cero impide arrancar.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile(OpcionesDeReloj.ArchivoLocal, optional: true, reloadOnChange: true);
+}
+
+OpcionesDeReloj.ExigirSoloEnDevelopment(builder.Configuration, builder.Environment);
+builder.Services.Configure<OpcionesDeReloj>(builder.Configuration.GetSection(OpcionesDeReloj.Seccion));
+var relojDesplazable = builder.Environment.IsDevelopment();
+
 builder.Services
-    .AddSingleton<IClock, RelojDelSistema>()
+    .AddSingleton<IClock>(servicios => new RelojDelSistema(
+        relojDesplazable ? servicios.GetRequiredService<IOptionsMonitor<OpcionesDeReloj>>() : null))
     .AddEntregaDeEventos()
     .AddOutbox<AgendaDbContext>();
 

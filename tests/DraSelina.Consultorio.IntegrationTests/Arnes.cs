@@ -175,6 +175,10 @@ public sealed class Arnes : IAsyncLifetime
                     .AddPruebas(cadenaDeConexion)
                     .AddOutbox<PruebasDbContext>();
 
+                // El desplazamiento de un recorrido manual (appsettings.Development.local.json) no llega a las pruebas:
+                // se aplica después de cada recarga del archivo.
+                servicios.PostConfigure<OpcionesDeReloj>(opciones => opciones.Desplazamiento = null);
+
                 servicios
                     .AddSingleton<RegistrosDePrueba>()
                     .AddSingleton<ILoggerProvider>(proveedor => proveedor.GetRequiredService<RegistrosDePrueba>());
