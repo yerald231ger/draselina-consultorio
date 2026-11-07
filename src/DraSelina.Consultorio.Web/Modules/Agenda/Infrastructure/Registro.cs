@@ -42,6 +42,7 @@ public static class Registro
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
             .AddScoped<ICommandHandler<ReprogramarCitaPorEnlace, CitaReprogramadaPorEnlace>, ReprogramarCitaPorEnlaceHandler>()
+            .AddScoped<ICommandHandler<CancelarCitaPorEnlace, CitaCanceladaPorEnlace>, CancelarCitaPorEnlaceHandler>()
             .AddScoped<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>, HorariosLibresHandler>()
             .AddScoped<IQueryHandler<VentanaDeReservaPublica, VentanaDeReservaVigente>, VentanaDeReservaPublicaHandler>()
             .AddScoped<IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario>, ArchivoDeCalendarioPorEnlaceHandler>()

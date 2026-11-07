@@ -4,7 +4,7 @@ using DraSelina.Consultorio.Kernel;
 namespace DraSelina.Consultorio.Domain.Tests;
 
 /// <summary>
-/// <see cref="Cita.Agendar"/>: INV-C1 a C5, C7, C9 a C11, y <see cref="Cita.Reprogramar"/>: RN-15, RN-17, sin base de datos. Las reglas son las sembradas: lunes a
+/// <see cref="Cita.Agendar"/>: INV-C1 a C5, C7, C9 a C11, <see cref="Cita.Reprogramar"/>: RN-15, RN-17, y <see cref="Cita.Cancelar"/>: RN-16, RN-31, INV-C8, sin base de datos. Las reglas son las sembradas: lunes a
 /// viernes de 15:30 a 18:00, anticipación de 1 día y ventana de 2 meses, tope semanal de 3.
 /// </summary>
 public class CitaTests
@@ -509,6 +509,107 @@ public class CitaTests
         var nuevo = Local(Jueves, 17, 0);
 
         Assert.Throws<ArgumentException>(() => cita.Reprogramar(Rango(nuevo), Reglas(Manana16), Ahora));
+    }
+
+    // Cita.Cancelar: la Cita Agendada el martes 3 a las 16:00 local (22:00 UTC), con umbral de 120. RN-16, RN-31, INV-C8.
+
+    [Fact]
+    public void Cancelar_con_tiempo_es_por_el_Paciente_y_fija_estado_motivo_e_instante()
+    {
+        var cita = Agendada();
+        var tresHorasAntes = Manana16.AddHours(-3);
+
+        Assert.Null(cita.Cancelar(tresHorasAntes, Reglas(Manana16)));
+
+        Assert.Equal(EstadoCita.Cancelada, cita.Estado);
+        Assert.Equal(MotivoDeCancelacion.Paciente, cita.MotivoDeCancelacion);
+        Assert.Equal(tresHorasAntes, cita.CanceladaEn);
+        Assert.Equal(TimeSpan.Zero, cita.CanceladaEn!.Value.Offset);
+        Assert.Equal(Manana16, cita.Rango.Inicio);
+        Assert.Equal(Manana16.AddMinutes(30), cita.Rango.Fin);
+    }
+
+    [Fact]
+    public void Cancelar_justo_en_el_umbral_todavia_es_por_el_Paciente()
+    {
+        var cita = Agendada();
+
+        Assert.Null(cita.Cancelar(Manana16.AddMinutes(-120), Reglas(Manana16)));
+        Assert.Equal(MotivoDeCancelacion.Paciente, cita.MotivoDeCancelacion);
+    }
+
+    [Theory]
+    [InlineData(119)]
+    [InlineData(60)]
+    [InlineData(1)]
+    public void Cancelar_dentro_del_umbral_es_tardia_y_se_permite(int minutosAntes)
+    {
+        var cita = Agendada();
+        var ahora = Manana16.AddMinutes(-minutosAntes);
+
+        Assert.Null(cita.Cancelar(ahora, Reglas(Manana16)));
+        Assert.Equal(EstadoCita.Cancelada, cita.Estado);
+        Assert.Equal(MotivoDeCancelacion.Tarde, cita.MotivoDeCancelacion);
+        Assert.Equal(ahora, cita.CanceladaEn);
+    }
+
+    [Fact]
+    public void El_umbral_de_la_cancelacion_tardia_se_lee_de_las_reglas()
+    {
+        // Con un umbral de 60, a 90 minutos todavía es a tiempo.
+        var cita = Agendada();
+
+        Assert.Null(cita.Cancelar(Manana16.AddMinutes(-90), Reglas(Manana16, umbralMin: 60)));
+        Assert.Equal(MotivoDeCancelacion.Paciente, cita.MotivoDeCancelacion);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(10)]
+    public void Una_Cita_que_ya_empezo_no_se_cancela_y_no_cambia_nada(int minutosDespues)
+    {
+        var cita = Agendada();
+
+        Assert.Equal(RechazoAlCancelar.YaEmpezo, cita.Cancelar(Manana16.AddMinutes(minutosDespues), Reglas(Manana16)));
+        Assert.Equal(EstadoCita.Agendada, cita.Estado);
+        Assert.Null(cita.MotivoDeCancelacion);
+        Assert.Null(cita.CanceladaEn);
+    }
+
+    [Theory]
+    [InlineData(EstadoCita.Cancelada)]
+    [InlineData(EstadoCita.NoSePresento)]
+    public void Una_Cita_que_no_esta_Agendada_no_se_cancela(EstadoCita estado)
+    {
+        var cita = Agendada();
+        typeof(Cita).GetProperty(nameof(Cita.Estado))!.SetValue(cita, estado);
+
+        Assert.Equal(RechazoAlCancelar.CitaNoAgendada, cita.Cancelar(Manana16.AddHours(-3), Reglas(Manana16)));
+        Assert.Equal(estado, cita.Estado);
+        Assert.Null(cita.MotivoDeCancelacion);
+        Assert.Null(cita.CanceladaEn);
+    }
+
+    [Fact]
+    public void Cancelar_dos_veces_no_cambia_lo_guardado_la_primera()
+    {
+        var cita = Agendada();
+        var primera = Manana16.AddHours(-3);
+
+        Assert.Null(cita.Cancelar(primera, Reglas(Manana16)));
+        Assert.Equal(RechazoAlCancelar.CitaNoAgendada, cita.Cancelar(Manana16.AddMinutes(-30), Reglas(Manana16)));
+        Assert.Equal(MotivoDeCancelacion.Paciente, cita.MotivoDeCancelacion);
+        Assert.Equal(primera, cita.CanceladaEn);
+    }
+
+    [Fact]
+    public void Una_Cita_cancelada_ya_no_se_reprograma()
+    {
+        var cita = Agendada();
+        Assert.Null(cita.Cancelar(Ahora, Reglas(Manana16)));
+        var nuevo = Local(Jueves, 17, 0);
+
+        Assert.Equal(RechazoAlReprogramar.CitaNoAgendada, cita.Reprogramar(Rango(nuevo), Reglas(nuevo), Ahora));
     }
 
     private static Cita Agendada()

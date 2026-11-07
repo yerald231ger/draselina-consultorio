@@ -1,0 +1,198 @@
+@page "/c/{Token}/cancelar"
+@attribute [EnableRateLimiting(DemasiadosIntentos.Politica)]
+@using Microsoft.AspNetCore.RateLimiting
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@using Microsoft.AspNetCore.Http
+@inject IQueryHandler<CitaPorEnlace, CitaDelEnlace> Consulta
+@inject ICommandHandler<CancelarCitaPorEnlace, CitaCanceladaPorEnlace> Cancelacion
+
+@*
+    Cancelar cita (mockup Cancelar; CAP-8, FR-10, UJ-2 pasos 4 a 7; entrada 3.4). El Paciente llega desde Tu cita con su
+    Enlace de gestión, sin cuenta. "¿Cancelar tu cita?" con la fecha, la hora y el tipo; dentro del umbral (RN-16), el
+    panel ámbar con el texto de cancelación tardía; fuera, sin panel (EXPERIENCE.md, "Cancelación normal"). Nunca se pide
+    confirmar dos veces: "Sí, cancelar mi cita" es un POST con antiforgery a esta misma dirección, y la misma respuesta
+    pinta Cita cancelada. "Conservar mi cita" vuelve a Tu cita.
+
+    Sin scripts (AD-11); el token va solo en la ruta (AD-23). Una Cita ya cancelada, al abrir, dice que ya lo está con
+    "Ver mi cita"; al enviar otra vez, pinta Cita cancelada con el motivo guardado. Un enlace no válido, al abrir o al
+    enviar, es 404 (RN-22). Lleva el límite de frecuencia y, como todo bajo /c/, X-Robots-Tag y no-store (Program.cs)
+    además del meta robots (CAP-21).
+*@
+
+<HeadContent>
+    <meta name="robots" content="noindex, nofollow" />
+</HeadContent>
+
+@switch (_vista)
+{
+    case Vista.Envio:
+        @* Solo mientras se despacha el envío: el formulario con ese nombre tiene que existir en el primer pintado. La
+           respuesta es lo que deja CancelarAsync. *@
+        <form method="post" action="@RutaDeCancelar" @formname="@NombreDelFormulario" @onsubmit="CancelarAsync">
+            <AntiforgeryToken />
+        </form>
+        break;
+
+    case Vista.NoValido:
+        <EnlaceNoValido />
+        break;
+
+    case Vista.Cancelada when _cancelada is { } cancelada:
+        <PageTitle>Cita cancelada · Dra. Selina Medina Castillo</PageTitle>
+        <CitaCancelada Fecha="cancelada.Fecha" Hora="cancelada.Hora" TipoDeVisita="@cancelada.TipoDeVisita"
+                       Tardia="cancelada.Tardia" PorElConsultorio="cancelada.PorElConsultorio" />
+        break;
+
+    case Vista.YaCancelada:
+        <PageTitle>Cancelar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <section class="dsm-contenedor dsm-gestion" aria-labelledby="cancelar">
+            <h1 id="cancelar" class="dsm-titulo-de-estado">@YaCancelada</h1>
+            <a href="@RutaDeTuCita" class="btn dsm-boton-secundario dsm-gestion__accion">Ver mi cita</a>
+        </section>
+        break;
+
+    case Vista.Pregunta when _cita is { } cita:
+        <PageTitle>Cancelar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <section class="dsm-contenedor dsm-gestion dsm-cancelar" aria-labelledby="cancelar">
+            <div class="dsm-regreso">
+                <a href="@RutaDeTuCita" class="dsm-regreso__enlace" aria-label="Regresar a tu cita">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 12H5M11 6l-6 6 6 6"></path>
+                    </svg>
+                </a>
+                <div class="dsm-regreso__texto">Tu cita</div>
+            </div>
+
+            <h1 id="cancelar" class="dsm-titulo-de-estado">@Titulo</h1>
+            <p class="dsm-cancelar__cita">@FormatoDeCita.Largo(cita.Fecha), @FormatoDeCita.Hora(cita.Hora) · @cita.TipoDeVisita</p>
+
+            @if (!cita.PuedeReprogramar)
+            {
+                <div class="dsm-gestion__umbral">
+                    <PanelDentroDelUmbral UmbralMin="cita.UmbralMin">@Tardia</PanelDentroDelUmbral>
+                </div>
+            }
+
+            <div class="dsm-cancelar__acciones">
+                <form method="post" action="@RutaDeCancelar" @formname="@NombreDelFormulario" @onsubmit="CancelarAsync">
+                    <AntiforgeryToken />
+                    <button type="submit" class="btn dsm-boton-cancelar">@Confirmar</button>
+                </form>
+                <a href="@RutaDeTuCita" class="btn dsm-boton-neutro">@Conservar</a>
+            </div>
+        </section>
+        break;
+}
+
+@code {
+    /// <summary>El nombre del formulario de "Sí, cancelar mi cita".</summary>
+    public const string NombreDelFormulario = "cancelar";
+
+    /// <summary>La pregunta de la página (mockup Cancelar).</summary>
+    public const string Titulo = "¿Cancelar tu cita?";
+
+    /// <summary>El botón que cancela (mockup Cancelar).</summary>
+    public const string Confirmar = "Sí, cancelar mi cita";
+
+    /// <summary>El botón que vuelve a Tu cita sin cambios (mockup Cancelar).</summary>
+    public const string Conservar = "Conservar mi cita";
+
+    /// <summary>Lo que dice el panel ámbar dentro del umbral (mockup Cancelar).</summary>
+    public const string Tardia =
+        "Puedes cancelar sin problema; quedará registrada como cancelación tardía. Gracias por avisarnos, así la doctora puede atender a alguien más.";
+
+    /// <summary>Lo que se ve al abrir Cancelar con una Cita ya cancelada: el mismo texto de Reprogramar.</summary>
+    public const string YaCancelada = Reprogramar.Cancelada;
+
+    private enum Vista
+    {
+        NoValido,
+        Envio,
+        Pregunta,
+        YaCancelada,
+        Cancelada,
+    }
+
+    private Vista _vista;
+    private CitaDelEnlace? _cita;
+    private CitaCanceladaPorEnlace? _cancelada;
+
+    [Parameter]
+    public string Token { get; set; } = "";
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    private CancellationToken Aborto => HttpContext?.RequestAborted ?? CancellationToken.None;
+
+    private string RutaDeTuCita => $"/c/{Uri.EscapeDataString(Token)}";
+
+    private string RutaDeCancelar => $"{RutaDeTuCita}/cancelar";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Un envío lo resuelve CancelarAsync: el comando decide con la Cita bloqueada, no con lo que se leyó aquí.
+        if (HttpContext is { } contexto && HttpMethods.IsPost(contexto.Request.Method))
+        {
+            _vista = Vista.Envio;
+            return;
+        }
+
+        await CargarAsync();
+    }
+
+    // Lo que se ve al abrir la página, y otra vez tras un envío rechazado.
+    private async Task CargarAsync()
+    {
+        var resultado = await Consulta.HandleAsync(new CitaPorEnlace(Token), Aborto);
+        if (!resultado.EsExito)
+        {
+            NoValido();
+            return;
+        }
+
+        _cita = resultado.Valor;
+        _vista = _cita.Estado == EstadoDelEnlace.Agendada ? Vista.Pregunta : Vista.YaCancelada;
+    }
+
+    private async Task CancelarAsync()
+    {
+        var resultado = await Cancelacion.HandleAsync(new CancelarCitaPorEnlace { Token = Token }, Aborto);
+
+        if (resultado.EsExito)
+        {
+            _cancelada = resultado.Valor;
+            _vista = Vista.Cancelada;
+            return;
+        }
+
+        if (resultado is { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.CitaNoEncontrada })
+        {
+            NoValido();
+            return;
+        }
+
+        // Lo demás (una Cita que no se presentó) vuelve a la página tal como se abre ahora.
+        await CargarAsync();
+    }
+
+    // El 404 se pone al empezar la respuesta, no durante el render, como en Tu cita: si no, el host de Blazor deja el
+    // cuerpo vacío y Enlace no válido se perdería.
+    private void NoValido()
+    {
+        _vista = Vista.NoValido;
+        _cita = null;
+        if (HttpContext is { } contexto)
+        {
+            contexto.Response.OnStarting(() =>
+            {
+                contexto.Response.StatusCode = StatusCodes.Status404NotFound;
+                return Task.CompletedTask;
+            });
+        }
+    }
+}

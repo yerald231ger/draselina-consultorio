@@ -1626,6 +1626,93 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   margin-top: var(--dsm-spacing-9);
 }
 
+/* Tu cita: "Cancelar cita" (mockup Gestionar): contorno de 2 px en el borde de la tarjeta, texto en danger. */
+.dsm-boton-peligro,
+.dsm-boton-neutro {
+  --bs-btn-bg: var(--dsm-surface);
+  --bs-btn-border-color: var(--dsm-border);
+  --bs-btn-border-width: 2px;
+  --bs-btn-hover-bg: var(--dsm-tint);
+  --bs-btn-hover-border-color: var(--dsm-border-input);
+  --bs-btn-active-bg: var(--dsm-tint);
+  --bs-btn-active-border-color: var(--dsm-border-input);
+  --bs-btn-font-family: var(--dsm-font-family);
+  --bs-btn-font-size: var(--dsm-button-font-size);
+  --bs-btn-font-weight: var(--dsm-button-font-weight);
+  --bs-btn-border-radius: var(--dsm-rounded-lg);
+  --bs-btn-padding-x: 24px;
+  --bs-btn-padding-y: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  width: 100%;
+}
+
+.dsm-boton-peligro {
+  --bs-btn-color: var(--dsm-danger);
+  --bs-btn-hover-color: var(--dsm-danger);
+  --bs-btn-active-color: var(--dsm-danger);
+  --bs-btn-focus-box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--dsm-danger) 50%, transparent);
+}
+
+/* Cancelar: "Conservar mi cita", el mismo contorno con texto en tinta (mockup Cancelar). */
+.dsm-boton-neutro {
+  --bs-btn-color: var(--dsm-ink);
+  --bs-btn-hover-color: var(--dsm-ink);
+  --bs-btn-active-color: var(--dsm-ink);
+  --bs-btn-focus-box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--dsm-primary) 50%, transparent);
+}
+
+/* Cancelar: "Sí, cancelar mi cita", lleno en danger (mockup Cancelar). */
+.dsm-boton-cancelar {
+  --bs-btn-color: var(--dsm-on-primary);
+  --bs-btn-bg: var(--dsm-danger);
+  --bs-btn-border-color: var(--dsm-danger);
+  --bs-btn-hover-color: var(--dsm-on-primary);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--dsm-danger) 85%, black);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--dsm-danger) 85%, black);
+  --bs-btn-active-color: var(--dsm-on-primary);
+  --bs-btn-active-bg: color-mix(in srgb, var(--dsm-danger) 75%, black);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--dsm-danger) 75%, black);
+  --bs-btn-focus-box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--dsm-danger) 50%, transparent);
+  --bs-btn-font-family: var(--dsm-font-family);
+  --bs-btn-font-size: var(--dsm-button-font-size);
+  --bs-btn-font-weight: var(--dsm-button-font-weight);
+  --bs-btn-border-radius: var(--dsm-rounded-lg);
+  --bs-btn-padding-x: 24px;
+  --bs-btn-padding-y: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  width: 100%;
+}
+
+/* Cancelar: la fecha, la hora y el tipo bajo la pregunta, y las dos acciones apiladas al final. */
+.dsm-cancelar__cita {
+  margin: var(--dsm-spacing-4) 0 0;
+  font-size: var(--dsm-body-font-size);
+  line-height: var(--dsm-body-line-height);
+  color: var(--dsm-muted);
+}
+
+.dsm-cancelar__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  margin-top: var(--dsm-spacing-9);
+}
+
+.dsm-cancelar__acciones form {
+  display: flex;
+}
+
+/* Cita cancelada: la tarjeta de la Cita bajo el título. */
+.dsm-cancelada__cita {
+  margin-top: var(--dsm-spacing-7);
+}
+
 /* Dentro del umbral de reprogramación (mockup Cancelar): el panel ámbar y la tarjeta "¿Buscabas otro horario?". */
 .dsm-umbral {
   display: flex;

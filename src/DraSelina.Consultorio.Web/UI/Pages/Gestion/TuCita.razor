@@ -15,8 +15,8 @@
     "Agregar a mi calendario"; Cancelada por el Paciente (a tiempo o tarde) y Cancelada por el Consultorio, cada una con
     su frase y el camino para agendar otra. Lo demás es Enlace no válido, con 404 y sin decir por qué (RN-22). Ni el
     CitaId ni el motivo de consulta aparecen (AD-23). Una Agendada con al menos el umbral antes de su inicio (RN-17)
-    lleva "Reprogramar" hacia /c/<token>/reprogramar y el plazo; con menos, el panel ámbar (entrada 3.3). Cancelar
-    llega con la 3.4.
+    lleva "Reprogramar" hacia /c/<token>/reprogramar y el plazo; con menos, el panel ámbar (entrada 3.3). Toda Agendada,
+    dentro o fuera del umbral, lleva "Cancelar cita" hacia /c/<token>/cancelar (entrada 3.4).
 
     Toda respuesta bajo /c/ lleva X-Robots-Tag y no-store (Program.cs); la página, además, el meta robots (CAP-21).
 *@
@@ -101,6 +101,7 @@ else
                     </svg>
                     Agregar a mi calendario
                 </a>
+                <a href="@Cancelar" class="btn dsm-boton-peligro dsm-gestion__accion dsm-gestion__cancelar">Cancelar cita</a>
                 break;
             case EstadoDelEnlace.CanceladaPorElPaciente:
                 <p class="dsm-gestion__nota">@CanceladaPorElPaciente</p>
@@ -153,6 +154,9 @@ else
 
     // Reprogramar, bajo el mismo token (AD-19); el token va solo en la ruta (AD-23).
     private string Reprogramar => $"/c/{Uri.EscapeDataString(Token)}/reprogramar";
+
+    // Cancelar, bajo el mismo token: siempre que esté Agendada, también dentro del umbral (RN-16).
+    private string Cancelar => $"/c/{Uri.EscapeDataString(Token)}/cancelar";
 
     protected override async Task OnParametersSetAsync()
     {

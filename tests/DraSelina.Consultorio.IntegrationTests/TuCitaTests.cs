@@ -43,9 +43,10 @@ public sealed class TuCitaTests(Arnes arnes)
         Assert.Contains("Agregar a mi calendario", html, StringComparison.Ordinal);
         Assert.Contains("¿Otra duda? Escríbenos por WhatsApp", html, StringComparison.Ordinal);
 
-        // Reprogramar llegó con la 3.3 (ReprogramarDesdeTuCitaTests); sin Cancelar todavía (3.4), sin id, sin motivo
-        // ni contacto del Paciente, sin scripts.
-        Assert.DoesNotContain("Cancelar cita", html, StringComparison.Ordinal);
+        // Reprogramar llegó con la 3.3 (ReprogramarDesdeTuCitaTests) y Cancelar con la 3.4 (CancelarCitaTests); sin id,
+        // sin motivo ni contacto del Paciente, sin scripts.
+        Assert.Contains($"href=\"{Ruta(cita.EnlaceDeGestion)}/cancelar\"", html, StringComparison.Ordinal);
+        Assert.Contains(">Cancelar cita</a>", html, StringComparison.Ordinal);
         Assert.DoesNotContain(cita.CitaId.Valor.ToString(), html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(cita.CitaId.Valor.ToString("N"), html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("rodilla", html, StringComparison.OrdinalIgnoreCase);

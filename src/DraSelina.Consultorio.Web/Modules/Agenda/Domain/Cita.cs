@@ -235,6 +235,51 @@ public sealed class Cita
         Rango = nuevoRango;
         return null;
     }
+
+    /// <summary>
+    /// Cancela la Cita por el Paciente (CAP-8, FR-10). Solo si está Agendada y su inicio no ha pasado (RN-16, RN-31):
+    /// antes del inicio nunca se impide. Si faltan menos de <see cref="ReglasDeAgenda.UmbralCancelacionTardiaMin"/>
+    /// minutos, el motivo es <see cref="Domain.MotivoDeCancelacion.Tarde"/>; si no, <see cref="Domain.MotivoDeCancelacion.Paciente"/>.
+    /// Con exactamente el umbral, <see cref="Domain.MotivoDeCancelacion.Paciente"/>, el mismo corte de
+    /// <see cref="Reprogramar"/> (RN-17). Fija el estado, el motivo y el instante de la cancelación (INV-C8); el rango no
+    /// cambia, y la restricción de exclusión deja de contarla (AD-8).
+    /// </summary>
+    /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    /// <param name="reglas">Los valores de las reglas de reserva: de ellas sale el umbral (T-1).</param>
+    /// <returns>Nulo si se canceló; si no, por qué no, y la Cita queda como estaba.</returns>
+    public RechazoAlCancelar? Cancelar(DateTimeOffset now, ReglasDeAgenda reglas)
+    {
+        ArgumentNullException.ThrowIfNull(reglas);
+
+        if (Estado != EstadoCita.Agendada)
+        {
+            return RechazoAlCancelar.CitaNoAgendada;
+        }
+
+        // RN-31: "ya pasó" se mide desde el inicio. En el inicio mismo, ya no se cancela.
+        if (Rango.Inicio <= now)
+        {
+            return RechazoAlCancelar.YaEmpezo;
+        }
+
+        // RN-16, RN-17: con 120, a 120 minutos es a tiempo; a 119, tardía.
+        MotivoDeCancelacion = Rango.Inicio - now < TimeSpan.FromMinutes(reglas.UmbralCancelacionTardiaMin)
+            ? Domain.MotivoDeCancelacion.Tarde
+            : Domain.MotivoDeCancelacion.Paciente;
+        Estado = EstadoCita.Cancelada;
+        CanceladaEn = now.ToUniversalTime();
+        return null;
+    }
+}
+
+/// <summary>Por qué <see cref="Cita.Cancelar"/> no canceló.</summary>
+public enum RechazoAlCancelar
+{
+    /// <summary>La Cita ya está Cancelada o No se presentó.</summary>
+    CitaNoAgendada = 1,
+
+    /// <summary>El inicio de la Cita ya llegó o pasó (RN-31).</summary>
+    YaEmpezo = 2,
 }
 
 /// <summary>Por qué <see cref="Cita.Reprogramar"/> no reprogramó.</summary>

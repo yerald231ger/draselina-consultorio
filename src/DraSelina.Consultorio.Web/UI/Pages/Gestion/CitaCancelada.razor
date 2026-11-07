@@ -1,0 +1,69 @@
+@using DraSelina.Consultorio.UI.Pages.Reserva
+
+@*
+    Cita cancelada (entrada 3.4, UJ-2 pasos 6 y 7): la Cita que el Paciente acaba de cancelar, con su fecha, su hora y su
+    tipo, y "Agendar otra cita". Si fue tardía (RN-16), además lo dice, sin culpa. Si ya la había cancelado el
+    Consultorio (un envío sobre una Cita ya cancelada), la frase y "Elegir otro horario" de Tu cita. Se pinta en la misma respuesta del
+    envío de Cancelar, sin redirección. El nombre choca con el evento Agenda.Contracts.CitaCancelada: desde código, se
+    nombra completo (UI.Pages.Gestion.CitaCancelada).
+*@
+
+<section class="dsm-contenedor dsm-gestion dsm-cancelada" aria-labelledby="cita-cancelada">
+    <h1 id="cita-cancelada" class="dsm-titulo-de-estado">@Titulo</h1>
+
+    <div class="dsm-tarjeta dsm-cancelada__cita">
+        <div class="dsm-tarjeta__seccion dsm-gestion__cuando">
+            <span class="dsm-chip-de-estado dsm-chip-de-estado--cancelada">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18"></path>
+                </svg>
+                Cancelada
+            </span>
+            <div class="dsm-gestion__fecha">@FormatoDeCita.Largo(Fecha), @FormatoDeCita.Hora(Hora)</div>
+            <div class="dsm-gestion__tipo">@TipoDeVisita</div>
+        </div>
+    </div>
+
+    @if (PorElConsultorio)
+    {
+        <p class="dsm-gestion__nota">@TuCita.CanceladaPorElConsultorio</p>
+        <a href="/reservar" class="btn btn-primary dsm-accion-principal dsm-gestion__accion">Elegir otro horario</a>
+    }
+    else
+    {
+        @if (Tardia)
+        {
+            <p class="dsm-gestion__nota">@NotaTardia</p>
+        }
+
+        <a href="/reservar" class="btn btn-primary dsm-accion-principal dsm-gestion__accion">Agendar otra cita</a>
+    }
+</section>
+
+@code {
+    /// <summary>El título. [ASSUMPTION: texto]</summary>
+    public const string Titulo = "Tu cita está cancelada";
+
+    /// <summary>La frase de una cancelación tardía (RN-16). [ASSUMPTION: texto]</summary>
+    public const string NotaTardia = "Gracias por avisarnos. Quedó registrada como cancelación tardía.";
+
+    /// <summary>La fecha local de la Cita.</summary>
+    [Parameter, EditorRequired]
+    public DateOnly Fecha { get; set; }
+
+    /// <summary>La hora local de inicio.</summary>
+    [Parameter, EditorRequired]
+    public TimeOnly Hora { get; set; }
+
+    [Parameter, EditorRequired]
+    public string TipoDeVisita { get; set; } = "";
+
+    /// <summary>Si quedó como cancelación tardía (RN-16).</summary>
+    [Parameter]
+    public bool Tardia { get; set; }
+
+    /// <summary>Si la canceló el Consultorio.</summary>
+    [Parameter]
+    public bool PorElConsultorio { get; set; }
+}
