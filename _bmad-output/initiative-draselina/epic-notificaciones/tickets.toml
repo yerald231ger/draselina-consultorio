@@ -76,7 +76,7 @@ covers = ["CAP-16"]
 after = [2, 6, "1.7"]
 hitl = false
 risk = "medium"
-unknown = "Al cambiar la hora del Recordatorio, ¿los Recordatorios ya programados se mueven a la nueva hora o conservan la que tenían?"
+notes = ["Al cambiar la hora del Recordatorio, los ya programados se mueven a la nueva hora; si alguno queda con la hora ya pasada, se registra Omitido (Gerardo, 2026-11-09)."]
 
 [[entry]]
 id = 8
