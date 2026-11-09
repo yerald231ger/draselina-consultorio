@@ -209,7 +209,7 @@ public sealed class AvisosDeCambioTests(Arnes arnes)
     [InlineData(CitaCancelada.MotivoPaciente)]
     [InlineData(CitaCancelada.MotivoTarde)]
     [InlineData(CitaCancelada.MotivoConsultorio)]
-    public async Task Sin_correo_no_sale_ningun_aviso_ni_queda_ninguna_fila(string caso)
+    public async Task Sin_correo_no_sale_ningun_aviso_al_Paciente_ni_queda_su_fila(string caso)
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
         var comando = Comando();
@@ -220,7 +220,12 @@ public sealed class AvisosDeCambioTests(Arnes arnes)
         await ProvocarAsync(escenario, agendada, caso);
         Assert.Equal(1, await Arnes.DarUnaVueltaDeEntregaAsync(escenario.Web, Cancelacion));
 
-        Assert.Empty(Arnes.Canal(escenario.Web).Enviados);
+        // Al Paciente no le sale nada; la alerta de una cancelación tardía va al Administrador (4.5).
+        Assert.Empty(Avisos(escenario));
+        Assert.DoesNotContain(Arnes.Canal(escenario.Web).Enviados, c => c.Destinatario != "administrador@consultorio.local");
+        Assert.Equal(
+            caso == CitaCancelada.MotivoTarde ? 1 : 0,
+            Arnes.Canal(escenario.Web).Enviados.Count(c => c.Destinatario == "administrador@consultorio.local"));
         Assert.Empty(await MensajesAsync(escenario));
         Assert.All(
             await Consultas.EventosDeLaClaveAsync(escenario.Cadena, AgendaDbContext.Esquema, agendada.CitaId.Valor, Cancelacion),
@@ -437,9 +442,11 @@ public sealed class AvisosDeCambioTests(Arnes arnes)
         [.. (await Consultas.EventosDeLaClaveAsync(escenario.Cadena, AgendaDbContext.Esquema, cita.CitaId.Valor, Cancelacion))
             .Where(f => f.Tipo == tipo)];
 
-    // Lo enviado que no es la confirmación de la 4.1.
+    // Lo enviado al Paciente que no es la confirmación de la 4.1 (sin la alerta al Administrador de la 4.5).
     private static List<MensajeDeCorreo> Avisos(Escenario escenario) =>
-        [.. Arnes.Canal(escenario.Web).Enviados.Where(c => !c.Asunto.StartsWith(PlantillaDeConfirmacion.Titulo, StringComparison.Ordinal))];
+        [.. Arnes.Canal(escenario.Web).Enviados.Where(c =>
+            !c.Asunto.StartsWith(PlantillaDeConfirmacion.Titulo, StringComparison.Ordinal)
+            && !c.Asunto.StartsWith(PlantillaDeAlertaTardia.Titulo, StringComparison.Ordinal))];
 
     private static Task<List<MensajeLeido>> MensajesAsync(Escenario escenario) => escenario.FilasAsync(
         "select id, evento_id, cita_id, tipo, canal, estado, registrado_en from notificaciones.mensaje "

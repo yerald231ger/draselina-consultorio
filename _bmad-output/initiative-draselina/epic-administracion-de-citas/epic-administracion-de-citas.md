@@ -53,3 +53,4 @@ El acceso (ASP.NET Core Identity en el host) y el marco de administración, la A
 - Assumption: toda la administración se construye sin mockup, desde las tablas de `EXPERIENCE.md`.
 - Open question: quién arma el historial de Citas de FR-18, dado que Pacientes no conoce citas (RN-29); se resuelve al dividir esta épica. AD-10 apunta a una consulta de Agenda que pide los contactos a Pacientes.
 - Open question: qué pantallas de administración necesitan mockup antes de construirse (spec, Open Questions).
+- Traspaso de la épica 4 (entrada 5, Gerardo, 2026-11-08): la alerta de cancelación tardía al Administrador sale sin el botón "Abrir la Agenda" de EXPERIENCE.md; esta épica lo agrega a la plantilla de Notificaciones cuando la Agenda de administración tenga su ruta.

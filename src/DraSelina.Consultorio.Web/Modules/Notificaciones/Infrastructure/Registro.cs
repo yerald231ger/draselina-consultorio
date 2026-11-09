@@ -24,6 +24,7 @@ public static class Registro
             .AddScoped<ITransaccionDeNotificaciones, TransaccionDeNotificaciones>()
             .AddScoped<IMensajes, Mensajes>()
             .AddScoped<IRecordatorios, Recordatorios>()
+            .AddScoped<IConfiguracionDeEnvio, ConfiguracionDeEnvio>()
             .AddScoped<IQueryHandler<RecordatorioPrevisto, Recordatorio>, RecordatorioPrevistoHandler>()
             .AddSingleton<INotificationChannel, CanalDeCorreoSmtp>()
             .AddSingleton<IDireccionDelSitio, DireccionDelSitio>()
@@ -33,6 +34,7 @@ public static class Registro
             .AddEventHandler<RecordatorioAlCancelar>()
             .AddEventHandler<AvisoAlReprogramar>()
             .AddEventHandler<AvisoAlCancelar>()
+            .AddEventHandler<AlertaDeCancelacionTardia>()
             .AddSingleton<EnviosProgramados>()
             .AddHostedService<ServicioDeEnviosProgramados>();
     }
