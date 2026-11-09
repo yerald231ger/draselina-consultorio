@@ -16,8 +16,8 @@ public sealed partial class TusDatosTests(Arnes arnes)
 {
     private static CancellationToken Cancelacion => TestContext.Current.CancellationToken;
 
-    private static string Ruta(string hora = "16:00") =>
-        $"/reservar/datos?tipo={TiposDeVisitaSembrados.PrimeraConsulta}&fecha=2026-11-03&hora={hora}";
+    private static string Ruta(string hora = "16:00", string fecha = "2026-11-03") =>
+        $"/reservar/datos?tipo={TiposDeVisitaSembrados.PrimeraConsulta}&fecha={fecha}&hora={hora}";
 
     [Fact]
     public async Task El_GET_pinta_el_formulario_con_el_horario_elegido_y_sin_ningun_script()
@@ -68,7 +68,22 @@ public sealed partial class TusDatosTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task Con_correo_Cita_confirmada_muestra_Guarda_este_enlace_despues_de_la_tarjeta_y_ninguna_frase_de_correo()
+    public async Task Con_correo_y_Recordatorio_por_salir_Cita_confirmada_dice_a_que_hora_llega()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.ClienteDeUnaPersona();
+
+        // Miércoles 4: su Recordatorio sale el martes 3 a las 9:00, después del reloj (lunes 2 a las 12:00 local).
+        var (_, html) = await EnviarAsync(cliente, Ruta(fecha: "2026-11-04"), Datos());
+
+        Assert.Contains(
+            "Te enviamos los detalles a tu correo. Un día antes, a las 9:00 am, te llegará un recordatorio.",
+            Confirmacion(html),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Con_correo_Cita_confirmada_muestra_Guarda_este_enlace_despues_de_la_tarjeta_y_la_frase_del_correo()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
         using var cliente = escenario.ClienteDeUnaPersona();
@@ -87,8 +102,9 @@ public sealed partial class TusDatosTests(Arnes arnes)
             confirmacion.IndexOf("dsm-tarjeta", StringComparison.Ordinal) < confirmacion.IndexOf("Guarda este enlace", StringComparison.Ordinal),
             "Con correo el panel va después de la tarjeta.");
 
-        // Nada se envía todavía (épica 4): ni frase de correo ni de recordatorio; tampoco la de sin correo.
-        Assert.DoesNotContain("correo", confirmacion, StringComparison.OrdinalIgnoreCase);
+        // El reloj está en el lunes 2 a las 12:00 local y la Cita es el martes 3: el Recordatorio (lunes 9:00) ya no
+        // sale, así que solo la frase del correo (EXPERIENCE.md, "Recordatorio omitido"); tampoco la de sin correo.
+        Assert.Contains("Te enviamos los detalles a tu correo.", confirmacion, StringComparison.Ordinal);
         Assert.DoesNotContain("recordatorio", confirmacion, StringComparison.OrdinalIgnoreCase);
 
         // Sin scripts no hay "Copiar"; el enlace es texto, no un vínculo a /c/ (la página es de la épica 3).

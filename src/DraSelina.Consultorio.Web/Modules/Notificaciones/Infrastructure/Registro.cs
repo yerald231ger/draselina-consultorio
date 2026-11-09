@@ -1,4 +1,5 @@
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Notificaciones.Contracts;
 using DraSelina.Consultorio.Notificaciones.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ public static class Registro
             .AddScoped<ITransaccionDeNotificaciones, TransaccionDeNotificaciones>()
             .AddScoped<IMensajes, Mensajes>()
             .AddScoped<IRecordatorios, Recordatorios>()
+            .AddScoped<IQueryHandler<RecordatorioPrevisto, Recordatorio>, RecordatorioPrevistoHandler>()
             .AddSingleton<INotificationChannel, CanalDeCorreoSmtp>()
             .AddEventHandler<ConfirmacionAlAgendar>()
             .AddEventHandler<RecordatorioAlAgendar>()

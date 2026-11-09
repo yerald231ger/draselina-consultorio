@@ -1,4 +1,8 @@
 @using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Notificaciones.Contracts
+@using Microsoft.AspNetCore.Http
+@inject IQueryHandler<RecordatorioPrevisto, Recordatorio> Recordatorios
 
 @*
     Cita confirmada (mockup Confirmada): fecha y hora en grande, tipo y duración, lugar y dirección, el Enlace de
@@ -9,8 +13,8 @@
     (/c/<token>/calendario.ics, armado con el token), relativo al sitio que sirvió la página; va después de la tarjeta, con o sin correo.
 
     El enlace va completo como texto seleccionable; sin scripts no hay botón "Copiar". El "2 horas" sale del umbral de
-    las reglas de reserva. Con correo no hay todavía frase del correo ni del recordatorio: nada se envía hasta la
-    épica 4. Con o sin correo lo dice Pacientes (el Paciente puede tener uno guardado de antes). Sin correo, la frase de "sin correo" y el panel del enlace sube antes de la tarjeta (EXPERIENCE.md,
+    las reglas de reserva. Con correo, la frase del correo y la del Recordatorio con su hora; si el Recordatorio ya no
+    alcanza a salir, solo la del correo (EXPERIENCE.md; la regla es de Notificaciones, entrada 4.3). Con o sin correo lo dice Pacientes (el Paciente puede tener uno guardado de antes). Sin correo, la frase de "sin correo" y el panel del enlace sube antes de la tarjeta (EXPERIENCE.md,
     "Confirmada, sin correo").
 
     En escritorio (mockup WebConfirmada, ticket 12) dos columnas: la Cita con el lugar y "Agregar a mi calendario" a un
@@ -30,6 +34,10 @@
         @if (!Cita.ConCorreo)
         {
             <p class="dsm-confirmada__nota">No recibirás recordatorio. Guarda este enlace o agrega la cita a tu calendario.</p>
+        }
+        else
+        {
+            <p class="dsm-confirmada__nota">@FraseDelCorreo(_recordatorio)</p>
         }
     </div>
 
@@ -83,6 +91,31 @@
 @code {
     [Parameter, EditorRequired]
     public CitaAgendadaEnLinea Cita { get; set; } = null!;
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    private Recordatorio? _recordatorio;
+
+    /// <summary>
+    /// Lo que dice Cita confirmada con correo: la frase del correo siempre y, si sale, la del Recordatorio. Sin respuesta
+    /// de Notificaciones, solo la del correo.
+    /// </summary>
+    public static string FraseDelCorreo(Recordatorio? recordatorio) =>
+        recordatorio is { SeEnviara: true }
+            ? $"Te enviamos los detalles a tu correo. Un día antes, a las {FormatoDeCita.Hora(recordatorio.Hora)}, te llegará un recordatorio."
+            : "Te enviamos los detalles a tu correo.";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _recordatorio = null;
+        if (Cita.ConCorreo)
+        {
+            var resultado = await Recordatorios.HandleAsync(
+                new RecordatorioPrevisto(Cita.Fecha, Cita.Hora), HttpContext?.RequestAborted ?? CancellationToken.None);
+            _recordatorio = resultado.EsExito ? resultado.Valor : null;
+        }
+    }
 
     // /c/<token>/calendario.ics, con el token del último segmento del Enlace de gestión: la ruta del endpoint, aunque la
     // URL base del enlace lleve una ruta propia.
