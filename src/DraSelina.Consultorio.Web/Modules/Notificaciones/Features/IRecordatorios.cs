@@ -9,7 +9,10 @@ namespace DraSelina.Consultorio.Notificaciones.Features;
 /// </summary>
 public interface IRecordatorios
 {
-    /// <summary>La hora local del Recordatorio (<c>hora_recordatorio</c>).</summary>
+    /// <summary>
+    /// La hora local del Recordatorio (<c>hora_recordatorio</c>). En una transacción abierta, la lee con
+    /// <c>FOR SHARE</c>: un cambio de la hora espera a que la transacción termine.
+    /// </summary>
     Task<TimeOnly> HoraDelRecordatorioAsync(CancellationToken cancellationToken);
 
     /// <summary>Guarda el Recordatorio de su Cita. Si la Cita ya tiene uno, no hace nada.</summary>
@@ -20,6 +23,12 @@ public interface IRecordatorios
 
     /// <summary>Borra el Recordatorio de la Cita, si tiene.</summary>
     Task BorrarAsync(CitaId citaId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Todos los Recordatorios pendientes, apartados con <c>FOR UPDATE</c> en la transacción abierta: el que una vuelta
+    /// de envíos tiene apartado se espera, y si esa vuelta lo envió y lo borró, ya no viene.
+    /// </summary>
+    Task<IReadOnlyList<RecordatorioProgramado>> ApartarTodosAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// El Recordatorio más antiguo con <see cref="RecordatorioProgramado.ProgramadoPara"/> en o antes de

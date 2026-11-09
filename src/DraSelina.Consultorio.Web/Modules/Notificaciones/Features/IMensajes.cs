@@ -12,10 +12,13 @@ public interface IMensajes
     Task<bool> ExisteAsync(Guid eventoId, TipoDeMensaje tipo, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Si ya salió (<see cref="EstadoDeMensaje.Enviado"/>) un mensaje de ese tipo para esa Cita, registrado en o después
-    /// de <paramref name="desde"/>.
+    /// Si el mensaje de ese tipo para esa Cita ya quedó cerrado en o después de <paramref name="desde"/>: salió
+    /// (<see cref="EstadoDeMensaje.Enviado"/>) o se omitió sin evento (<see cref="EstadoDeMensaje.Omitido"/> con
+    /// <see cref="MensajeRegistrado.EventoId"/> nulo: el de un cambio de la hora del Recordatorio). El Omitido de un
+    /// evento no cuenta: lo cubre <see cref="ExisteAsync"/> por evento, y contarlo aquí taparía a un evento posterior
+    /// de la misma Cita entregado después.
     /// </summary>
-    Task<bool> EnviadoDesdeAsync(CitaId citaId, TipoDeMensaje tipo, DateTimeOffset desde, CancellationToken cancellationToken);
+    Task<bool> CerradoDesdeAsync(CitaId citaId, TipoDeMensaje tipo, DateTimeOffset desde, CancellationToken cancellationToken);
 
     /// <summary>Si ya hay un mensaje de ese tipo para esa fecha local, en cualquier estado. Por el índice único de (tipo, fecha).</summary>
     Task<bool> ExisteDeLaFechaAsync(TipoDeMensaje tipo, DateOnly fecha, CancellationToken cancellationToken);

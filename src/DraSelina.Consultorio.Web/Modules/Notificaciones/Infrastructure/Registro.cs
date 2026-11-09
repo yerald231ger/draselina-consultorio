@@ -26,6 +26,8 @@ public static class Registro
             .AddScoped<IRecordatorios, Recordatorios>()
             .AddScoped<IConfiguracionDeEnvio, ConfiguracionDeEnvio>()
             .AddScoped<IQueryHandler<RecordatorioPrevisto, Recordatorio>, RecordatorioPrevistoHandler>()
+            .AddScoped<IQueryHandler<ConfiguracionDeEnvioVigente, ConfiguracionDeEnvioValores>, ConfiguracionDeEnvioVigenteHandler>()
+            .AddScoped<ICommandHandler<CambiarConfiguracionDeEnvio, ConfiguracionDeEnvioValores>, CambiarConfiguracionDeEnvioHandler>()
             .AddSingleton<INotificationChannel, CanalDeCorreoSmtp>()
             .AddSingleton<IDireccionDelSitio, DireccionDelSitio>()
             .AddEventHandler<ConfirmacionAlAgendar>()

@@ -14,14 +14,17 @@ public sealed class Mensajes(NotificacionesDbContext db) : IMensajes
         return db.Mensajes.AsNoTracking().AnyAsync(m => m.EventoId == eventoId && m.Tipo == texto, cancellationToken);
     }
 
-    public Task<bool> EnviadoDesdeAsync(CitaId citaId, TipoDeMensaje tipo, DateTimeOffset desde, CancellationToken cancellationToken)
+    public Task<bool> CerradoDesdeAsync(CitaId citaId, TipoDeMensaje tipo, DateTimeOffset desde, CancellationToken cancellationToken)
     {
         var texto = tipo.ToString();
         var enviado = EstadoDeMensaje.Enviado.ToString();
+        var omitido = EstadoDeMensaje.Omitido.ToString();
         var cita = citaId.Valor;
         var desdeUtc = desde.ToUniversalTime();
         return db.Mensajes.AsNoTracking().AnyAsync(
-            m => m.CitaId == cita && m.Tipo == texto && m.Estado == enviado && m.RegistradoEn >= desdeUtc, cancellationToken);
+            m => m.CitaId == cita && m.Tipo == texto && m.RegistradoEn >= desdeUtc
+                && (m.Estado == enviado || (m.Estado == omitido && m.EventoId == null)),
+            cancellationToken);
     }
 
     // Por el índice único parcial (tipo, fecha).

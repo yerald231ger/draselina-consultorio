@@ -14,8 +14,8 @@ namespace DraSelina.Consultorio.Notificaciones.Features;
 /// <item>Si no, borra la fila y registra un <c>mensaje</c> <see cref="TipoDeMensaje.Recordatorio"/>
 /// <see cref="EstadoDeMensaje.Omitido"/> con el <see cref="CitaReprogramada.EventoId"/>, una sola vez.</item>
 /// </list>
-/// Si ya salió un Recordatorio de la Cita después de <see cref="CitaReprogramada.OcurridoEn"/> (un reintento tardío
-/// del evento), no hace nada.
+/// Si ya salió un Recordatorio de la Cita, o se omitió al cambiar la hora del Recordatorio, después de
+/// <see cref="CitaReprogramada.OcurridoEn"/> (un reintento tardío del evento), no hace nada.
 /// </summary>
 public sealed class RecordatorioAlReprogramar(
     ITransaccionDeNotificaciones transaccion,
@@ -27,8 +27,9 @@ public sealed class RecordatorioAlReprogramar(
     {
         await using var tx = await transaccion.AbrirAsync(cancellationToken);
 
-        // Un reintento del evento que llega cuando su Recordatorio ya salió: no hay nada que programar.
-        if (await mensajes.EnviadoDesdeAsync(evento.CitaId, TipoDeMensaje.Recordatorio, evento.OcurridoEn, cancellationToken))
+        // Un reintento del evento que llega cuando su Recordatorio ya salió, o ya se omitió al cambiar la hora del
+        // Recordatorio: no hay nada que programar.
+        if (await mensajes.CerradoDesdeAsync(evento.CitaId, TipoDeMensaje.Recordatorio, evento.OcurridoEn, cancellationToken))
         {
             return;
         }
