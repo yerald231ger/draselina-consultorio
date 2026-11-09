@@ -1,6 +1,3 @@
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
 using DraSelina.Consultorio.Contenido.Contracts;
 
 namespace DraSelina.Consultorio.Notificaciones.Features;
@@ -14,8 +11,8 @@ namespace DraSelina.Consultorio.Notificaciones.Features;
 /// <item>Un solo botón, "Ver o cambiar mi cita", al Enlace de gestión.</item>
 /// <item>El archivo de calendario adjunto, si Agenda lo da. No pide confirmar.</item>
 /// </list>
-/// HTML con estilos en línea (los clientes de correo no leen hojas de estilo) y los colores del sitio, y texto plano
-/// legible por sí solo.
+/// Con <see cref="MarcoDeCorreo"/>: HTML con estilos en línea (los clientes de correo no leen hojas de estilo) y los
+/// colores del sitio, y texto plano legible por sí solo.
 /// </summary>
 public static class PlantillaDeConfirmacion
 {
@@ -67,15 +64,7 @@ public static class PlantillaDeConfirmacion
 
     private static string Texto(Datos datos)
     {
-        var c = datos.Consultorio;
-        var texto = new StringBuilder();
-        texto.AppendLine(Doctora);
-        texto.AppendLine(Especialidad);
-        texto.AppendLine();
-        texto.AppendLine($"Hola, {datos.Nombre}:");
-        texto.AppendLine();
-        texto.AppendLine($"{Titulo}.");
-        texto.AppendLine();
+        var texto = MarcoDeCorreo.Texto(datos.Nombre, Titulo);
         texto.AppendLine(FormatoDeFechaEnCorreo.Largo(datos.Fecha));
         texto.AppendLine(FormatoDeFechaEnCorreo.Hora(datos.Hora));
         if (datos.TipoDeVisita is { } tipo)
@@ -83,15 +72,7 @@ public static class PlantillaDeConfirmacion
             texto.AppendLine(tipo);
         }
 
-        texto.AppendLine();
-        texto.AppendLine(c.Lugar);
-        texto.AppendLine(c.Direccion);
-        texto.AppendLine(c.Ciudad);
-        if (c.EnlaceDelMapa is { } mapa)
-        {
-            texto.AppendLine($"{AbrirEnElMapa}: {mapa}");
-        }
-
+        MarcoDeCorreo.LugarEnTexto(texto, datos.Consultorio);
         texto.AppendLine();
         texto.AppendLine($"{Boton}: {datos.EnlaceDeGestion}");
         return texto.ToString();
@@ -99,54 +80,13 @@ public static class PlantillaDeConfirmacion
 
     private static string Html(Datos datos)
     {
-        var c = datos.Consultorio;
-        var tipo = datos.TipoDeVisita is { } t
-            ? $"""<p style="margin:8px 0 0;font-size:16px;color:#4A3039;">{H(t)}</p>"""
-            : "";
-        var mapa = c.EnlaceDelMapa is { } enlace
-            ? $"""<p style="margin:8px 0 0;font-size:15px;"><a href="{H(enlace)}" style="color:#6B2A45;font-weight:600;">{H(AbrirEnElMapa)}</a></p>"""
-            : "";
-
-        return $"""
-            <!doctype html>
-            <html lang="es-MX">
-            <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>{H(Asunto(datos.Fecha, datos.Hora))}</title>
-            </head>
-            <body style="margin:0;padding:0;background:#FBF6F5;font-family:Arial,Helvetica,sans-serif;color:#3A1F29;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF6F5;">
-            <tr><td align="center" style="padding:24px 16px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;">
-            <tr><td style="padding:24px 24px 16px;border-bottom:1px solid #EADBD9;">
-            <p style="margin:0;font-size:18px;font-weight:700;">{H(Doctora)}</p>
-            <p style="margin:4px 0 0;font-size:14px;color:#6E5560;">{H(Especialidad)}</p>
-            </td></tr>
-            <tr><td style="padding:24px;">
-            <p style="margin:0 0 8px;font-size:16px;">Hola, {H(datos.Nombre)}:</p>
-            <h1 style="margin:0 0 16px;font-size:22px;">{H(Titulo)}</h1>
-            <p style="margin:0;font-size:26px;font-weight:700;">{H(FormatoDeFechaEnCorreo.Largo(datos.Fecha))}</p>
-            <p style="margin:4px 0 0;font-size:26px;font-weight:700;">{H(FormatoDeFechaEnCorreo.Hora(datos.Hora))}</p>
-            {tipo}
-            <div style="margin:20px 0 0;padding:16px 0 0;border-top:1px solid #EADBD9;">
-            <p style="margin:0;font-size:16px;font-weight:600;">{H(c.Lugar)}</p>
-            <p style="margin:4px 0 0;font-size:15px;color:#4A3039;">{H(c.Direccion)}</p>
-            <p style="margin:4px 0 0;font-size:15px;color:#4A3039;">{H(c.Ciudad)}</p>
-            {mapa}
-            </div>
-            <p style="margin:28px 0 0;"><a href="{H(datos.EnlaceDeGestion)}" style="display:inline-block;padding:14px 24px;background:#6B2A45;color:#ffffff;text-decoration:none;font-weight:700;border-radius:8px;font-size:16px;">{H(Boton)}</a></p>
-            </td></tr>
-            </table>
-            </td></tr>
-            </table>
-            </body>
-            </html>
+        var cuerpo = $"""
+            {MarcoDeCorreo.FechaYHora(datos.Fecha, datos.Hora)}
+            {MarcoDeCorreo.Tipo(datos.TipoDeVisita)}
+            {MarcoDeCorreo.Lugar(datos.Consultorio)}
+            {MarcoDeCorreo.Boton(datos.EnlaceDeGestion, Boton)}
             """;
+
+        return MarcoDeCorreo.Html(Asunto(datos.Fecha, datos.Hora), datos.Nombre, Titulo, cuerpo);
     }
-
-    // Escapa lo que el HTML exige (<, >, &, comillas) y deja los acentos como texto: el correo va en UTF-8.
-    private static readonly HtmlEncoder Codificador = HtmlEncoder.Create(UnicodeRanges.All);
-
-    private static string H(string texto) => Codificador.Encode(texto);
 }

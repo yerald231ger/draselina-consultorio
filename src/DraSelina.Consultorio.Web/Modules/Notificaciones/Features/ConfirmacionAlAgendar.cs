@@ -19,34 +19,28 @@ namespace DraSelina.Consultorio.Notificaciones.Features;
 /// único lo rechaza y este no envía.</item>
 /// <item>Si el canal lanza, la transacción se deshace y la excepción sale: el outbox reintenta.</item>
 /// </list>
-/// No registra nada: ni la dirección, ni el nombre, ni el contenido van a registros o trazas (AD-23).
+/// El envío único lo lleva <see cref="EnvioUnico"/>; aquí se decide si hay correo y qué lleva. No registra nada: ni la
+/// dirección, ni el nombre, ni el contenido van a registros o trazas (AD-23).
 /// </summary>
 public sealed class ConfirmacionAlAgendar(
-    ITransaccionDeNotificaciones transaccion,
-    IMensajes mensajes,
+    EnvioUnico envio,
     IPacientesApi pacientes,
     IAgendaApi agenda,
-    IContenidoApi contenido,
-    INotificationChannel canal,
-    IClock reloj) : IEventHandler<CitaAgendada>
+    IContenidoApi contenido) : IEventHandler<CitaAgendada>
 {
-    public async Task HandleAsync(CitaAgendada evento, CancellationToken cancellationToken)
+    public Task HandleAsync(CitaAgendada evento, CancellationToken cancellationToken) =>
+        envio.EnviarAsync(evento.EventoId, evento.CitaId, TipoDeMensaje.Confirmacion, ct => ArmarAsync(evento, ct), cancellationToken);
+
+    private async Task<MensajeDeCorreo?> ArmarAsync(CitaAgendada evento, CancellationToken cancellationToken)
     {
-        await using var tx = await transaccion.AbrirAsync(cancellationToken);
-
-        if (await mensajes.ExisteAsync(evento.EventoId, TipoDeMensaje.Confirmacion, cancellationToken))
-        {
-            return;
-        }
-
         if (await pacientes.ObtenerContactosAsync(evento.PatientId, cancellationToken) is not { Correo: { } correo } contactos)
         {
-            return;
+            return null;
         }
 
         var inicio = TimeZoneInfo.ConvertTime(evento.Inicio, ZonaDelConsultorio.Zona);
         var archivo = await agenda.ObtenerArchivoDeCalendarioAsync(evento.CitaId, cancellationToken);
-        var mensaje = PlantillaDeConfirmacion.Armar(new PlantillaDeConfirmacion.Datos(
+        return PlantillaDeConfirmacion.Armar(new PlantillaDeConfirmacion.Datos(
             Destinatario: correo,
             Nombre: contactos.Nombre,
             Fecha: DateOnly.FromDateTime(inicio.DateTime),
@@ -60,22 +54,5 @@ public sealed class ConfirmacionAlAgendar(
                     ArchivoDeCalendario.NombreDeArchivo,
                     ArchivoDeCalendario.TipoDeContenido,
                     Encoding.UTF8.GetBytes(archivo.Contenido))));
-
-        await mensajes.RegistrarAsync(
-            new MensajeRegistrado(
-                Guid.CreateVersion7(),
-                evento.EventoId,
-                evento.CitaId,
-                TipoDeMensaje.Confirmacion,
-                CanalDeMensaje.Correo,
-                EstadoDeMensaje.Enviado,
-                reloj.UtcNow),
-            cancellationToken);
-
-        await canal.EnviarAsync(mensaje, cancellationToken);
-
-        // El correo ya salió: lo que falta es anotarlo, aunque se cancele la entrega. Si se cancelara aquí, el
-        // siguiente intento lo enviaría otra vez.
-        await tx.ConfirmarAsync(CancellationToken.None);
     }
 }

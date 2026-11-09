@@ -30,6 +30,7 @@ public static class Registro
             .AddScoped<ICommandHandler<CambiarConfiguracionDeEnvio, ConfiguracionDeEnvioValores>, CambiarConfiguracionDeEnvioHandler>()
             .AddSingleton<INotificationChannel, CanalDeCorreoSmtp>()
             .AddSingleton<IDireccionDelSitio, DireccionDelSitio>()
+            .AddScoped<EnvioUnico>()
             .AddEventHandler<ConfirmacionAlAgendar>()
             .AddEventHandler<RecordatorioAlAgendar>()
             .AddEventHandler<RecordatorioAlReprogramar>()

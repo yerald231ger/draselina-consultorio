@@ -33,6 +33,7 @@ public static class Registro
             .AddScoped<ICitas, Citas>()
             .AddScoped<ITiposDeVisita, TiposDeVisita>()
             .AddScoped<IAgendaAtencion, AgendaAtencionPersistida>()
+            .AddScoped<ITramosDeLaFecha, TramosDeLaFecha>()
             .AddScoped<IReglasDeReserva, ReglasDeReservaPersistidas>()
             .AddScoped<ICitasActivas, CitasActivas>()
             .AddScoped<ITiposDeVisitaReservables, TiposDeVisitaReservablesPersistidos>()

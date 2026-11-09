@@ -9,12 +9,12 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// <summary>
 /// <see cref="IAgendaApi"/>. El enlace se deriva cada vez; no se guarda ni se registra (AD-19, AD-23). El archivo de
 /// calendario sale de <see cref="GeneradorDeCalendario"/>, con el lugar que da Contenido (AD-15); leerlo no escribe nada.
-/// La Agenda del día sale de <see cref="AgendaAtencion"/> y de <see cref="ICitasDelDia"/>, sin rastrear.
+/// La Agenda del día sale de <see cref="ITramosDeLaFecha"/> y de <see cref="ICitasDelDia"/>, sin rastrear.
 /// </summary>
 public sealed class AgendaApi(
     IOptions<OpcionesDeEnlaceDeGestion> opciones,
     ICitasDelCalendario citas,
-    IAgendaAtencion agendaAtencion,
+    ITramosDeLaFecha tramosDeLaFecha,
     ICitasDelDia citasDelDia,
     IContenidoApi contenido,
     IClock reloj) : IAgendaApi
@@ -35,10 +35,10 @@ public sealed class AgendaApi(
     // Agendadas que empiezan ese día local, aunque esté fuera de los Tramos (una Cita del Consultorio en sábado).
     public async Task<AgendaDelDia> AgendaDelDiaAsync(DateOnly fecha, CancellationToken cancellationToken)
     {
-        var agenda = await agendaAtencion.ObtenerAsync(fecha, cancellationToken);
+        var tramos = await tramosDeLaFecha.VigentesAsync(fecha, cancellationToken);
         var citas = await citasDelDia.AgendadasEntreAsync(
             HoraLocal.AUtc(fecha, TimeOnly.MinValue), HoraLocal.AUtc(fecha.AddDays(1), TimeOnly.MinValue), cancellationToken);
-        return new AgendaDelDia(!agenda.TramosVigentes(fecha).SinTramos, citas);
+        return new AgendaDelDia(!tramos.SinTramos, citas);
     }
 
     /// <summary>

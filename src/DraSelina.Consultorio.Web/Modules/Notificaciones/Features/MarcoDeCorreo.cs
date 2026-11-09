@@ -1,14 +1,16 @@
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
+using DraSelina.Consultorio.Contenido.Contracts;
 
 namespace DraSelina.Consultorio.Notificaciones.Features;
 
 /// <summary>
-/// La estructura que comparten los avisos de reprogramación y cancelación (<see cref="PlantillaDeReprogramacion"/>,
-/// <see cref="PlantillaDeCancelacion"/>): la misma de <see cref="PlantillaDeConfirmacion"/> y
-/// <see cref="PlantillaDeRecordatorio"/>, con el encabezado de la doctora y la especialidad sin imágenes, el saludo, el
-/// título, estilos en línea y los colores del sitio; y su versión de texto plano, legible por sí sola.
+/// La estructura que comparten todos los correos de Notificaciones (<see cref="PlantillaDeConfirmacion"/>,
+/// <see cref="PlantillaDeRecordatorio"/>, <see cref="PlantillaDeReprogramacion"/>, <see cref="PlantillaDeCancelacion"/>,
+/// <see cref="PlantillaDeAlertaTardia"/> y <see cref="PlantillaDeAgendaDelDia"/>): el encabezado de la doctora y la
+/// especialidad sin imágenes, el saludo, el título, estilos en línea y los colores del sitio; y su versión de texto
+/// plano, legible por sí sola.
 /// </summary>
 internal static class MarcoDeCorreo
 {
@@ -47,6 +49,42 @@ internal static class MarcoDeCorreo
     public static string Tipo(string? tipo) => tipo is { } t
         ? $"""<p style="margin:8px 0 0;font-size:16px;color:#4A3039;">{H(t)}</p>"""
         : "";
+
+    /// <summary>
+    /// El lugar bajo una línea: nombre, dirección y ciudad; "Abrir en el mapa" si Contenido da enlace. Lo llevan los
+    /// correos de una Cita que sigue en pie.
+    /// </summary>
+    public static string Lugar(DatosDelConsultorio consultorio)
+    {
+        var mapa = consultorio.EnlaceDelMapa is { } enlace
+            ? $"""<p style="margin:8px 0 0;font-size:15px;"><a href="{H(enlace)}" style="color:#6B2A45;font-weight:600;">{H(PlantillaDeConfirmacion.AbrirEnElMapa)}</a></p>"""
+            : "";
+
+        return $"""
+            <div style="margin:20px 0 0;padding:16px 0 0;border-top:1px solid #EADBD9;">
+            <p style="margin:0;font-size:16px;font-weight:600;">{H(consultorio.Lugar)}</p>
+            <p style="margin:4px 0 0;font-size:15px;color:#4A3039;">{H(consultorio.Direccion)}</p>
+            <p style="margin:4px 0 0;font-size:15px;color:#4A3039;">{H(consultorio.Ciudad)}</p>
+            {mapa}
+            </div>
+            """;
+    }
+
+    /// <summary>
+    /// <see cref="Lugar"/> en texto plano: una línea en blanco, el nombre, la dirección, la ciudad y, si hay, el enlace
+    /// del mapa.
+    /// </summary>
+    public static void LugarEnTexto(StringBuilder texto, DatosDelConsultorio consultorio)
+    {
+        texto.AppendLine();
+        texto.AppendLine(consultorio.Lugar);
+        texto.AppendLine(consultorio.Direccion);
+        texto.AppendLine(consultorio.Ciudad);
+        if (consultorio.EnlaceDelMapa is { } mapa)
+        {
+            texto.AppendLine($"{PlantillaDeConfirmacion.AbrirEnElMapa}: {mapa}");
+        }
+    }
 
     /// <summary>Un párrafo de texto.</summary>
     public static string Parrafo(string texto) =>

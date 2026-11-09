@@ -53,7 +53,6 @@ public static class PlantillaDeReprogramacion
 
     private static string Texto(Datos datos)
     {
-        var c = datos.Consultorio;
         var texto = MarcoDeCorreo.Texto(datos.Nombre, Titulo);
         texto.AppendLine(FormatoDeFechaEnCorreo.Largo(datos.Fecha));
         texto.AppendLine(FormatoDeFechaEnCorreo.Hora(datos.Hora));
@@ -62,15 +61,7 @@ public static class PlantillaDeReprogramacion
             texto.AppendLine(tipo);
         }
 
-        texto.AppendLine();
-        texto.AppendLine(c.Lugar);
-        texto.AppendLine(c.Direccion);
-        texto.AppendLine(c.Ciudad);
-        if (c.EnlaceDelMapa is { } mapa)
-        {
-            texto.AppendLine($"{PlantillaDeConfirmacion.AbrirEnElMapa}: {mapa}");
-        }
-
+        MarcoDeCorreo.LugarEnTexto(texto, datos.Consultorio);
         texto.AppendLine();
         texto.AppendLine($"{PlantillaDeConfirmacion.Boton}: {datos.EnlaceDeGestion}");
         return texto.ToString();
@@ -78,20 +69,10 @@ public static class PlantillaDeReprogramacion
 
     private static string Html(Datos datos)
     {
-        var c = datos.Consultorio;
-        var mapa = c.EnlaceDelMapa is { } enlace
-            ? $"""<p style="margin:8px 0 0;font-size:15px;"><a href="{MarcoDeCorreo.H(enlace)}" style="color:#6B2A45;font-weight:600;">{MarcoDeCorreo.H(PlantillaDeConfirmacion.AbrirEnElMapa)}</a></p>"""
-            : "";
-
         var cuerpo = $"""
             {MarcoDeCorreo.FechaYHora(datos.Fecha, datos.Hora)}
             {MarcoDeCorreo.Tipo(datos.TipoDeVisita)}
-            <div style="margin:20px 0 0;padding:16px 0 0;border-top:1px solid #EADBD9;">
-            <p style="margin:0;font-size:16px;font-weight:600;">{MarcoDeCorreo.H(c.Lugar)}</p>
-            <p style="margin:4px 0 0;font-size:15px;color:#4A3039;">{MarcoDeCorreo.H(c.Direccion)}</p>
-            <p style="margin:4px 0 0;font-size:15px;color:#4A3039;">{MarcoDeCorreo.H(c.Ciudad)}</p>
-            {mapa}
-            </div>
+            {MarcoDeCorreo.Lugar(datos.Consultorio)}
             {MarcoDeCorreo.Boton(datos.EnlaceDeGestion, PlantillaDeConfirmacion.Boton)}
             """;
 

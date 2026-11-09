@@ -11,3 +11,6 @@ Deuda técnica que Gerardo decidió dejar para el final de todas las épicas.
 - source_plan: `_bmad-output/initiative-draselina/epic-reserva-en-linea/story-reserva-en-escritorio-plan.md`
   summary: En el teléfono, la hora de la tarjeta de la cita se parte en dos renglones y "pm" queda sola abajo.
   evidence: Visto por Gerardo en su recorrido de UJ-1 (2026-11-06) en vista de teléfono; detalle de CSS (la hora debería no partirse, por ejemplo con white-space: nowrap).
+- source_plan: `_bmad-output/initiative-draselina/epic-notificaciones/story-refactor-sweep-plan.md`
+  summary: `HorariosLibresHandler` lee la Agenda de atención por `IAgendaAtencion`, documentado como puerto de escritura.
+  evidence: Visto en la revisión de la entrada 4.8 (2026-11-09). Es de la épica 2; la calculadora necesita la `AgendaAtencion` entera, así que el puerto `ITramosDeLaFecha` de la 4.8 no le sirve. Al retomarlo: un puerto de lectura de la agenda completa, o documentar que `IAgendaAtencion` también sirve lecturas sin rastrear.
