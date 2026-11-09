@@ -167,9 +167,9 @@ Ninguna impide dividir el trabajo. Responsable: Gerardo.
 
 - ¿El sitio queda en una página con secciones o en páginas separadas (FR-27)? ¿Entra completo al piloto?
 - ¿El calendario de escritorio del Paciente muestra siete columnas siempre o solo los días con atención?
-- ¿Qué pantallas de administración necesitan mockup?
+- ¿Qué pantallas de administración necesitan mockup? (Para la épica 5, ninguna: Agenda, Detalle de Cita, Agendar cita y Pacientes se construyen sin mockup y se revisan en un recorrido; Gerardo, 2026-11-09. Sigue abierta para el Calendario de atención y Configuración.)
 - ¿Qué vino manda: `#6B2A45` (mockups) o `#6D2D45` (papelería)? ¿Se oscurece el borde de los campos para llegar a 3:1?
-- ¿Quién arma el historial de Citas de FR-18, si Pacientes no conoce citas (RN-29)?
+- ¿Quién arma el historial de Citas de FR-18, si Pacientes no conoce citas (RN-29)? (Resuelto el 2026-11-09: dos consultas, `BuscarPacientes` en Pacientes y `HistorialDelPaciente` en Agenda, que pide el encabezado a Pacientes; Gerardo, inception de la épica 5.)
 - ¿Qué límite de frecuencia se usa en FR-7?
 
 **Antes del primer Paciente**

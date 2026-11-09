@@ -20,7 +20,15 @@ Las excepciones se resuelven en un solo lugar; la señal es SM-C1 y SM-C3 del PR
 
 ## Requirements
 
-Se completan al dividir esta épica. La fuente son las capacidades de `covers` en el spec, con las consecuencias verificables de sus `FR-n` en el PRD.
+La fuente son las capacidades de `covers` en el spec, con las consecuencias verificables de sus `FR-n` en el PRD; `tickets.toml` dice qué entrada entrega qué parte.
+
+- **CAP-9** (FR-11): Identity en el host, segundo factor TOTP obligatorio, sin registro público; todo comando y consulta de administración lleva `IRequiereAdministrador` (AD-22). Entrada 1.
+- **CAP-12** (FR-14): Agenda por día y por semana con los estados de `EXPERIENCE.md` y refresco a intervalos (AD-11). Entradas 1, 2 y 6.
+- **CAP-13** (FR-15): Cita del consultorio con `Cita.AgendarPorConsultorio` (AD-7, INV-C6, RN-13, RN-14) y la pantalla Agendar cita. Entradas 3 y 4.
+- **CAP-14** (FR-16, FR-17): `MarcarNoSePresento` y `CancelarPorConsultorio` (AD-9, RN-31), con la disculpa de la épica 4. Entradas 5 y 6.
+- **CAP-15** (FR-18): `BuscarPacientes` en Pacientes e `HistorialDelPaciente` en Agenda (Decision del 2026-11-09). Entrada 7.
+- **CAP-17** (FR-20), su parte: las entradas de bitácora de la Cita del consultorio, No se presentó y la cancelación por el Consultorio, y la vista de la bitácora en el Detalle de Cita. Entradas 3, 5 y 6. Los cambios de base y custom son de la épica 6.
+- **CAP-21**, su parte: `/admin` no es indexable. Entrada 1.
 
 ## Done when
 
@@ -46,11 +54,13 @@ El acceso (ASP.NET Core Identity en el host) y el marco de administración, la A
 ## Notes
 
 - Decision: "terminado" significa que corre en local con el AppHost y pasan sus pruebas de integración contra PostgreSQL real; no hay producción todavía (Gerardo, 2026-10-05).
+- Decision: el segundo factor es una app autenticadora (TOTP de ASP.NET Core Identity); la primera vez se escanea un QR, después cada inicio de sesión pide el código de 6 dígitos. No hay código por correo (Gerardo, 2026-11-09, inception).
 - Waits on epic-plataforma-base because: necesita el marcador de administración y el servicio de actor.
 - Waits on epic-reserva-en-linea because: necesita la Cita, Pacientes y la bitácora.
 - Waits on epic-gestion-por-el-paciente because: necesita `CitaCancelada` con su motivo y la marca de Cancelación tardía que distingue el historial.
 - Waits on epic-notificaciones because: necesita `ObtenerContactos` y la disculpa por cancelación del Consultorio para comprobar FR-17.
-- Assumption: toda la administración se construye sin mockup, desde las tablas de `EXPERIENCE.md`.
-- Open question: quién arma el historial de Citas de FR-18, dado que Pacientes no conoce citas (RN-29); se resuelve al dividir esta épica. AD-10 apunta a una consulta de Agenda que pide los contactos a Pacientes.
-- Open question: qué pantallas de administración necesitan mockup antes de construirse (spec, Open Questions).
+- Decision: ninguna pantalla de esta épica lleva mockup; se construyen con `DESIGN.md` y las tablas de `EXPERIENCE.md`, y una entrada hitl al final recorre UJ-4 y la primera mitad de UJ-6 con el AppHost; lo que no guste ahí se vuelve ajuste o entrada nueva. Resuelve, para esta épica, la Open question de mockups de administración; el Calendario de atención y Configuración (épica 6) la deciden en su inception (Gerardo, 2026-11-09, inception).
+- Decision: el historial de FR-18 son dos consultas, cada una de su módulo. `BuscarPacientes(nombre)` en Pacientes (id, nombre, teléfono, si tiene correo; nada de citas, RN-29) y `HistorialDelPaciente(PatientId)` en Agenda (Citas con su estado, Atendida derivada y tardía distinguida), cuyo handler pide el encabezado a `IPacientesApi.ObtenerContactos` (AD-10). Ninguna página compone dos módulos. Resuelve la Open question de FR-18 (Gerardo, 2026-11-09, inception).
+- Decision: el camino trazador es la entrada 1, entrar con segundo factor y ver las citas del día: recorre Identity del host, una página Interactive Server, una consulta con `IRequiereAdministrador`, la lectura en Agenda y los contactos en lote de Pacientes. Es también lo menos seguro de la épica (Gerardo, 2026-11-09, inception).
+- Decision: dos carriles después del trazador, lectura y pantallas (1, 2) y la Cita (3, 5, que tocan `Cita.cs` en serie); la 4 y la 6 los juntan, la 7 va al final porque comparte Pacientes con la 4 y enlaza al Detalle de la 6; la 8 es el recorrido de Gerardo y la 9 el Refactor sweep (Gerardo, 2026-11-09, inception).
 - Traspaso de la épica 4 (entrada 5, Gerardo, 2026-11-08): la alerta de cancelación tardía al Administrador sale sin el botón "Abrir la Agenda" de EXPERIENCE.md; esta épica lo agrega a la plantilla de Notificaciones cuando la Agenda de administración tenga su ruta.

@@ -1,0 +1,100 @@
+# Historias de epic-administracion-de-citas, en orden de construcción.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Entrar con segundo factor y ver las citas del día"
+description = "Camino trazador: ASP.NET Core Identity en el host con su DbContext en el esquema identidad, migrado por el MigrationService, que siembra la cuenta del Administrador ([ASSUMPTION: contraseña de un parámetro secreto del AppHost en user-secrets y correo de la configuración]) sin registro público; inicio de sesión y segundo factor TOTP en SSR estático, con enrolamiento por QR la primera vez y los códigos de recuperación y el bloqueo que trae Identity [ASSUMPTION]; el área /admin [ASSUMPTION: prefijo] en Interactive Server con su layout, la navegación de cuatro entradas (Agenda, Pacientes, Calendario de atención, Configuración), sesión exigida y noindex (la parte de CAP-21 que le toca); IActorActual entrega también el id del Administrador para actor_id; IPacientesApi.ObtenerContactos en lote (AD-10), que usan las entradas 2, 6 y 7; y la consulta de administración CitasDelDia(fecha) (IRequiereAdministrador) con la página Agenda que lista hora, Paciente, motivo y estado, que la entrada 2 completa."
+verify = "Con el AppHost arriba, Gerardo escanea el QR, entra con el código y ve las citas de hoy; pruebas de integración comprueban que sin sesión /admin redirige al inicio de sesión y CitasDelDia vuelve No autorizado, que con contraseña y sin segundo factor no se entra, y que no existe ruta de registro."
+covers = ["CAP-9", "CAP-12"]
+after = ["1.7", "2.1", "4.1"]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Agenda por día y por semana"
+description = "Sobre la página de la entrada 1: vista de semana y navegación entre días; las tarjetas de EXPERIENCE.md (Atendida derivada y atenuada, No se presentó, Canceladas ocultas tras un filtro distinguiendo por Paciente, tardía y por el Consultorio, \"sin correo\", la Cita del consultorio fuera de horario con su nota, la fecha con Agenda custom y su motivo, \"No hay citas este día\"); refresco cada 30 segundos (AD-11) y la vista del día usable en teléfono; y el traspaso de la épica 4: \"Abrir la Agenda\" en la alerta de cancelación tardía apunta a la ruta de la Agenda. Los enlaces de las tarjetas al Detalle de Cita los agrega la entrada 6."
+verify = "Pruebas bUnit y de integración: una reserva en línea hecha con la página abierta aparece en la siguiente vuelta de refresco sin recargar; una Cita con el inicio ya pasado se muestra Atendida; una Agenda custom sembrada muestra su motivo; una Cancelada solo aparece con el filtro; la alerta de cancelación tardía trae el enlace a la Agenda."
+covers = ["CAP-12"]
+after = [1, "3.4", "4.5"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Cita del consultorio en el dominio y el caso de uso"
+description = "Cita.AgendarPorConsultorio (INV-C6, RN-13, RN-14): ignora rejilla, ventana, Tramos y tope, exige nota cuando cae fuera de los Tramos vigentes y solo la impiden el traslape (23P01 a conflicto, AD-8) o la hora pasada (INV-C4); el comando AgendarCitaPorConsultorio (IRequiereAdministrador) que hace BuscarOCrear del Paciente, registra el Consentimiento con canal externo (supuesto de FR-15) y el motivo de consulta opcional, deja la bitácora a nombre del Administrador con su id de la entrada 1 y publica CitaAgendada con origen consultorio, cuya confirmación envía el handler existente de la 4.1 (supuesto de FR-21). [ASSUMPTION: si toma el candado de fecha de AD-26 lo decide quien la construye; AD-26 no lo pide.] La pantalla es de la entrada 4."
+verify = "Pruebas de dominio e integración: un sábado cerrado a las 10:15 sin nota se rechaza y con nota se guarda, y HorariosLibres sigue sin ofrecer ese sábado; un traslape o una hora pasada se rechazan con su código; sin sesión vuelve No autorizado; la bitácora dice Administrador con su id; con correo sale la confirmación."
+covers = ["CAP-13", "CAP-17"]
+after = [1, "2.6", "4.1"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Pantalla Agendar cita"
+description = "La acción principal de la Agenda de la entrada 2, sobre el comando de la entrada 3: captura teléfono y nombre y, si el Paciente ya existe, lo dice y muestra su última Cita (una consulta de Agenda que se apoya en un método nuevo de IPacientesApi que busca sin crear); tipo, fecha y hora libres de la Rejilla; aviso de fuera de horario o día cerrado, con los Tramos de ITramosDeLaFecha, que vuelve obligatoria la nota sin impedir guardar; casilla de Consentimiento por canal externo; y los dos mensajes de conflicto, traslape y hora pasada (EXPERIENCE.md, estados del Administrador)."
+verify = "Pruebas bUnit y de integración: con teléfono y nombre conocidos se ve que ya existe y su última Cita; el sábado avisa fuera de horario y pide la nota antes de guardar; un traslape muestra la regla incumplida; al guardar, la Cita aparece en la Agenda."
+covers = ["CAP-13"]
+after = [2, 3]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "No se presentó y cancelar por el Consultorio, en el dominio y los casos de uso"
+description = "cita.MarcarNoSePresento, solo desde el inicio (RN-31) y final (INV-C7), y cita.CancelarPorConsultorio, solo antes del inicio, que también usará la política P-1 de la épica 6; sus dos comandos (IRequiereAdministrador) leen la Cita con FOR UPDATE después del candado de fecha y dejan la bitácora del Administrador; CitaCancelada con motivo consultorio dispara la disculpa existente de la 4.4; PacienteNoSePresento no se publica (T-23). La interfaz es de la entrada 6."
+verify = "Pruebas de dominio e integración con el reloj de prueba: a las 4:10 una Cita de las 4:00 se puede marcar No se presentó y ya no cancelar, y a las 3:50 al revés; marcar o cancelar dos veces no cambia nada; cancelar por el Consultorio deja la disculpa en el canal de prueba, de punta a punta (FR-17); sin sesión ambos comandos vuelven No autorizado."
+covers = ["CAP-14", "CAP-17"]
+after = [3, "3.4", "4.4"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Detalle de Cita con su bitácora"
+description = "La página que se abre desde cada tarjeta de la Agenda de la entrada 2 (esta entrada agrega los enlaces): Paciente con teléfono y correo o \"sin correo: avisa a mano\", tipo, fecha y hora, origen, nota, motivo de consulta y Consentimiento; estado; bitácora con quién, qué y cuándo (CAP-17); \"No se presentó\" visible solo desde el inicio y \"Cancelar\" solo antes, con confirmación, sobre los comandos de la entrada 5; usable en teléfono. Una consulta de Agenda reúne los datos y pide el contacto a Pacientes (AD-10)."
+verify = "Pruebas bUnit y de integración: una Cita futura ofrece solo Cancelar y una ya empezada solo No se presentó; una de origen consultorio muestra su nota; la bitácora muestra la reserva del Paciente y la cancelación del Administrador en orden; sin sesión la consulta vuelve No autorizado."
+covers = ["CAP-12", "CAP-14", "CAP-17"]
+after = [2, 5]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Pacientes: búsqueda e historial"
+description = "Según la Decision del 2026-11-09: BuscarPacientes(nombre) en Pacientes, sobre nombre_busqueda sin mayúsculas ni acentos, con id, nombre, teléfono y si tiene correo; HistorialDelPaciente(PatientId) en Agenda, con Atendida, No se presentó, Cancelada, Cancelación tardía y cancelada por el Consultorio, cuyo handler pide el encabezado a IPacientesApi.ObtenerContactos; ambas IRequiereAdministrador; la lista y la página del Paciente, cada fila con enlace a su Detalle de Cita de la entrada 6."
+verify = "Pruebas de integración y bUnit: \"mariana\" encuentra a \"Mariana López\" y a \"MARIANA\"; el historial de un Paciente sembrado distingue Atendida, No se presentó, Cancelada y Cancelación tardía; sin sesión ambas consultas vuelven No autorizado."
+covers = ["CAP-15"]
+after = [4, 6, "3.4"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Reloj desplazado y recorrido de UJ-4 y UJ-6"
+description = "Gerardo recorre con el AppHost y Mailpit: la Cita pactada por WhatsApp de un Paciente conocido (UJ-4), la del sábado con su nota sin que el público vea ese sábado (primera mitad de UJ-6), adelantar el reloj y marcar No se presentó, cancelar por el Consultorio y ver la disculpa, y el historial en Pacientes; lo que no le guste se vuelve ajuste o entrada nueva (Decision de mockups, 2026-11-09)."
+verify = "Gerardo completa el recorrido y anota en el plan lo que aprueba y lo que pide cambiar."
+covers = ["CAP-12", "CAP-13", "CAP-14", "CAP-15"]
+after = [2, 4, 6, 7]
+hitl = true
+risk = "low"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Refactor sweep"
+description = "Limpieza de lo aplazado en los planes y revisiones de la épica; su alcance se fija al empezar."
+verify = "Las pruebas de la épica siguen pasando y los pendientes de revisión anotados quedan cerrados o registrados."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8]
+hitl = false
+risk = "low"
