@@ -3,7 +3,7 @@ title: 'Agenda del día'
 type: 'feature'
 ticket: '6'
 created: '2026-11-09'
-status: 'built'
+status: done
 baseline_revision: 'bc1aef10e8091985df3142328f7885c53c56f22d'
 route: 'full'
 route_source: 'auto'

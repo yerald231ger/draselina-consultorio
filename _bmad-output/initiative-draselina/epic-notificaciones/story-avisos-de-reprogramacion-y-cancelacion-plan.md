@@ -3,7 +3,7 @@ title: 'Avisos de reprogramación y cancelación'
 type: 'feature'
 ticket: '4'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: 'a744f07064bb81dc4796b5658ed3f7e94fa6ac98'
 route: 'full'
 route_source: 'auto'

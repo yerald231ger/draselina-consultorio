@@ -3,7 +3,7 @@ title: 'Horas y destinatarios configurables'
 type: 'feature'
 ticket: '7'
 created: '2026-11-09'
-status: 'built'
+status: done
 baseline_revision: 'c5c3a7c8f748fca3bb5e7a64163639a773f41a41'
 route: 'full'
 route_source: 'auto'

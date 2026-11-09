@@ -3,7 +3,7 @@ title: 'Frases del correo en Cita confirmada'
 type: 'feature'
 ticket: '3'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: '3f6d540936d437aec6301a27e6f2178162b01cdd'
 route: 'oneshot'
 route_source: 'auto'

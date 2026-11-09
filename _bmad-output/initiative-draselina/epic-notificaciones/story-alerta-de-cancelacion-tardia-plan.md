@@ -3,7 +3,7 @@ title: 'Alerta de cancelación tardía'
 type: 'feature'
 ticket: '5'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: 'd28a095822e2ae7b0fa428044944e9c9b635f8c3'
 route: 'oneshot'
 route_source: 'auto'

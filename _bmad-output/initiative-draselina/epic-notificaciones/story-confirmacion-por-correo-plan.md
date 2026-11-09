@@ -3,7 +3,7 @@ title: 'Confirmación por correo'
 type: 'feature'
 ticket: '1'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: '8022daf15fa9aafbe1dea8ffce3e94c81a084535'
 route: 'full'
 route_source: 'auto'

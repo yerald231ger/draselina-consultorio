@@ -3,7 +3,7 @@ title: 'Recordatorio programado'
 type: 'feature'
 ticket: '2'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: 'efb1c11ed562bd6f0e2870b4c09055b72ee46bb8'
 route: 'full'
 route_source: 'auto'
