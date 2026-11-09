@@ -1031,6 +1031,8 @@ El recordatorio pendiente de una cita (AD-20). El servicio en segundo plano de N
 | Columna | Tipo | Nulo | Notas |
 | --- | --- | --- | --- |
 | `cita_id` | `uuid` | no | PK |
+| `paciente_id` | `uuid` | no | Del evento; para pedir el contacto a Pacientes al enviar (Gerardo, 2026-11-08, entrada 4.2) |
+| `inicio` | `timestamptz` | no | Inicio de la cita, del evento; para escribir el correo sin preguntar a Agenda (Gerardo, 2026-11-08, entrada 4.2) |
 | `programado_para` | `timestamptz` | no | |
 
 ## Esquemas que no se diseñan aquí

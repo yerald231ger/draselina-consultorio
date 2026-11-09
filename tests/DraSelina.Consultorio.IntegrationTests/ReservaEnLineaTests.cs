@@ -989,7 +989,13 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
             }
         }
 
-        public ValueTask DisposeAsync() => Web.DisposeAsync();
+        // La base es solo de este escenario: sus conexiones libres se cierran ya, sin esperar a que el pool las suelte.
+        // Con tantas bases en la corrida, si se quedan abiertas agotan las del contenedor.
+        public async ValueTask DisposeAsync()
+        {
+            await Web.DisposeAsync();
+            NpgsqlConnection.ClearPool(new NpgsqlConnection(Cadena));
+        }
     }
 
     internal sealed record CitaLeida(

@@ -228,7 +228,7 @@ public sealed class ConfirmacionPorCorreoTests(Arnes arnes)
         await Arnes.DarUnaVueltaDeEntregaAsync(escenario.Web, Cancelacion);
         Assert.Single(canal.Enviados);
 
-        var fila = await escenario.EscalarAsync<string>("select row_to_json(m)::text from notificaciones.mensaje m");
+        var fila = await escenario.EscalarAsync<string>("select row_to_json(m)::text from notificaciones.mensaje m where tipo = 'Confirmacion'");
         var registros = Arnes.Registros(escenario.Web).Select(r => r.Mensaje).ToList();
         Assert.NotEmpty(registros);
         foreach (var dato in new[] { Correo, "correo.com", "Ana Sofía", "López", "Lopez", "4441234567", "rodilla", "Tu cita está" })
@@ -302,8 +302,10 @@ public sealed class ConfirmacionPorCorreoTests(Arnes arnes)
             """);
     }
 
+    // Solo los de la confirmación: la Cita del martes, agendada el lunes a mediodía, deja además su Recordatorio Omitido
+    // (RecordatorioTests).
     private static Task<List<MensajeLeido>> MensajesAsync(Escenario escenario) => escenario.FilasAsync(
-        "select id, evento_id, cita_id, tipo, canal, estado, registrado_en from notificaciones.mensaje order by id",
+        "select id, evento_id, cita_id, tipo, canal, estado, registrado_en from notificaciones.mensaje where tipo = 'Confirmacion' order by id",
         l => new MensajeLeido(
             l.GetGuid(0), l.IsDBNull(1) ? null : l.GetGuid(1), l.IsDBNull(2) ? null : l.GetGuid(2),
             l.GetString(3), l.GetString(4), l.GetString(5), l.GetFieldValue<DateTimeOffset>(6)));

@@ -18,6 +18,8 @@ public sealed class NotificacionesDbContext(DbContextOptions<NotificacionesDbCon
 
     internal DbSet<FilaDeConfiguracionDeEnvio> ConfiguracionDeEnvio => Set<FilaDeConfiguracionDeEnvio>();
 
+    internal DbSet<FilaDeRecordatorioProgramado> RecordatoriosProgramados => Set<FilaDeRecordatorioProgramado>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Esquema);
@@ -57,6 +59,18 @@ public sealed class NotificacionesDbContext(DbContextOptions<NotificacionesDbCon
             mensaje.Property(m => m.Estado).HasColumnName("estado");
             mensaje.Property(m => m.RegistradoEn).HasColumnName("registrado_en");
             mensaje.HasIndex(m => new { m.EventoId, m.Tipo }).IsUnique().HasDatabaseName(FilaDeMensaje.IndiceDeEventoYTipo);
+        });
+
+        // notificaciones.recordatorio_programado: el Recordatorio pendiente de cada Cita (AD-20). Sin llaves foráneas.
+        modelBuilder.Entity<FilaDeRecordatorioProgramado>(recordatorio =>
+        {
+            recordatorio.ToTable(FilaDeRecordatorioProgramado.Tabla);
+            recordatorio.HasKey(r => r.CitaId);
+            recordatorio.Property(r => r.CitaId).HasColumnName("cita_id").ValueGeneratedNever();
+            recordatorio.Property(r => r.PacienteId).HasColumnName("paciente_id");
+            recordatorio.Property(r => r.Inicio).HasColumnName("inicio");
+            recordatorio.Property(r => r.ProgramadoPara).HasColumnName("programado_para");
+            recordatorio.HasIndex(r => r.ProgramadoPara).HasDatabaseName(FilaDeRecordatorioProgramado.IndiceDeProgramadoPara);
         });
     }
 }

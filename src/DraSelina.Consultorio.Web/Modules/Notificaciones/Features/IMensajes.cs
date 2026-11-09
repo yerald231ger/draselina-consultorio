@@ -12,6 +12,12 @@ public interface IMensajes
     Task<bool> ExisteAsync(Guid eventoId, TipoDeMensaje tipo, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Si ya salió (<see cref="EstadoDeMensaje.Enviado"/>) un mensaje de ese tipo para esa Cita, registrado en o después
+    /// de <paramref name="desde"/>.
+    /// </summary>
+    Task<bool> EnviadoDesdeAsync(CitaId citaId, TipoDeMensaje tipo, DateTimeOffset desde, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Guarda <paramref name="mensaje"/> en la transacción abierta. Si ya hay uno con su evento y su tipo, el índice
     /// único lo rechaza y lanza: otra entrega del mismo evento llegó antes.
     /// </summary>

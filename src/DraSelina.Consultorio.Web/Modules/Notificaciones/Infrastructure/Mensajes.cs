@@ -1,3 +1,4 @@
+using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Features;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,16 @@ public sealed class Mensajes(NotificacionesDbContext db) : IMensajes
     {
         var texto = tipo.ToString();
         return db.Mensajes.AsNoTracking().AnyAsync(m => m.EventoId == eventoId && m.Tipo == texto, cancellationToken);
+    }
+
+    public Task<bool> EnviadoDesdeAsync(CitaId citaId, TipoDeMensaje tipo, DateTimeOffset desde, CancellationToken cancellationToken)
+    {
+        var texto = tipo.ToString();
+        var enviado = EstadoDeMensaje.Enviado.ToString();
+        var cita = citaId.Valor;
+        var desdeUtc = desde.ToUniversalTime();
+        return db.Mensajes.AsNoTracking().AnyAsync(
+            m => m.CitaId == cita && m.Tipo == texto && m.Estado == enviado && m.RegistradoEn >= desdeUtc, cancellationToken);
     }
 
     public async Task RegistrarAsync(MensajeRegistrado mensaje, CancellationToken cancellationToken)

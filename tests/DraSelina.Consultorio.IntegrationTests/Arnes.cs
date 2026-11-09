@@ -2,6 +2,7 @@ using DraSelina.Consultorio.IntegrationTests;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Features;
+using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -123,6 +124,13 @@ public sealed class Arnes : IAsyncLifetime
         new Web(cadenaDeConexion, reloj: null);
 
     /// <summary>
+    /// Como <see cref="ArrancarWeb(string)"/>, pero con el servicio de envíos programados en segundo plano, que las
+    /// demás webs de las pruebas no llevan: para la prueba que comprueba que da sus vueltas por su cuenta.
+    /// </summary>
+    public WebApplicationFactory<Program> ArrancarWebConEnviosProgramados(string cadenaDeConexion) =>
+        new Web(cadenaDeConexion, reloj: null, conEnviosProgramados: true);
+
+    /// <summary>
     /// La web en memoria contra la base de la corrida, sin la clave del Enlace de gestión en su configuración: para
     /// comprobar que así no arranca.
     /// </summary>
@@ -130,8 +138,9 @@ public sealed class Arnes : IAsyncLifetime
         new Web(CadenaDeConexion, reloj: null, conClave: false);
 
     /// <summary>
-    /// Arranca la web en memoria sin el servicio que entrega eventos en segundo plano y con el reloj de la prueba.
-    /// La prueba da cada vuelta de entrega cuando quiere, con <see cref="DarUnaVueltaDeEntregaAsync"/>, y mueve el
+    /// Arranca la web en memoria sin los servicios en segundo plano (la entrega de eventos y los envíos programados)
+    /// y con el reloj de la prueba. La prueba da cada vuelta cuando quiere, con
+    /// <see cref="DarUnaVueltaDeEntregaAsync"/> y <see cref="DarUnaVueltaDeEnviosProgramadosAsync"/>, y mueve el
     /// tiempo con <paramref name="reloj"/>. Se usa contra una base propia (<see cref="CrearBaseMigradaAsync"/>).
     /// </summary>
     public WebApplicationFactory<Program> ArrancarWebSinEntregaAutomatica(
@@ -145,6 +154,14 @@ public sealed class Arnes : IAsyncLifetime
     public static Task<int> DarUnaVueltaDeEntregaAsync(WebApplicationFactory<Program> web, CancellationToken cancelacion = default) =>
         web.Services.GetRequiredService<EntregaDeEventos>().DarUnaVueltaAsync(cancelacion);
 
+    /// <summary>
+    /// Da una vuelta de envíos programados de Notificaciones en esa web, la misma que da su servicio en segundo plano.
+    /// Devuelve cuántos Recordatorios intentó enviar.
+    /// </summary>
+    public static Task<int> DarUnaVueltaDeEnviosProgramadosAsync(
+        WebApplicationFactory<Program> web, CancellationToken cancelacion = default) =>
+        web.Services.GetRequiredService<EnviosProgramados>().DarUnaVueltaAsync(cancelacion);
+
     /// <summary>Lo que esa web ha registrado (avisos, errores...) desde que arrancó.</summary>
     public static IReadOnlyCollection<RegistroEscrito> Registros(WebApplicationFactory<Program> web) =>
         web.Services.GetRequiredService<RegistrosDePrueba>().Escritos;
@@ -157,13 +174,19 @@ public sealed class Arnes : IAsyncLifetime
     public WebApplicationFactory<Program> ArrancarWeb() => ArrancarWeb(CadenaDeConexion);
 
     // Una sola fábrica por llamada, que desecha quien la pidió.
-    // Con reloj de prueba, la web no entrega eventos por su cuenta: las vueltas las da la prueba.
+    // Con reloj de prueba, la web no entrega eventos por su cuenta: las vueltas las da la prueba. Los envíos
+    // programados no corren por su cuenta salvo en ArrancarWebConEnviosProgramados.
     private sealed class Web(
         string cadenaDeConexion,
         RelojDePrueba? reloj,
         TimeSpan? limitePorHandler = null,
-        bool conClave = true) : WebApplicationFactory<Program>
+        bool conClave = true,
+        bool conEnviosProgramados = false) : WebApplicationFactory<Program>
     {
+        private static void QuitarServicio(IServiceCollection servicios, Type tipo) =>
+            servicios.Remove(servicios.Single(s =>
+                s.ServiceType == typeof(IHostedService) && s.ImplementationType == tipo));
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseSetting($"ConnectionStrings:{BaseDeDatos.Nombre}", cadenaDeConexion);
@@ -199,10 +222,14 @@ public sealed class Arnes : IAsyncLifetime
                 if (reloj is not null)
                 {
                     servicios.AddSingleton<IClock>(reloj);
+                    QuitarServicio(servicios, typeof(ServicioDeEntregaDeEventos));
+                }
 
-                    var servicio = servicios.Single(s =>
-                        s.ServiceType == typeof(IHostedService) && s.ImplementationType == typeof(ServicioDeEntregaDeEventos));
-                    servicios.Remove(servicio);
+                // Los envíos programados solo corren en la web que los pide: cada uno abre su propio pool de
+                // conexiones y, en todas las webs de la corrida, agotan las del contenedor.
+                if (!conEnviosProgramados)
+                {
+                    QuitarServicio(servicios, typeof(ServicioDeEnviosProgramados));
                 }
 
                 if (limitePorHandler is { } limite)

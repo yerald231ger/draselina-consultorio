@@ -113,6 +113,32 @@ namespace DraSelina.Consultorio.Notificaciones.Infrastructure.Migrations
                             t.HasCheckConstraint("ck_mensaje_tipo", "tipo IN ('Confirmacion', 'Recordatorio', 'Reprogramada', 'Cancelada', 'CanceladaPorConsultorio', 'AlertaTardia', 'AgendaDelDia')");
                         });
                 });
+
+            modelBuilder.Entity("DraSelina.Consultorio.Notificaciones.Infrastructure.FilaDeRecordatorioProgramado", b =>
+                {
+                    b.Property<Guid>("CitaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cita_id");
+
+                    b.Property<DateTimeOffset>("Inicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio");
+
+                    b.Property<Guid>("PacienteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paciente_id");
+
+                    b.Property<DateTimeOffset>("ProgramadoPara")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("programado_para");
+
+                    b.HasKey("CitaId");
+
+                    b.HasIndex("ProgramadoPara")
+                        .HasDatabaseName("ix_recordatorio_programado_programado_para");
+
+                    b.ToTable("recordatorio_programado", "notificaciones");
+                });
 #pragma warning restore 612, 618
         }
     }
