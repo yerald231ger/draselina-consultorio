@@ -31,6 +31,16 @@ public sealed class Pacientes(PacientesDbContext db) : IPacientes
             .Select(p => (string?)p.Nombre.Original)
             .SingleOrDefaultAsync(cancellationToken);
 
+    public async Task<(string Nombre, string? Correo)?> ContactosAsync(PatientId paciente, CancellationToken cancellationToken)
+    {
+        var encontrado = await db.Pacientes.AsNoTracking()
+            .Where(p => p.Id == paciente)
+            .Select(p => new { p.Nombre.Original, p.Correo })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return encontrado is null ? null : (encontrado.Original, encontrado.Correo?.Valor);
+    }
+
     public void Agregar(Paciente paciente) => db.Pacientes.Add(paciente);
 
     public async Task<GuardadoDePaciente> GuardarAsync(CancellationToken cancellationToken)

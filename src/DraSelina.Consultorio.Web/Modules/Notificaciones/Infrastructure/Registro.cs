@@ -1,3 +1,4 @@
+using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.Notificaciones.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -5,14 +6,43 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DraSelina.Consultorio.Notificaciones.Infrastructure;
 
 /// <summary>
-/// Lo que el host registra de Notificaciones: su contexto, su puerto de transacción y sus handlers. Cada handler se
-/// registra aquí, uno por línea, por su interfaz (AD-10):
-/// <c>.AddScoped&lt;ICommandHandler&lt;MiComando, T&gt;, MiComandoHandler&gt;()</c>.
+/// Lo que el host registra de Notificaciones: su contexto, su puerto de transacción, sus puertos, su canal, su
+/// configuración y sus handlers. Cada handler se registra aquí, uno por línea (AD-10). Los de eventos van con
+/// <see cref="AddEventHandler{THandler}"/>, por cada <c>IEventHandler&lt;T&gt;</c> que implementan: así esta capa no
+/// nombra los eventos de otros módulos, que solo puede usar Features (AD-1).
 /// </summary>
 public static class Registro
 {
-    public static IServiceCollection AddNotificaciones(this IServiceCollection servicios, string cadenaDeConexion) =>
-        servicios
+    public static IServiceCollection AddNotificaciones(this IServiceCollection servicios, string cadenaDeConexion)
+    {
+        servicios.AddOptions<OpcionesDeNotificaciones>().BindConfiguration(OpcionesDeNotificaciones.Seccion);
+
+        return servicios
             .AddDbContext<NotificacionesDbContext>(opciones => NotificacionesDbContext.Configurar(opciones, cadenaDeConexion))
-            .AddScoped<ITransaccionDeNotificaciones, TransaccionDeNotificaciones>();
+            .AddScoped<ITransaccionDeNotificaciones, TransaccionDeNotificaciones>()
+            .AddScoped<IMensajes, Mensajes>()
+            .AddSingleton<INotificationChannel, CanalDeCorreoSmtp>()
+            .AddEventHandler<ConfirmacionAlAgendar>();
+    }
+
+    // Registra THandler, por ámbito, como cada IEventHandler<T> que implementa.
+    private static IServiceCollection AddEventHandler<THandler>(this IServiceCollection servicios)
+        where THandler : class
+    {
+        var interfaces = typeof(THandler).GetInterfaces()
+            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>))
+            .ToList();
+
+        if (interfaces.Count == 0)
+        {
+            throw new InvalidOperationException($"{typeof(THandler).Name} no implementa ningún IEventHandler<T>.");
+        }
+
+        foreach (var interfaz in interfaces)
+        {
+            servicios.AddScoped(interfaz, typeof(THandler));
+        }
+
+        return servicios;
+    }
 }

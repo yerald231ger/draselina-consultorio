@@ -5,6 +5,11 @@ var builder = DistributedApplication.CreateBuilder(args);
 var postgres = builder.AddPostgres("postgres");
 var consultorio = postgres.AddDatabase("consultorio");
 
+// Mailpit atrapa los correos que envía la web por SMTP y los muestra, con sus adjuntos, desde el dashboard (épica 4).
+// Sin volumen, como PostgreSQL: cada arranque parte sin correos. La web lee el servidor de la cadena de conexión
+// "mailpit" (Endpoint=smtp://host:puerto).
+var mailpit = builder.AddMailPit("mailpit");
+
 // La clave del Enlace de gestión (AD-19): un parámetro secreto, fuera de la base y del repositorio. Si no se da
 // (Parameters:clave-enlace-de-gestion, por ejemplo con user-secrets), Aspire genera una en cada arranque: los enlaces
 // cambian con ella, igual que la base, que también parte vacía.
@@ -22,8 +27,11 @@ var migraciones = builder.AddProject<Projects.DraSelina_Consultorio_MigrationSer
 // con la dirección de la propia web.
 var web = builder.AddProject<Projects.DraSelina_Consultorio_Web>("web")
     .WithReference(consultorio)
+    .WithReference(mailpit)
     .WaitForCompletion(migraciones)
-    .WithEnvironment("EnlaceDeGestion__Clave", claveDeEnlace);
+    .WithEnvironment("EnlaceDeGestion__Clave", claveDeEnlace)
+    // El remitente de los correos en desarrollo. `[ASSUMPTION]` hasta que exista la dirección real.
+    .WithEnvironment("Notificaciones__Remitente", "citas@consultorio.local");
 web.WithEnvironment("EnlaceDeGestion__UrlBase", web.GetEndpoint("http"));
 
 builder.Build().Run();

@@ -524,8 +524,13 @@ El AppHost de Aspire arranca, en este orden:
 
 1. `postgres`: PostgreSQL en un contenedor, con la base `consultorio`. Sin volumen: cada arranque parte de una
    base vacía. La contraseña la genera Aspire en cada arranque; no hay secretos en el repositorio.
-2. `migraciones`: el `MigrationService`. Aplica las migraciones de Agenda, Pacientes y Notificaciones y termina.
-3. `web`: la aplicación, en <http://localhost:5080>. Arranca solo si `migraciones` terminó con código 0. La web
+2. `mailpit`: Mailpit en un contenedor. Atrapa los correos que la web envía por SMTP (la confirmación de cada
+   Cita, épica 4) y los muestra, con sus adjuntos, en su página, que se abre desde el panel de Aspire. Sin volumen:
+   cada arranque parte sin correos. La web recibe el servidor por la cadena de conexión `mailpit` y el remitente por
+   `Notificaciones__Remitente` (`citas@consultorio.local`). Si Mailpit no responde, la reserva no se detiene: el
+   outbox reintenta el correo.
+3. `migraciones`: el `MigrationService`. Aplica las migraciones de Agenda, Pacientes y Notificaciones y termina.
+4. `web`: la aplicación, en <http://localhost:5080>. Arranca solo si `migraciones` terminó con código 0. La web
    nunca crea ni migra nada (AD-25).
 
 La clave del Enlace de gestión (AD-19) es el parámetro secreto del AppHost `clave-enlace-de-gestion`; el AppHost
@@ -539,7 +544,7 @@ user-secrets: la primera vez `./dotnet.sh user-secrets init --project src/DraSel
 La clave nunca va en el repositorio.
 
 El panel de Aspire queda en <http://localhost:15080>; la dirección con el token de entrada sale en la consola
-(`Login to the dashboard at ...`). Ahí se ven los tres recursos con su estado, sus registros y las trazas: pide
+(`Login to the dashboard at ...`). Ahí se ven los cuatro recursos con su estado, sus registros y las trazas: pide
 una página a la web y aparece su traza `GET /`.
 
 Todo corre por HTTP (`ASPIRE_ALLOW_UNSECURED_TRANSPORT` en el perfil del AppHost) porque el equipo no tiene un

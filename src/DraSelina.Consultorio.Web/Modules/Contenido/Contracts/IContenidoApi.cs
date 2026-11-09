@@ -32,4 +32,8 @@ public interface IContenidoApi
 /// <param name="Lugar">Hospital y consultorio: "Hospital Star Médica, consultorio 101".</param>
 /// <param name="Direccion">Calle, número y colonia.</param>
 /// <param name="Ciudad">Ciudad.</param>
-public sealed record DatosDelConsultorio(string Lugar, string Direccion, string Ciudad);
+/// <param name="EnlaceDelMapa">
+/// Una búsqueda de Google Maps del lugar, la dirección y la ciudad: "Abrir en el mapa". Nulo si no hay enlace; quien lo
+/// muestra lo omite entonces (Gerardo, 2026-11-08).
+/// </param>
+public sealed record DatosDelConsultorio(string Lugar, string Direccion, string Ciudad, string? EnlaceDelMapa = null);

@@ -25,6 +25,9 @@ public sealed class AgendaApi(
     public async Task<ArchivoDeCalendario?> ObtenerArchivoDeCalendarioAsync(CitaId citaId, CancellationToken cancellationToken) =>
         Archivo(await citas.PorIdAsync(citaId, cancellationToken));
 
+    public async Task<string?> ObtenerTipoDeVisitaAsync(CitaId citaId, CancellationToken cancellationToken) =>
+        (await citas.PorIdAsync(citaId, cancellationToken))?.TipoDeVisita;
+
     /// <summary>
     /// El archivo de <paramref name="cita"/>, o nulo si no hay Cita, no está Agendada o su inicio ya pasó (RN-22);
     /// "ya pasó" se mide desde el inicio (RN-31). La misma regla para la descarga por Enlace de gestión

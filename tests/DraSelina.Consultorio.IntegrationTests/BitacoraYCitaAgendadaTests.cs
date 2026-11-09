@@ -162,7 +162,7 @@ public sealed class BitacoraYCitaAgendadaTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task El_servicio_de_entrega_entrega_CitaAgendada_aunque_aun_no_tenga_handler()
+    public async Task El_servicio_de_entrega_entrega_CitaAgendada_a_su_handler_de_Notificaciones()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
         Assert.True((await escenario.AgendarAsync(Comando())).EsExito);
@@ -170,10 +170,12 @@ public sealed class BitacoraYCitaAgendadaTests(Arnes arnes)
 
         Assert.Equal(1, await Arnes.DarUnaVueltaDeEntregaAsync(escenario.Web, Cancelacion));
 
+        // Ya no es un evento sin handler: no queda el aviso de "ningún handler registrado". Lo que hace el handler lo
+        // prueba ConfirmacionPorCorreoTests.
         var fila = Assert.Single(await Consultas.EventosDeLaClaveAsync(escenario.Cadena, AgendaDbContext.Esquema, cita.Id, Cancelacion));
         Assert.Equal("Entregado", fila.Estado);
-        Assert.Contains(Arnes.Registros(escenario.Web), r =>
-            r.Nivel == LogLevel.Warning && r.Mensaje.Contains(fila.Id.ToString()) && r.Mensaje.Contains(nameof(CitaAgendada)));
+        Assert.DoesNotContain(Arnes.Registros(escenario.Web), r =>
+            r.Nivel >= LogLevel.Warning && r.Mensaje.Contains(fila.Id.ToString()));
     }
 
     [Fact]

@@ -3,6 +3,9 @@
   <ItemGroup>
     <!-- Aspire 13.6.0. El SDK del AppHost fija su propia versión en el .csproj (Aspire.AppHost.Sdk/13.6.0). -->
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.6.0" />
+    <!-- Mailpit en el AppHost: atrapa los correos en local y los muestra desde el dashboard (épica 4, Gerardo,
+         2026-11-08). La del Community Toolkit que pide Aspire.Hosting 13.6.0. -->
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.MailPit" Version="13.6.0" />
     <!-- Paquetes de la plantilla ServiceDefaults de Aspire 13.6.0, con las versiones que trae la plantilla. -->
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.10.0" />
@@ -20,6 +23,10 @@
     <!-- Valida y normaliza a E.164 los celulares de México (fila del Stack). Lo usa Pacientes.Features: el dominio y
          los contratos solo usan la biblioteca base (T-28, AD-12). -->
     <PackageVersion Include="libphonenumber-csharp" Version="9.0.42" />
+    <!-- El canal SMTP de INotificationChannel (Notificaciones.Infrastructure), hacia Mailpit en local. Azure
+         Communication Services también acepta SMTP, pero al desplegar habría que agregar la autenticación, que hoy
+         no existe (Gerardo, 2026-11-08). -->
+    <PackageVersion Include="MailKit" Version="4.18.2" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <!-- Solo en pruebas. La misma línea que ASP.NET Core 10. -->

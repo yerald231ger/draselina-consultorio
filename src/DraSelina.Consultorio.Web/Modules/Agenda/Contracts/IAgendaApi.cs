@@ -18,4 +18,10 @@ public interface IAgendaApi
     /// Notificaciones lo adjunte (AD-20). Nulo si la Cita no existe, no está Agendada o su inicio ya pasó.
     /// </summary>
     Task<ArchivoDeCalendario?> ObtenerArchivoDeCalendarioAsync(CitaId citaId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// El nombre de hoy del tipo de visita de la Cita ("Primera consulta"), para los correos de Notificaciones. Nulo si
+    /// la Cita no existe. Cualquier estado de la Cita; leerlo no escribe nada.
+    /// </summary>
+    Task<string?> ObtenerTipoDeVisitaAsync(CitaId citaId, CancellationToken cancellationToken);
 }

@@ -26,6 +26,8 @@
     <PackageReference Include="Scrutor" />
     <!-- Celulares de México en E.164 (Pacientes.Features). -->
     <PackageReference Include="libphonenumber-csharp" />
+    <!-- El canal SMTP de Notificaciones (Notificaciones.Infrastructure). -->
+    <PackageReference Include="MailKit" />
   </ItemGroup>
 
   <ItemGroup>

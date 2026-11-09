@@ -23,6 +23,12 @@ public interface IPacientes
     /// <summary>El nombre del Paciente como lo escribió (<see cref="NombreCompleto.Original"/>); nulo si no existe. Sin rastrear.</summary>
     Task<string?> NombreAsync(PatientId paciente, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// El nombre como lo escribió y el correo guardado (<see cref="CorreoElectronico.Valor"/>, nulo si no tiene); nulo
+    /// si el Paciente no existe. Sin rastrear.
+    /// </summary>
+    Task<(string Nombre, string? Correo)?> ContactosAsync(PatientId paciente, CancellationToken cancellationToken);
+
     void Agregar(Paciente paciente);
 
     /// <summary>

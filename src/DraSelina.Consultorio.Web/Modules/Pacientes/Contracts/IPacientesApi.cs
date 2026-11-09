@@ -45,6 +45,25 @@ public interface IPacientesApi
     /// </summary>
     /// <returns>Nulo si el Paciente no existe.</returns>
     Task<string?> NombreAsync(PatientId paciente, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// A quién y adónde se le escribe al Paciente: su nombre tal como se guardó y su correo, si tiene (RN-29, RN-30).
+    /// Es para Notificaciones y para el Administrador (épica 5). Quien lo recibe no escribe ninguno de los dos en
+    /// registros, trazas ni tablas (AD-23). No registra nada.
+    /// </summary>
+    /// <returns>Nulo si el Paciente no existe.</returns>
+    Task<Contactos?> ObtenerContactosAsync(PatientId paciente, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// El contacto de un Paciente. Nunca va a registros (AD-23): <see cref="ToString"/> no muestra ni el nombre ni el
+/// correo.
+/// </summary>
+/// <param name="Nombre">Como se guardó (<c>NombreAsync</c> da el mismo).</param>
+/// <param name="Correo">La dirección guardada; nulo si no dio correo.</param>
+public sealed record Contactos(string Nombre, string? Correo)
+{
+    public override string ToString() => $"Contactos(oculto, {(Correo is null ? "sin correo" : "con correo")})";
 }
 
 /// <summary>El conjunto cerrado de códigos de fallo esperado de Pacientes.</summary>

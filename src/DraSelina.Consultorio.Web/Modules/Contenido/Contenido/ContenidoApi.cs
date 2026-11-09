@@ -7,11 +7,19 @@ namespace DraSelina.Consultorio.Contenido;
 /// </summary>
 public sealed class ContenidoApi : IContenidoApi
 {
-    /// <summary>Los del mockup, confirmados como los correctos (Gerardo, 2026-11-02).</summary>
+    private const string Lugar = "Hospital Star Médica, consultorio 101";
+    private const string Direccion = "Mariano Arista No. 735, Col. Barrio de Tequisquiapan";
+    private const string Ciudad = "San Luis Potosí";
+
+    /// <summary>
+    /// Los del mockup, confirmados como los correctos (Gerardo, 2026-11-02), con su enlace al mapa (Gerardo,
+    /// 2026-11-08).
+    /// </summary>
     public static readonly DatosDelConsultorio Consultorio = new(
-        Lugar: "Hospital Star Médica, consultorio 101",
-        Direccion: "Mariano Arista No. 735, Col. Barrio de Tequisquiapan",
-        Ciudad: "San Luis Potosí");
+        Lugar: Lugar,
+        Direccion: Direccion,
+        Ciudad: Ciudad,
+        EnlaceDelMapa: BusquedaEnGoogleMaps(Lugar, Direccion, Ciudad));
 
     /// <summary>
     /// Borrador hasta que el abogado entregue el texto revisado; entonces cambia a su fecha de publicación, por
@@ -36,6 +44,13 @@ public sealed class ContenidoApi : IContenidoApi
     public const string? WhatsAppDelConsultorio = null;
 
     public DatosDelConsultorio DatosDelConsultorio => Consultorio;
+
+    /// <summary>
+    /// Una búsqueda de Google Maps (<c>https://www.google.com/maps/search/?api=1&amp;query=...</c>) con lugar, dirección
+    /// y ciudad separados por coma y codificados en la URL.
+    /// </summary>
+    public static string BusquedaEnGoogleMaps(string lugar, string direccion, string ciudad) =>
+        $"https://www.google.com/maps/search/?api=1&query={Uri.EscapeDataString($"{lugar}, {direccion}, {ciudad}")}";
 
     public string VersionDelAvisoDePrivacidad => AvisoDePrivacidad;
 

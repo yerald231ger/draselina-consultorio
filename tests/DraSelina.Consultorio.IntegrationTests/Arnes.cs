@@ -1,6 +1,7 @@
 using DraSelina.Consultorio.IntegrationTests;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
+using DraSelina.Consultorio.Notificaciones.Features;
 using DraSelina.Consultorio.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -147,6 +149,10 @@ public sealed class Arnes : IAsyncLifetime
     public static IReadOnlyCollection<RegistroEscrito> Registros(WebApplicationFactory<Program> web) =>
         web.Services.GetRequiredService<RegistrosDePrueba>().Escritos;
 
+    /// <summary>El canal de correo de esa web: lo que ha enviado, y si está caído.</summary>
+    public static CanalDePrueba Canal(WebApplicationFactory<Program> web) =>
+        web.Services.GetRequiredService<CanalDePrueba>();
+
     /// <summary>Arranca la web en memoria contra la base migrada de la corrida.</summary>
     public WebApplicationFactory<Program> ArrancarWeb() => ArrancarWeb(CadenaDeConexion);
 
@@ -178,6 +184,13 @@ public sealed class Arnes : IAsyncLifetime
                 // El desplazamiento de un recorrido manual (appsettings.Development.local.json) no llega a las pruebas:
                 // se aplica después de cada recarga del archivo.
                 servicios.PostConfigure<OpcionesDeReloj>(opciones => opciones.Desplazamiento = null);
+
+                // Ninguna web de las pruebas envía correos de verdad: el canal SMTP se reemplaza por uno que guarda los
+                // envíos y puede fallar a pedido (Arnes.Canal).
+                servicios.RemoveAll<INotificationChannel>();
+                servicios
+                    .AddSingleton<CanalDePrueba>()
+                    .AddSingleton<INotificationChannel>(proveedor => proveedor.GetRequiredService<CanalDePrueba>());
 
                 servicios
                     .AddSingleton<RegistrosDePrueba>()
