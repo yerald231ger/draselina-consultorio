@@ -10,4 +10,10 @@ public sealed class OpcionesDeNotificaciones
     /// <c>[ASSUMPTION]</c>.
     /// </summary>
     public string? Remitente { get; set; }
+
+    /// <summary>
+    /// La dirección absoluta del sitio, a la que llevan los botones de los correos que no usan el Enlace de gestión
+    /// ("Agendar otra cita", "Elegir otro horario" a <c>/reservar</c>). En local la da el AppHost: la de la web.
+    /// </summary>
+    public string? UrlDelSitio { get; set; }
 }

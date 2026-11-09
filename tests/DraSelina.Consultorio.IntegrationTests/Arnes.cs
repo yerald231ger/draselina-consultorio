@@ -37,6 +37,9 @@ public sealed class Arnes : IAsyncLifetime
     /// <summary>La URL base del Enlace de gestión que reciben las webs de las pruebas.</summary>
     public const string UrlBaseDeEnlace = "https://citas.prueba.mx";
 
+    /// <summary>La dirección del sitio que reciben las webs de las pruebas, para los botones de los correos.</summary>
+    public const string UrlDelSitio = "https://sitio.prueba.mx";
+
     private PostgreSqlContainer? _contenedor;
     private string? _cadenaDeConexion;
 
@@ -191,6 +194,7 @@ public sealed class Arnes : IAsyncLifetime
         {
             builder.UseSetting($"ConnectionStrings:{BaseDeDatos.Nombre}", cadenaDeConexion);
             builder.UseSetting("EnlaceDeGestion:UrlBase", UrlBaseDeEnlace);
+            builder.UseSetting($"{OpcionesDeNotificaciones.Seccion}:{nameof(OpcionesDeNotificaciones.UrlDelSitio)}", UrlDelSitio);
             if (conClave)
             {
                 builder.UseSetting("EnlaceDeGestion:Clave", ClaveDeEnlace);

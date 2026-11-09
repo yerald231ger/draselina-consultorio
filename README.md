@@ -535,6 +535,8 @@ El AppHost de Aspire arranca, en este orden:
 
 La clave del Enlace de gestión (AD-19) es el parámetro secreto del AppHost `clave-enlace-de-gestion`; el AppHost
 se la pasa a la web como `EnlaceDeGestion__Clave`, junto con su propia dirección como `EnlaceDeGestion__UrlBase`.
+La misma dirección le llega como `Notificaciones__UrlDelSitio`: a ella llevan los botones de los correos sin Enlace
+de gestión ("Agendar otra cita", "Elegir otro horario" a `/reservar`).
 Si no se da `Parameters:clave-enlace-de-gestion`, Aspire genera una nueva en cada arranque, así que los enlaces de
 gestión cambian entre arranques (como la base, que también parte vacía). Para enlaces estables, da una clave de al
 menos 32 caracteres por la variable de entorno `Parameters__clave-enlace-de-gestion` al arrancar el AppHost, o por

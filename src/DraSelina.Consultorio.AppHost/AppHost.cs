@@ -23,8 +23,8 @@ var migraciones = builder.AddProject<Projects.DraSelina_Consultorio_MigrationSer
     .WithReference(consultorio)
     .WaitFor(consultorio);
 
-// La web arranca solo si las migraciones terminaron con código 0; si fallan, no arranca. El Enlace de gestión se arma
-// con la dirección de la propia web.
+// La web arranca solo si las migraciones terminaron con código 0; si fallan, no arranca. El Enlace de gestión y los
+// botones de los correos se arman con la dirección de la propia web.
 var web = builder.AddProject<Projects.DraSelina_Consultorio_Web>("web")
     .WithReference(consultorio)
     .WithReference(mailpit)
@@ -33,5 +33,7 @@ var web = builder.AddProject<Projects.DraSelina_Consultorio_Web>("web")
     // El remitente de los correos en desarrollo. `[ASSUMPTION]` hasta que exista la dirección real.
     .WithEnvironment("Notificaciones__Remitente", "citas@consultorio.local");
 web.WithEnvironment("EnlaceDeGestion__UrlBase", web.GetEndpoint("http"));
+// La dirección del sitio a la que llevan los botones de los correos sin Enlace de gestión ("Agendar otra cita").
+web.WithEnvironment("Notificaciones__UrlDelSitio", web.GetEndpoint("http"));
 
 builder.Build().Run();

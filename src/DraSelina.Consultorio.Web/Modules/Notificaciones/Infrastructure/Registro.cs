@@ -26,10 +26,13 @@ public static class Registro
             .AddScoped<IRecordatorios, Recordatorios>()
             .AddScoped<IQueryHandler<RecordatorioPrevisto, Recordatorio>, RecordatorioPrevistoHandler>()
             .AddSingleton<INotificationChannel, CanalDeCorreoSmtp>()
+            .AddSingleton<IDireccionDelSitio, DireccionDelSitio>()
             .AddEventHandler<ConfirmacionAlAgendar>()
             .AddEventHandler<RecordatorioAlAgendar>()
             .AddEventHandler<RecordatorioAlReprogramar>()
             .AddEventHandler<RecordatorioAlCancelar>()
+            .AddEventHandler<AvisoAlReprogramar>()
+            .AddEventHandler<AvisoAlCancelar>()
             .AddSingleton<EnviosProgramados>()
             .AddHostedService<ServicioDeEnviosProgramados>();
     }
