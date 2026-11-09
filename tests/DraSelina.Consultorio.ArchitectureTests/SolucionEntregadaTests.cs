@@ -38,6 +38,16 @@ public class SolucionEntregadaTests
     }
 
     [Fact]
+    public void Toda_pagina_de_administracion_salvo_entrar_lleva_Authorize()
+    {
+        var componentes = Lector.Componentes(Web);
+
+        // La Agenda es de administración: si la regla no la viera, no estaría verificando nada.
+        Assert.Contains(componentes, c => c.Ruta == "UI/Pages/Administracion/Agenda.razor");
+        Assert.Empty(Verificador.VerificarPaginasDeAdministracion(componentes));
+    }
+
+    [Fact]
     public void Web_no_tiene_using_implicitos_fuera_de_System()
     {
         var generados = Lector.UsingsImplicitos(Web);

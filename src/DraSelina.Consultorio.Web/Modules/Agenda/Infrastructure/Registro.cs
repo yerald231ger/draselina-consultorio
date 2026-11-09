@@ -40,6 +40,7 @@ public static class Registro
             .AddScoped<ICitasDelCalendario, CitasDelCalendario>()
             .AddScoped<ICitasDelEnlace, CitasDelEnlace>()
             .AddScoped<ICitasDelDia, CitasDelDia>()
+            .AddScoped<ICitasDeLaFecha, CitasDeLaFechaPersistidas>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
@@ -49,7 +50,8 @@ public static class Registro
             .AddScoped<IQueryHandler<VentanaDeReservaPublica, VentanaDeReservaVigente>, VentanaDeReservaPublicaHandler>()
             .AddScoped<IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario>, ArchivoDeCalendarioPorEnlaceHandler>()
             .AddScoped<IQueryHandler<CitaPorEnlace, CitaDelEnlace>, CitaPorEnlaceHandler>()
-            .AddScoped<IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>>, TiposDeVisitaReservablesHandler>();
+            .AddScoped<IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>>, TiposDeVisitaReservablesHandler>()
+            .AddScoped<IQueryHandler<CitasDeLaFecha, IReadOnlyList<CitaDeLaFecha>>, CitasDeLaFechaHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

@@ -40,6 +40,14 @@ public sealed class Arnes : IAsyncLifetime
     /// <summary>La dirección del sitio que reciben las webs de las pruebas, para los botones de los correos.</summary>
     public const string UrlDelSitio = "https://sitio.prueba.mx";
 
+    /// <summary>El correo de la cuenta del Administrador que siembra el MigrationService en cada base de las pruebas.</summary>
+    public const string CorreoDelAdministrador = "administrador@consultorio.prueba";
+
+    /// <summary>
+    /// La contraseña inicial de esa cuenta. Cumple la política de Identity: mayúscula, minúscula, dígito y símbolo.
+    /// </summary>
+    public const string ContrasenaDelAdministrador = "Contraseña-de-las-pruebas-1";
+
     private PostgreSqlContainer? _contenedor;
     private string? _cadenaDeConexion;
 

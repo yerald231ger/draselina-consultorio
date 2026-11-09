@@ -1,0 +1,116 @@
+@page "/admin/entrar"
+@inject UserManager<IdentityUser> Usuarios
+@inject SignInManager<IdentityUser> Entrada
+@inject NavigationManager Navegacion
+
+@*
+    Inicio de sesión del Administrador (CAP-9, FR-11), en SSR estático (AD-11). Correo y contraseña; el segundo factor es
+    obligatorio (Decision 2026-11-09):
+    - con la app autenticadora activa, PasswordSignInAsync deja la cookie parcial y lleva a escribir el código;
+    - sin ella, la contraseña sola no inicia sesión: CheckPasswordSignInAsync (que también cuenta los intentos) y la
+      cookie parcial, que solo abre el enrolamiento.
+    Un error dice siempre lo mismo; tras el límite de intentos, la cuenta se bloquea unos minutos (los valores de
+    Identity por omisión). No hay registro ni recuperación de contraseña.
+*@
+
+<PageTitle>Entrar · Administración</PageTitle>
+<SinIndice />
+
+<section class="dsm-contenedor dsm-entrar" aria-labelledby="entrar">
+    <h1 id="entrar" class="dsm-titulo-de-estado">Entrar</h1>
+    <p class="dsm-cuerpo">Escribe tu correo y tu contraseña. Después te pediremos el código de tu app autenticadora.</p>
+
+    @if (_mensaje is not null)
+    {
+        <div class="dsm-errores-del-objeto" role="alert" tabindex="-1" autofocus>
+            <div class="dsm-errores-del-objeto__mensaje">@_mensaje</div>
+        </div>
+    }
+
+    <EditForm Model="Datos!" FormName="entrar" method="post" OnSubmit="EntrarAsync" class="dsm-formulario dsm-entrar__formulario">
+        <div class="dsm-campo">
+            <label for="correo" class="dsm-campo__etiqueta">Correo</label>
+            <InputText id="correo" type="email" class="dsm-campo__control" autocomplete="username" @bind-Value="Datos!.Correo" />
+        </div>
+        <div class="dsm-campo">
+            <label for="contrasena" class="dsm-campo__etiqueta">Contraseña</label>
+            <InputText id="contrasena" type="password" class="dsm-campo__control" autocomplete="current-password"
+                       @bind-Value="Datos!.Contrasena" />
+        </div>
+        <button type="submit" class="btn btn-primary dsm-accion-principal">Entrar</button>
+    </EditForm>
+</section>
+
+@code {
+    /// <summary>Lo que se dice de un correo o una contraseña que no son: nunca cuál de los dos.</summary>
+    public const string Incorrecto = "El correo o la contraseña no son correctos.";
+
+    /// <summary>Tras el límite de intentos fallidos.</summary>
+    public const string Bloqueada = "Hubo demasiados intentos. Espera unos minutos y vuelve a intentarlo.";
+
+    private string? _mensaje;
+
+    [SupplyParameterFromForm(FormName = "entrar")]
+    private DatosDeEntrada? Datos { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        Datos ??= new();
+
+        // Con sesión ya iniciada no hay nada que hacer aquí.
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            Navegacion.NavigateTo(Registro.RegresoSeguro(ReturnUrl));
+        }
+    }
+
+    private async Task EntrarAsync()
+    {
+        var datos = Datos!;
+        var cuenta = await Usuarios.FindByEmailAsync(datos.Correo.Trim());
+        if (cuenta is null || string.IsNullOrEmpty(datos.Contrasena))
+        {
+            _mensaje = Incorrecto;
+            return;
+        }
+
+        var regreso = Uri.EscapeDataString(Registro.RegresoSeguro(ReturnUrl));
+
+        if (!await Usuarios.GetTwoFactorEnabledAsync(cuenta))
+        {
+            // Sin app autenticadora activa: la contraseña no inicia sesión, solo abre el enrolamiento.
+            var comprobada = await Entrada.CheckPasswordSignInAsync(cuenta, datos.Contrasena, lockoutOnFailure: true);
+            if (comprobada.Succeeded)
+            {
+                await CookieParcial.GuardarAsync(HttpContext, cuenta);
+                Navegacion.NavigateTo($"{Registro.RutaDeActivar}?ReturnUrl={regreso}");
+                return;
+            }
+
+            _mensaje = comprobada.IsLockedOut ? Bloqueada : Incorrecto;
+            return;
+        }
+
+        var resultado = await Entrada.PasswordSignInAsync(cuenta, datos.Contrasena, isPersistent: false, lockoutOnFailure: true);
+        if (resultado.RequiresTwoFactor)
+        {
+            Navegacion.NavigateTo($"{Registro.RutaDelSegundoFactor}?ReturnUrl={regreso}");
+            return;
+        }
+
+        _mensaje = resultado.IsLockedOut ? Bloqueada : Incorrecto;
+    }
+
+    private sealed class DatosDeEntrada
+    {
+        public string Correo { get; set; } = "";
+
+        public string Contrasena { get; set; } = "";
+    }
+}

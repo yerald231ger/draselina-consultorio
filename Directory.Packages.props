@@ -18,6 +18,12 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <!-- Identity en el host (AD-22, AD-25): cuentas en el esquema identidad, segundo factor TOTP. La misma línea que
+         ASP.NET Core 10 (épica 5, entrada 1). -->
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
+    <!-- El QR del enrolamiento del segundo factor, como SVG generado en el servidor, sin scripts. MIT (Gerardo,
+         2026-11-09). -->
+    <PackageVersion Include="QRCoder" Version="1.7.0" />
     <!-- Decoradores de los handlers en el host (AD-12, AD-22). La versión que usa Cypma.Cop. -->
     <PackageVersion Include="Scrutor" Version="6.1.0" />
     <!-- Valida y normaliza a E.164 los celulares de México (fila del Stack). Lo usa Pacientes.Features: el dominio y

@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace DraSelina.Consultorio.ArchitectureTests;
 
 /// <summary>Algo que las tablas no permiten. Nombra dónde está y qué referencia.</summary>
@@ -10,7 +12,7 @@ public sealed record Violacion(string Donde, string Referencia, string Regla)
 /// Compara proyectos y archivos de código contra <see cref="Reglas"/>. Recibe ambos como dato para poder
 /// probarse con casos sintéticos, sin tocar <c>src/</c>.
 /// </summary>
-public static class Verificador
+public static partial class Verificador
 {
     public const string ProyectoDesconocido = "proyecto desconocido: la arquitectura no lo nombra";
     public const string ProyectoNoPermitido = "referencia de proyecto que la tabla de la arquitectura no permite";
@@ -19,6 +21,9 @@ public static class Verificador
     public const string CapaNoPermitida = "dependencia entre namespaces que la tabla de AD-1 no permite";
     public const string PaqueteProhibido = "paquete o framework prohibido: Kernel, contratos y dominio solo usan la biblioteca base (T-28, AD-12)";
     public const string GlobalUsingProhibido = "global using prohibido: llegaría a todas las capas sin que esta prueba lo vea";
+
+    public const string AdministracionSinAuthorize =
+        "página de administración sin [Authorize]: toda ruta bajo /admin, salvo las de /admin/entrar, pide sesión (AD-22)";
 
     public const string UsingImplicitoProhibido = "using implícito fuera de System.*: llegaría a todas las capas sin que esta prueba lo vea";
 
@@ -30,6 +35,31 @@ public static class Verificador
         [.. generados.SelectMany(generado => generado.Usos
             .Where(uso => !EsOEstaDentro(uso, "System"))
             .Select(uso => new Violacion(generado.Ruta, uso, UsingImplicitoProhibido)))];
+
+    /// <summary>
+    /// Toda página con una ruta bajo <c>/admin</c> que no sea de <c>/admin/entrar</c> (inicio de sesión y segundo factor)
+    /// lleva <c>@attribute [Authorize]</c> (AD-22). Recibe los <c>.razor</c> con su texto.
+    /// </summary>
+    public static IReadOnlyList<Violacion> VerificarPaginasDeAdministracion(IEnumerable<(string Ruta, string Texto)> componentes) =>
+        [.. from componente in componentes
+            let rutas = DirectivaPage().Matches(componente.Texto).Select(m => m.Groups["ruta"].Value).ToList()
+            where rutas.Any(EsDeAdministracionConSesion) && !AtributoAuthorize().IsMatch(componente.Texto)
+            select new Violacion(componente.Ruta, rutas.First(EsDeAdministracionConSesion), AdministracionSinAuthorize)];
+
+    private static bool EsDeAdministracionConSesion(string ruta) =>
+        EsOEstaDebajo(ruta, "/admin") && !EsOEstaDebajo(ruta, "/admin/entrar");
+
+    private static bool EsOEstaDebajo(string ruta, string raiz) =>
+        string.Equals(ruta, raiz, StringComparison.OrdinalIgnoreCase)
+        || ruta.StartsWith($"{raiz}/", StringComparison.OrdinalIgnoreCase);
+
+    // @page "/admin/..."
+    [GeneratedRegex("""^\s*@page\s+"(?<ruta>[^"]+)"\s*$""", RegexOptions.Multiline)]
+    private static partial Regex DirectivaPage();
+
+    // @attribute [Authorize] · [Authorize(...)] · [Microsoft.AspNetCore.Authorization.Authorize]
+    [GeneratedRegex("""^\s*@attribute\s+\[\s*(Microsoft\.AspNetCore\.Authorization\.)?Authorize(Attribute)?\s*[\(\]]""", RegexOptions.Multiline)]
+    private static partial Regex AtributoAuthorize();
 
     public static IReadOnlyList<Violacion> VerificarProyectos(IEnumerable<Proyecto> proyectos)
     {

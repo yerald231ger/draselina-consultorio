@@ -21,7 +21,11 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     private static ClaimsPrincipal Anonimo => new(new ClaimsIdentity());
 
     private static ClaimsPrincipal Autenticado =>
-        new(new ClaimsIdentity([new Claim(ClaimTypes.Name, "administradora")], authenticationType: "Prueba"));
+        new(new ClaimsIdentity(
+            [new Claim(ClaimTypes.Name, "administradora"), new Claim(ClaimTypes.NameIdentifier, IdDeLaCuenta)],
+            authenticationType: "Prueba"));
+
+    private const string IdDeLaCuenta = "0b6f7c1e-cuenta-de-prueba";
 
     [Fact]
     public async Task Un_comando_marcado_sin_usuario_vuelve_no_autorizado_y_el_handler_no_corre()
@@ -169,6 +173,29 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
             () => Handler<PreguntarActor>(ambito).HandleAsync(new PreguntarActor(), Cancelacion));
 
         Assert.Contains("no tiene actor", error.Message);
+    }
+
+    [Fact]
+    public async Task Con_usuario_el_id_del_Administrador_es_el_de_su_cuenta()
+    {
+        await using var web = arnes.ArrancarWeb();
+        await using var ambito = web.Services.CreateAsyncScope();
+        FijarUsuario(ambito, Autenticado);
+
+        Assert.Equal(IdDeLaCuenta, await ambito.ServiceProvider.GetRequiredService<IActorActual>().IdDelAdministradorAsync());
+    }
+
+    [Fact]
+    public async Task Sin_usuario_o_como_Sistema_no_hay_id_del_Administrador()
+    {
+        await using var web = arnes.ArrancarWeb();
+        await using var anonimo = web.Services.CreateAsyncScope();
+        FijarUsuario(anonimo, Anonimo);
+        await using var sistema = web.Services.CreateAsyncScope();
+        DeclararSistema(sistema);
+
+        Assert.Null(await anonimo.ServiceProvider.GetRequiredService<IActorActual>().IdDelAdministradorAsync());
+        Assert.Null(await sistema.ServiceProvider.GetRequiredService<IActorActual>().IdDelAdministradorAsync());
     }
 
     [Fact]

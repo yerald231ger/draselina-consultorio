@@ -18,10 +18,19 @@ var claveDeEnlace = builder.AddParameter(
     new GenerateParameterDefault { MinLength = 64, Special = false },
     secret: true);
 
-// Aplica las migraciones de todos los módulos y termina (AD-25).
+// La cuenta del Administrador (AD-22, AD-25), la siembra el MigrationService si no existe. La contraseña inicial es un
+// parámetro secreto sin valor por omisión: la captura Gerardo y se guarda en los user-secrets del AppHost
+// (dotnet user-secrets set "Parameters:clave-administrador" "..." --project src/DraSelina.Consultorio.AppHost); sin
+// ella, el dashboard la pide antes de arrancar. El correo tiene uno por omisión `[ASSUMPTION]`.
+var claveDelAdministrador = builder.AddParameter("clave-administrador", secret: true);
+var correoDelAdministrador = builder.AddParameter("correo-administrador", "administrador@consultorio.local");
+
+// Aplica las migraciones de todos los módulos, siembra la cuenta del Administrador y termina (AD-25).
 var migraciones = builder.AddProject<Projects.DraSelina_Consultorio_MigrationService>("migraciones")
     .WithReference(consultorio)
-    .WaitFor(consultorio);
+    .WaitFor(consultorio)
+    .WithEnvironment("Administrador__Correo", correoDelAdministrador)
+    .WithEnvironment("Administrador__Contrasena", claveDelAdministrador);
 
 // La web arranca solo si las migraciones terminaron con código 0; si fallan, no arranca. El Enlace de gestión y los
 // botones de los correos se arman con la dirección de la propia web.

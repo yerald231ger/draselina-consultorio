@@ -1867,3 +1867,227 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   font-weight: 600;
   text-align: right;
 }
+
+/*
+ * Administración (épica 5). Sin mockup: se construye con los tokens de DESIGN.md y las tablas de EXPERIENCE.md. Pensada
+ * para escritorio, legible en el teléfono.
+ */
+
+/* Inicio de sesión, segundo factor y enrolamiento (Identidad/Paginas), en el layout del sitio. */
+.dsm-entrar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-7);
+  max-width: 480px;
+  padding-block: 40px 56px;
+}
+
+.dsm-entrar__formulario {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsm-entrar__alterno,
+.dsm-entrar__clave-ayuda {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-entrar__pasos {
+  margin: 0;
+  padding-left: var(--dsm-spacing-9);
+  font-size: var(--dsm-body-font-size);
+  color: var(--dsm-ink-soft);
+}
+
+.dsm-entrar__qr {
+  width: 220px;
+  padding: var(--dsm-spacing-5);
+  border-radius: var(--dsm-rounded-lg);
+  background: var(--dsm-surface);
+  border: 1px solid var(--dsm-border);
+}
+
+.dsm-entrar__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.dsm-entrar__clave,
+.dsm-entrar__codigos {
+  margin: 0;
+  padding: var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-md);
+  background: var(--dsm-field-readonly);
+  font-size: var(--dsm-input-font-size);
+  color: var(--dsm-ink);
+  word-break: break-all;
+}
+
+.dsm-entrar__codigos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--dsm-spacing-3);
+  list-style: none;
+}
+
+.dsm-entrar__clave code,
+.dsm-entrar__codigos code {
+  color: inherit;
+  font-size: inherit;
+}
+
+/* Encabezado de administración: la marca a la izquierda, la navegación y "Salir" a la derecha. */
+.dsm-administracion__fila {
+  justify-content: space-between;
+  gap: var(--dsm-spacing-7);
+  flex-wrap: wrap;
+}
+
+.dsm-administracion__navegacion {
+  display: flex;
+  align-items: center;
+  gap: var(--dsm-spacing-5);
+}
+
+.dsm-administracion__enlace,
+.dsm-administracion__boton-salir {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--dsm-spacing-touch-min);
+  padding-inline: var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-full);
+  font-size: var(--dsm-label-font-size);
+  font-weight: var(--dsm-label-font-weight);
+  text-decoration: none;
+}
+
+.dsm-administracion__enlace {
+  color: var(--dsm-ink);
+}
+
+.dsm-administracion__enlace--activo {
+  background: var(--dsm-tint);
+  color: var(--dsm-primary-strong);
+}
+
+.dsm-administracion__salir {
+  margin: 0;
+}
+
+.dsm-administracion__boton-salir {
+  border: 1px solid var(--dsm-border-input);
+  background: var(--dsm-surface);
+  color: var(--dsm-primary);
+}
+
+.dsm-administracion__boton-salir:hover {
+  color: var(--dsm-primary-hover);
+}
+
+/* Chips de la Agenda (DESIGN.md): el ámbar solo para la cancelación tardía; las demás cancelaciones y No se presentó,
+   neutros. El rojo (danger) queda para la acción de cancelar. */
+.dsm-chip-de-estado--tardia {
+  background: var(--dsm-warning-bg);
+  border: 1px solid var(--dsm-warning-border);
+  color: var(--dsm-warning-title);
+}
+
+.dsm-chip-de-estado--neutro {
+  background: var(--dsm-field-readonly);
+  color: var(--dsm-muted);
+}
+
+/* Agenda: una tarjeta por Cita, en orden de inicio. */
+.dsm-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-7);
+  padding-block: 32px 56px;
+}
+
+.dsm-agenda__cabeza {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+}
+
+.dsm-agenda__fecha {
+  margin: 0;
+  font-size: var(--dsm-section-font-size);
+  font-weight: var(--dsm-section-font-weight);
+  color: var(--dsm-eyebrow);
+}
+
+.dsm-agenda__vacia {
+  margin: 0;
+  padding: var(--dsm-spacing-9);
+  border-radius: var(--dsm-rounded-2xl);
+  background: var(--dsm-surface);
+  border: 1px solid var(--dsm-border);
+  color: var(--dsm-muted);
+}
+
+.dsm-agenda__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsm-agenda__cita {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--dsm-spacing-7);
+  padding: var(--dsm-spacing-8);
+  border-radius: var(--dsm-rounded-2xl);
+  background: var(--dsm-surface);
+  border: 1px solid var(--dsm-border);
+}
+
+/* Atendida (derivada): la misma tarjeta, atenuada (EXPERIENCE.md). */
+.dsm-agenda__cita--atendida {
+  opacity: 0.6;
+}
+
+.dsm-agenda__cita--cancelada {
+  background: var(--dsm-ground);
+}
+
+.dsm-agenda__cita--cancelada .dsm-agenda__paciente {
+  text-decoration: line-through;
+}
+
+.dsm-agenda__hora {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsm-agenda__inicio {
+  font-size: var(--dsm-section-font-size);
+  font-weight: 700;
+  color: var(--dsm-ink);
+}
+
+.dsm-agenda__fin,
+.dsm-agenda__motivo {
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-agenda__paciente {
+  font-weight: 600;
+  color: var(--dsm-ink);
+}
+
+@media (max-width: 575.98px) {
+  .dsm-agenda__cita {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--dsm-spacing-3);
+  }
+}

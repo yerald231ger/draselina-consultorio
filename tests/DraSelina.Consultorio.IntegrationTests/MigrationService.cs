@@ -16,8 +16,21 @@ public static class MigrationService
 {
     private static readonly TimeSpan Limite = TimeSpan.FromMinutes(3);
 
-    /// <summary>Migra la base de <paramref name="cadenaDeConexion"/>. Lanza si el proceso no sale con 0.</summary>
-    public static async Task EjecutarAsync(string cadenaDeConexion, CancellationToken cancelacion = default)
+    /// <summary>
+    /// Migra la base de <paramref name="cadenaDeConexion"/> y siembra la cuenta del Administrador con el correo y la
+    /// contraseña del arnés (<see cref="Arnes.CorreoDelAdministrador"/>, <see cref="Arnes.ContrasenaDelAdministrador"/>),
+    /// como los pasa el AppHost. Lanza si el proceso no sale con 0.
+    /// </summary>
+    public static Task EjecutarAsync(string cadenaDeConexion, CancellationToken cancelacion = default) =>
+        EjecutarAsync(cadenaDeConexion, Arnes.ContrasenaDelAdministrador, cancelacion);
+
+    /// <summary>Como <see cref="EjecutarAsync(string, CancellationToken)"/>, con otra contraseña del Administrador.</summary>
+    public static Task EjecutarAsync(string cadenaDeConexion, string contrasenaDelAdministrador, CancellationToken cancelacion = default) =>
+        EjecutarAsync(cadenaDeConexion, contrasenaDelAdministrador, Arnes.CorreoDelAdministrador, cancelacion);
+
+    /// <summary>Como <see cref="EjecutarAsync(string, CancellationToken)"/>, con otra contraseña y otro correo del Administrador.</summary>
+    public static async Task EjecutarAsync(
+        string cadenaDeConexion, string contrasenaDelAdministrador, string correoDelAdministrador, CancellationToken cancelacion = default)
     {
         var ensamblado = RutaDelEnsamblado();
 
@@ -31,6 +44,8 @@ public static class MigrationService
         inicio.ArgumentList.Add(ensamblado);
         inicio.Environment[$"ConnectionStrings__{BaseDeDatos.Nombre}"] = cadenaDeConexion;
         inicio.Environment["DOTNET_ENVIRONMENT"] = "Development";
+        inicio.Environment["Administrador__Correo"] = correoDelAdministrador;
+        inicio.Environment["Administrador__Contrasena"] = contrasenaDelAdministrador;
 
         var salida = new StringBuilder();
         using var proceso = new Process { StartInfo = inicio };

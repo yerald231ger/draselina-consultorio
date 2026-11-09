@@ -9,4 +9,10 @@ public interface IActorActual
 {
     /// <summary>El actor del ámbito actual.</summary>
     Task<Actor> ObtenerAsync();
+
+    /// <summary>
+    /// El id de la cuenta del Administrador que actúa, para la bitácora (<c>actor_id</c>, RN-24); nulo si el actor no es
+    /// <see cref="Actor.Administrador"/>.
+    /// </summary>
+    Task<string?> IdDelAdministradorAsync();
 }

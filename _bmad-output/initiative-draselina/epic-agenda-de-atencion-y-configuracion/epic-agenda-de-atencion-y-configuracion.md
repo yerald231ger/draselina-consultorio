@@ -51,3 +51,4 @@ El Calendario de atención y Configuración: los métodos de escritura de `Agend
 - Waits on epic-notificaciones because: la pantalla de Configuración compone las horas de envío y la disculpa de CAP-11 sale por ahí.
 - Waits on epic-reserva-en-linea because: necesita `AgendaAtencion` y la `Cita`.
 - Assumption: en la lista, las Citas en línea no vienen preseleccionadas y las del Consultorio vienen marcadas "conservar" (RN-10).
+- Traspaso de la épica 5 (Gerardo, 2026-11-09): la navegación de administración muestra solo las pantallas que existen; esta épica agrega "Calendario de atención" y "Configuración" al construir sus pantallas.

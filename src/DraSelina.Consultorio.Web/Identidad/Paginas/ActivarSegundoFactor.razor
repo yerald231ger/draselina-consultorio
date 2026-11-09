@@ -1,0 +1,175 @@
+@page "/admin/entrar/activar"
+@inject UserManager<IdentityUser> Usuarios
+@inject SignInManager<IdentityUser> Entrada
+@inject NavigationManager Navegacion
+
+@*
+    Enrolamiento del segundo factor (CAP-9; Decision 2026-11-09), en SSR estático (AD-11). Solo con la cookie parcial que
+    deja la contraseña correcta y con el segundo factor todavía sin activar; sin ella vuelve a Entrar, y con el segundo
+    factor ya activo lleva a escribir el código: el QR no se vuelve a mostrar.
+
+    El QR (otpauth://) lo genera QRCoder como SVG en el servidor, sin scripts (Gerardo, 2026-11-09), con la clave en texto
+    para escribirla a mano. Con un código válido: el segundo factor queda activo, se generan 10 códigos de recuperación,
+    se inicia la sesión y la misma respuesta los muestra, una sola vez. Un código mal escrito no activa nada y cuenta para
+    el bloqueo por intentos.
+*@
+
+<PageTitle>Activa tu app autenticadora · Administración</PageTitle>
+<SinIndice />
+
+@if (_codigosDeRecuperacion is { } codigos)
+{
+    <section class="dsm-contenedor dsm-entrar" aria-labelledby="activada">
+        <h1 id="activada" class="dsm-titulo-de-estado">Tu app quedó activada</h1>
+        <p class="dsm-cuerpo">@GuardaLosCodigos</p>
+        <ul class="dsm-entrar__codigos">
+            @foreach (var codigo in codigos)
+            {
+                <li><code>@codigo</code></li>
+            }
+        </ul>
+        <a href="@Registro.RegresoSeguro(ReturnUrl)" class="btn btn-primary dsm-accion-principal">Ir a la Agenda</a>
+    </section>
+}
+else if (_clave is not null)
+{
+    <section class="dsm-contenedor dsm-entrar" aria-labelledby="activar">
+        <h1 id="activar" class="dsm-titulo-de-estado">Activa tu app autenticadora</h1>
+        <ol class="dsm-entrar__pasos">
+            <li>Instala en tu teléfono una app autenticadora, como Google Authenticator o Microsoft Authenticator.</li>
+            <li>En la app, agrega una cuenta y escanea este código QR.</li>
+            <li>Escribe abajo el código de 6 dígitos que muestra la app.</li>
+        </ol>
+
+        <div class="dsm-entrar__qr" role="img" aria-label="Código QR para tu app autenticadora">
+            @((MarkupString)_qr!)
+        </div>
+        <p class="dsm-entrar__clave-ayuda">¿No puedes escanearlo? Escribe esta clave en la app:</p>
+        <p class="dsm-entrar__clave"><code>@_clave</code></p>
+
+        @if (_mensaje is not null)
+        {
+            <div class="dsm-errores-del-objeto" role="alert" tabindex="-1" autofocus>
+                <div class="dsm-errores-del-objeto__mensaje">@_mensaje</div>
+            </div>
+        }
+
+        <EditForm Model="Datos!" FormName="activar" method="post" OnSubmit="ActivarAsync" class="dsm-formulario dsm-entrar__formulario">
+            <div class="dsm-campo">
+                <label for="codigo" class="dsm-campo__etiqueta">Código</label>
+                <InputText id="codigo" class="dsm-campo__control" inputmode="numeric" autocomplete="one-time-code"
+                           maxlength="7" @bind-Value="Datos!.Codigo" />
+            </div>
+            <button type="submit" class="btn btn-primary dsm-accion-principal">Activar y entrar</button>
+        </EditForm>
+    </section>
+}
+
+@code {
+    /// <summary>A quién se le muestra el código en la app autenticadora.</summary>
+    public const string Emisor = "Consultorio Dra. Selina";
+
+    /// <summary>Un código que no es el de ahora.</summary>
+    public const string Incorrecto =
+        "El código no es correcto. Revisa que la hora de tu teléfono esté bien y escribe el que se ve ahora.";
+
+    /// <summary>Lo que acompaña a los códigos de recuperación.</summary>
+    public const string GuardaLosCodigos =
+        "Guarda estos códigos de recuperación en un lugar seguro. Cada uno te deja entrar una vez si no tienes tu teléfono. No se volverán a mostrar.";
+
+    private IdentityUser? _cuenta;
+    private string? _clave;
+    private string? _qr;
+    private string? _mensaje;
+    private IReadOnlyList<string>? _codigosDeRecuperacion;
+
+    [SupplyParameterFromForm(FormName = "activar")]
+    private DatosDelCodigo? Datos { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Datos ??= new();
+
+        _cuenta = await Entrada.GetTwoFactorAuthenticationUserAsync();
+        if (_cuenta is null)
+        {
+            Navegacion.NavigateTo(Registro.RutaDeEntrar);
+            return;
+        }
+
+        if (await Usuarios.GetTwoFactorEnabledAsync(_cuenta))
+        {
+            Navegacion.NavigateTo($"{Registro.RutaDelSegundoFactor}?ReturnUrl={Uri.EscapeDataString(Registro.RegresoSeguro(ReturnUrl))}");
+            return;
+        }
+
+        await CargarClaveAsync(_cuenta);
+    }
+
+    // La clave se crea una vez y se conserva hasta activar: recargar la página muestra el mismo QR.
+    private async Task CargarClaveAsync(IdentityUser cuenta)
+    {
+        var clave = await Usuarios.GetAuthenticatorKeyAsync(cuenta);
+        if (string.IsNullOrEmpty(clave))
+        {
+            await Usuarios.ResetAuthenticatorKeyAsync(cuenta);
+            clave = await Usuarios.GetAuthenticatorKeyAsync(cuenta)
+                    ?? throw new InvalidOperationException("Identity no guardó la clave de la app autenticadora.");
+        }
+
+        var correo = await Usuarios.GetEmailAsync(cuenta) ?? cuenta.Id;
+        _clave = ClaveLegible(clave);
+        _qr = CodigoQr.Svg(DireccionOtpauth(Emisor, correo, clave));
+    }
+
+    private async Task ActivarAsync()
+    {
+        if (_cuenta is not { } cuenta)
+        {
+            return;
+        }
+
+        if (await Usuarios.IsLockedOutAsync(cuenta))
+        {
+            _mensaje = Entrar.Bloqueada;
+            return;
+        }
+
+        var codigo = Codigos.Limpiar(Datos!.Codigo);
+        var valido = await Usuarios.VerifyTwoFactorTokenAsync(cuenta, Usuarios.Options.Tokens.AuthenticatorTokenProvider, codigo);
+        if (!valido)
+        {
+            await Usuarios.AccessFailedAsync(cuenta);
+            _mensaje = await Usuarios.IsLockedOutAsync(cuenta) ? Entrar.Bloqueada : Incorrecto;
+            return;
+        }
+
+        await Usuarios.SetTwoFactorEnabledAsync(cuenta, true);
+        await Usuarios.ResetAccessFailedCountAsync(cuenta);
+        _codigosDeRecuperacion = [.. await Usuarios.GenerateNewTwoFactorRecoveryCodesAsync(cuenta, 10) ?? []];
+
+        // La sesión completa, como la deja el código de la app: sin la cookie parcial y con el método "mfa".
+        await HttpContext.SignOutAsync(IdentityConstants.TwoFactorUserIdScheme);
+        await Entrada.SignInWithClaimsAsync(cuenta, isPersistent: false, [new Claim("amr", "mfa")]);
+    }
+
+    /// <summary>La clave en grupos de cuatro, en minúsculas, para escribirla a mano.</summary>
+    public static string ClaveLegible(string clave) =>
+        string.Join(' ', clave.ToLowerInvariant().Chunk(4).Select(grupo => new string(grupo)));
+
+    /// <summary>La dirección <c>otpauth://totp/...</c> que lee la app autenticadora (6 dígitos, cada 30 segundos).</summary>
+    public static string DireccionOtpauth(string emisor, string cuenta, string clave) =>
+        $"otpauth://totp/{Uri.EscapeDataString(emisor)}:{Uri.EscapeDataString(cuenta)}"
+        + $"?secret={clave}&issuer={Uri.EscapeDataString(emisor)}&digits=6";
+
+    private sealed class DatosDelCodigo
+    {
+        public string Codigo { get; set; } = "";
+    }
+}

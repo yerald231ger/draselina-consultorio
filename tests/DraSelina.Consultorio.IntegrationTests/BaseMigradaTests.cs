@@ -1,10 +1,11 @@
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
+using DraSelina.Consultorio.Web.Identidad;
 
 namespace DraSelina.Consultorio.IntegrationTests;
 
-/// <summary>Lo que el <c>MigrationService</c> deja en la base de la corrida (AD-2, AD-25).</summary>
+/// <summary>Lo que el <c>MigrationService</c> deja en la base de la corrida (AD-2, AD-25): los esquemas de los módulos y el del host.</summary>
 public sealed class BaseMigradaTests(Arnes arnes)
 {
     private static CancellationToken Cancelacion => TestContext.Current.CancellationToken;
@@ -13,6 +14,7 @@ public sealed class BaseMigradaTests(Arnes arnes)
     [InlineData(AgendaDbContext.Esquema)]
     [InlineData(PacientesDbContext.Esquema)]
     [InlineData(NotificacionesDbContext.Esquema)]
+    [InlineData(IdentidadDbContext.Esquema)]
     public async Task Cada_modulo_lleva_su_historial_de_migraciones_en_su_esquema(string esquema)
     {
         var tablas = await Consultas.TablasAsync(arnes.CadenaDeConexion, esquema, Cancelacion);
@@ -28,7 +30,7 @@ public sealed class BaseMigradaTests(Arnes arnes)
 
         Assert.DoesNotContain("public", esquemas);
         Assert.Equal(
-            [AgendaDbContext.Esquema, NotificacionesDbContext.Esquema, PacientesDbContext.Esquema],
+            [AgendaDbContext.Esquema, IdentidadDbContext.Esquema, NotificacionesDbContext.Esquema, PacientesDbContext.Esquema],
             esquemas);
     }
 

@@ -7,6 +7,7 @@ using DraSelina.Consultorio.UI;
 using DraSelina.Consultorio.UI.Pages;
 using DraSelina.Consultorio.UI.Pages.Reserva;
 using DraSelina.Consultorio.Web;
+using DraSelina.Consultorio.Web.Identidad;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,12 @@ builder.Services
     .AddPacientes(cadena)
     .AddNotificaciones(cadena)
     .AddContenido();
+
+// La cuenta del Administrador y su sesión (AD-22): Identity en el host, con su esquema identidad, segundo factor por
+// app autenticadora y sin registro público (Identidad/Registro.cs). La cuenta la siembra el MigrationService.
+builder.Services
+    .AddIdentidad(cadena)
+    .AddCascadingAuthenticationState();
 
 // El reloj de la aplicación, y la entrega de eventos entre módulos (AD-3): un servicio en segundo plano entrega
 // los eventos de cada outbox dado de alta aquí. Hoy solo publica Agenda.
@@ -55,7 +62,11 @@ builder.Services
     .AddScoped<ActorDelHost>()
     .AddScoped<IActorActual>(servicios => servicios.GetRequiredService<ActorDelHost>());
 
-builder.Services.AddRazorComponents();
+// El sitio y la reserva en SSR estático; la administración, en Interactive Server, salvo inicio de sesión y segundo
+// factor (AD-11). Solo las páginas que lo piden con @rendermode abren un circuito.
+builder.Services
+    .AddRazorComponents()
+    .AddInteractiveServerComponents();
 
 // Protección de las páginas de reserva (FR-7, CAP-5), sin scripts ni servicios de terceros: el límite de frecuencia
 // por IP (LimiteDeFrecuencia.cs, valores en configuración) y la verificación anti-bots de Tus datos.
@@ -71,11 +82,13 @@ builder.Host.UseServiceProviderFactory(contexto => DecoradoresDeHandlers.Fabrica
 var app = builder.Build();
 
 // Todo lo que cuelga del Enlace de gestión (/c/<token> y sus subrutas, el .ics incluido) lleva el token en la
-// dirección: ningún buscador lo indexa y ni el navegador ni un intermediario lo guardan (CAP-21, AD-19). Va antes del
-// límite de frecuencia para que también la respuesta 429 lo lleve.
+// dirección: ningún buscador lo indexa y ni el navegador ni un intermediario lo guardan (CAP-21, AD-19). La
+// administración (/admin y sus subrutas, inicio de sesión incluido) tampoco se indexa ni se guarda (CAP-21). Va antes
+// del límite de frecuencia y de la autorización para que también la respuesta 429 y la redirección a /admin/entrar lo
+// lleven.
 app.Use((contexto, siguiente) =>
 {
-    if (contexto.Request.Path.StartsWithSegments("/c"))
+    if (contexto.Request.Path.StartsWithSegments("/c") || contexto.Request.Path.StartsWithSegments("/admin"))
     {
         contexto.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
         contexto.Response.Headers.CacheControl = "no-store";
@@ -86,11 +99,17 @@ app.Use((contexto, siguiente) =>
 
 // Solo lo aplican los endpoints que piden su política: las páginas de reserva, Tu cita y el archivo de calendario.
 app.UseRateLimiter();
+
+// La sesión del Administrador: una página con [Authorize] sin sesión lleva a /admin/entrar (AD-22).
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 app.MapAgenda(DemasiadosIntentos.Politica);
+app.MapIdentidad();
 app.MapDefaultEndpoints();
 
 app.Run();

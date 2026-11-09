@@ -5,6 +5,8 @@ using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
 using DraSelina.Consultorio.Web;
+using DraSelina.Consultorio.Web.Identidad;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +14,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Trace;
 
-// Aplica todas las migraciones y termina. Sale con 0 si todo quedó aplicado y con 1 si algo falló:
+// Aplica todas las migraciones, siembra la cuenta del Administrador y termina. Sale con 0 si todo quedó aplicado y con 1 si algo falló:
 // el AppHost solo arranca la web cuando este proceso termina con 0.
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -33,6 +35,10 @@ if (builder.Configuration.GetConnectionString(BaseDeDatos.Nombre) is { } cadena)
         .AddAgenda(cadena)
         .AddPacientes(cadena)
         .AddNotificaciones(cadena);
+
+    // La identidad del host (AD-25): su esquema y la cuenta del Administrador, con la misma política de contraseña
+    // que la web.
+    builder.Services.AddCuentasDeIdentidad(cadena);
 
     // Lo que los handlers y las API de los módulos piden al host. Aquí no se usan, pero en Development el host valida
     // al construirse que todo lo registrado se pueda crear.
@@ -63,8 +69,19 @@ try
     await Migrar<AgendaDbContext>(AgendaDbContext.Esquema);
     await Migrar<PacientesDbContext>(PacientesDbContext.Esquema);
     await Migrar<NotificacionesDbContext>(NotificacionesDbContext.Esquema);
+    await Migrar<IdentidadDbContext>(IdentidadDbContext.Esquema);
 
     registro.LogInformation("Migraciones terminadas");
+
+    // Datos iniciales que no caben en HasData: la cuenta del Administrador lleva el hash de su contraseña. El correo y la
+    // contraseña nunca se registran (AD-23).
+    var siembra = await SiembraDelAdministrador.SembrarAsync(
+        ambito.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>(),
+        host.Services.GetRequiredService<IConfiguration>());
+    registro.LogInformation(
+        siembra == SiembraDelAdministrador.Siembra.Creada
+            ? "Cuenta del Administrador creada, sin segundo factor: el primer inicio de sesión lo activa"
+            : "La cuenta del Administrador ya existía; no se tocó");
     return 0;
 
     async Task Migrar<TContexto>(string esquema) where TContexto : DbContext
@@ -87,4 +104,6 @@ catch (Exception error)
 internal sealed class ActorSistema : IActorActual
 {
     public Task<Actor> ObtenerAsync() => Task.FromResult(Actor.Sistema);
+
+    public Task<string?> IdDelAdministradorAsync() => Task.FromResult<string?>(null);
 }

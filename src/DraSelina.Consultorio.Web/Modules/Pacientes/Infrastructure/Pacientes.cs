@@ -41,6 +41,19 @@ public sealed class Pacientes(PacientesDbContext db) : IPacientes
         return encontrado is null ? null : (encontrado.Original, encontrado.Correo?.Valor);
     }
 
+    // Una sola consulta, por la llave primaria: id = ANY(@ids).
+    public async Task<IReadOnlyDictionary<PatientId, (string Nombre, string? Correo)>> ContactosAsync(
+        IReadOnlyCollection<PatientId> ids, CancellationToken cancellationToken)
+    {
+        var distintos = ids.Distinct().ToList();
+        var encontrados = await db.Pacientes.AsNoTracking()
+            .Where(p => distintos.Contains(p.Id))
+            .Select(p => new { p.Id, p.Nombre.Original, p.Correo })
+            .ToListAsync(cancellationToken);
+
+        return encontrados.ToDictionary(e => e.Id, e => (e.Original, e.Correo?.Valor));
+    }
+
     public void Agregar(Paciente paciente) => db.Pacientes.Add(paciente);
 
     public async Task<GuardadoDePaciente> GuardarAsync(CancellationToken cancellationToken)

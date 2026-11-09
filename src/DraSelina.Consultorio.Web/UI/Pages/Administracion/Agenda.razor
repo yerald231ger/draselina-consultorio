@@ -1,0 +1,134 @@
+@page "/admin"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@layout LayoutAdministracion
+@using Microsoft.AspNetCore.Authorization
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@inject IQueryHandler<CitasDeLaFecha, IReadOnlyList<CitaDeLaFecha>> Consulta
+@inject IClock Reloj
+
+@*
+    Agenda (CAP-12, FR-14; entrada 5.1): las Citas de hoy, en la fecha local del consultorio, en todos sus estados y en
+    orden de inicio, con el nombre del Paciente y el motivo. Sin mockup: los tratamientos son los de EXPERIENCE.md
+    (State Patterns, Administrador). Atendida va atenuada; No se presentó y las tres cancelaciones llevan su etiqueta. La
+    navegación entre días y la semana son de la entrada 2; el Detalle, de la 6.
+
+    Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar. La consulta lleva
+    IRequiereAdministrador (AD-22): no se confía en esta protección. Los nombres los reúne el handler (AD-10).
+*@
+
+<PageTitle>Agenda · Administración</PageTitle>
+
+<section class="dsm-contenedor dsm-agenda" aria-labelledby="agenda">
+    <div class="dsm-agenda__cabeza">
+        <h1 id="agenda" class="dsm-titulo-de-estado">Agenda</h1>
+        <p class="dsm-agenda__fecha">Hoy, @FormatoDeCita.Largo(_hoy)</p>
+    </div>
+
+    @if (_citas is null)
+    {
+        @if (_fallo)
+        {
+            <p class="dsm-agenda__vacia">@NoSeCargo</p>
+        }
+    }
+    else if (_citas.Count == 0)
+    {
+        <p class="dsm-agenda__vacia">@DiaVacio</p>
+    }
+    else
+    {
+        <ol class="dsm-agenda__lista">
+            @foreach (var cita in _citas)
+            {
+                <li class="@Clase(cita)" data-cita="@cita.CitaId">
+                    <div class="dsm-agenda__hora">
+                        <span class="dsm-agenda__inicio">@FormatoDeCita.Hora(cita.Inicio)</span>
+                        <span class="dsm-agenda__fin">a @FormatoDeCita.Hora(cita.Fin)</span>
+                    </div>
+                    <div class="dsm-agenda__datos">
+                        <div class="dsm-agenda__paciente">@(cita.Paciente ?? PacienteNoEncontrado)</div>
+                        @if (cita.MotivoDeConsulta is { Length: > 0 } motivo)
+                        {
+                            <div class="dsm-agenda__motivo">@motivo</div>
+                        }
+                    </div>
+                    <span class="@ClaseDeEtiqueta(cita)">@Etiqueta(cita)</span>
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    /// <summary>Un día sin Citas (EXPERIENCE.md).</summary>
+    public const string DiaVacio = "No hay citas este día.";
+
+    /// <summary>Una Cita cuyo Paciente no está en Pacientes: se lista igual, sin nombre.</summary>
+    public const string PacienteNoEncontrado = "Paciente no encontrado";
+
+    /// <summary>Si la consulta no vuelve con éxito (sin sesión no se llega aquí).</summary>
+    public const string NoSeCargo = "No se pudo cargar la agenda. Vuelve a entrar.";
+
+    /// <summary>
+    /// Lo cargado en el prerenderizado, que pasa al circuito (.NET 10, <c>[PersistentState]</c>): la consulta no se repite
+    /// y la lista no desaparece mientras el circuito arranca.
+    /// </summary>
+    [PersistentState]
+    public AgendaCargada? Cargada { get; set; }
+
+    private DateOnly _hoy => Cargada?.Hoy ?? default;
+    private IReadOnlyList<CitaDeLaFecha>? _citas => Cargada?.Citas;
+    private bool _fallo => Cargada?.Fallo ?? false;
+
+    /// <summary>La fecha mostrada y sus Citas; nulas si la consulta no volvió con éxito.</summary>
+    public sealed record AgendaCargada(DateOnly Hoy, IReadOnlyList<CitaDeLaFecha>? Citas, bool Fallo);
+
+    /// <summary>La etiqueta del estado de una Cita en la Agenda.</summary>
+    public static string Etiqueta(CitaDeLaFecha cita) => (cita.Estado, cita.Cancelacion) switch
+    {
+        (EstadoEnLaAgenda.Agendada, _) => "Agendada",
+        (EstadoEnLaAgenda.Atendida, _) => "Atendida",
+        (EstadoEnLaAgenda.NoSePresento, _) => "No se presentó",
+        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "Cancelada (tardía)",
+        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio) => "Cancelada (por el consultorio)",
+        (EstadoEnLaAgenda.Cancelada, _) => "Cancelada (por el paciente)",
+        _ => cita.Estado.ToString(),
+    };
+
+    private static string Clase(CitaDeLaFecha cita) => cita.Estado switch
+    {
+        EstadoEnLaAgenda.Atendida => "dsm-agenda__cita dsm-agenda__cita--atendida",
+        EstadoEnLaAgenda.Cancelada => "dsm-agenda__cita dsm-agenda__cita--cancelada",
+        _ => "dsm-agenda__cita",
+    };
+
+    // DESIGN.md: el ámbar (warning) es solo de la cancelación tardía y el rojo (danger) solo de la acción de cancelar;
+    // las demás cancelaciones y No se presentó van en un chip neutro.
+    private static string ClaseDeEtiqueta(CitaDeLaFecha cita) => (cita.Estado, cita.Cancelacion) switch
+    {
+        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "dsm-chip-de-estado dsm-chip-de-estado--tardia",
+        (EstadoEnLaAgenda.Cancelada or EstadoEnLaAgenda.NoSePresento, _) => "dsm-chip-de-estado dsm-chip-de-estado--neutro",
+        _ => "dsm-chip-de-estado",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Ya cargada en el prerenderizado: el circuito la recibe y no consulta otra vez.
+        if (Cargada is not null)
+        {
+            return;
+        }
+
+        // La fecha local del consultorio (AD-17), del reloj de la aplicación.
+        var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
+
+        var resultado = await Consulta.HandleAsync(new CitasDeLaFecha(hoy), CancellationToken.None);
+        Cargada = resultado.EsExito
+            ? new AgendaCargada(hoy, resultado.Valor, Fallo: false)
+            : new AgendaCargada(hoy, null, Fallo: true);
+    }
+}

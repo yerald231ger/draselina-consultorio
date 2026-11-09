@@ -28,6 +28,10 @@
     <PackageReference Include="libphonenumber-csharp" />
     <!-- El canal SMTP de Notificaciones (Notificaciones.Infrastructure). -->
     <PackageReference Include="MailKit" />
+    <!-- Identity del host (Identidad/): la cuenta del Administrador y su segundo factor. -->
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <!-- El QR del enrolamiento del segundo factor (Identidad/). -->
+    <PackageReference Include="QRCoder" />
   </ItemGroup>
 
   <ItemGroup>

@@ -264,4 +264,49 @@ public class VerificadorTests
         var violacion = Assert.Single(Verificador.VerificarProyectos([Con("Web", "MigrationService")]));
         Assert.Equal(new Violacion("Web", "MigrationService", Verificador.ProyectoNoPermitido), violacion);
     }
+
+    [Fact]
+    public void Una_pagina_bajo_admin_sin_Authorize_es_violacion()
+    {
+        var violacion = Assert.Single(Verificador.VerificarPaginasDeAdministracion([("UI/Pages/Administracion/Pacientes.razor", """
+            @page "/admin/pacientes"
+            @rendermode InteractiveServer
+            """)]));
+
+        Assert.Equal(
+            new Violacion("UI/Pages/Administracion/Pacientes.razor", "/admin/pacientes", Verificador.AdministracionSinAuthorize),
+            violacion);
+    }
+
+    [Fact]
+    public void Una_pagina_de_admin_con_Authorize_no_es_violacion_ni_las_de_entrar_ni_las_publicas()
+    {
+        Assert.Empty(Verificador.VerificarPaginasDeAdministracion(
+        [
+            ("UI/Pages/Administracion/Agenda.razor", """
+                @page "/admin"
+                @attribute [Authorize]
+                """),
+            ("UI/Pages/Administracion/Detalle.razor", """
+                @page "/admin/citas/{Id:guid}"
+                @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "x")]
+                """),
+            ("Identidad/Paginas/Entrar.razor", """@page "/admin/entrar" """),
+            ("Identidad/Paginas/Activar.razor", """@page "/admin/entrar/activar" """),
+            ("UI/Pages/Inicio.razor", """@page "/" """),
+            ("UI/Pages/Administrador.razor", """@page "/administrador" """),
+        ]));
+    }
+
+    [Fact]
+    public void La_raiz_admin_sin_Authorize_es_violacion_aunque_otra_ruta_de_la_pagina_sea_publica()
+    {
+        var violacion = Assert.Single(Verificador.VerificarPaginasDeAdministracion([("UI/Pages/Dos.razor", """
+            @page "/publica"
+            @page "/admin"
+            @attribute [EnableRateLimiting("x")]
+            """)]));
+
+        Assert.Equal("/admin", violacion.Referencia);
+    }
 }

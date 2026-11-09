@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using DraSelina.Consultorio.Kernel;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -7,7 +8,9 @@ namespace DraSelina.Consultorio.Web;
 /// El único servicio que dice quién actúa (AD-22). Uno por ámbito: el de la petición en SSR estático o el del
 /// circuito en Interactive Server. Lee el usuario del <see cref="AuthenticationStateProvider"/> de ese mismo
 /// ámbito: autenticado es <see cref="Actor.Administrador"/> (no hay registro público); sin autenticar,
-/// <see cref="Actor.Paciente"/>. <see cref="Actor.Sistema"/> no se deduce: lo declara quien crea el ámbito, desde el
+/// <see cref="Actor.Paciente"/>. Autenticado quiere decir con la cookie de sesión de Identity, que solo se emite tras el
+/// segundo factor: la cookie parcial del segundo factor no es la del esquema por omisión y no cuenta (Identidad/).
+/// <see cref="Actor.Sistema"/> no se deduce: lo declara quien crea el ámbito, desde el
 /// host, con <see cref="DeclararSistema"/>.
 /// </summary>
 public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IActorActual
@@ -31,13 +34,31 @@ public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IA
     public async Task<Actor> ObtenerAsync()
     {
         if (_esSistema) return Actor.Sistema;
-        
-        AuthenticationState estado;
+
+        return EsAdministrador(await UsuarioAsync()) ? Actor.Administrador : Actor.Paciente;
+    }
+
+    /// <summary>
+    /// El id de la cuenta (claim <see cref="ClaimTypes.NameIdentifier"/>) si el actor es <see cref="Actor.Administrador"/>;
+    /// nulo si no. En un ámbito sin actor lanza, igual que <see cref="ObtenerAsync"/>.
+    /// </summary>
+    public async Task<string?> IdDelAdministradorAsync()
+    {
+        if (_esSistema) return null;
+
+        var usuario = await UsuarioAsync();
+        return EsAdministrador(usuario) ? usuario.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+    }
+
+    private static bool EsAdministrador(ClaimsPrincipal usuario) => usuario.Identity?.IsAuthenticated == true;
+
+    private async Task<ClaimsPrincipal> UsuarioAsync()
+    {
         try
         {
             // BL0013 avisa de un estado viejo cuando se guarda; aquí no se guarda: se pide de nuevo en cada llamada,
             // así que siempre es el vigente del ámbito y no hace falta escuchar AuthenticationStateChanged.
-            estado = await autenticacion.GetAuthenticationStateAsync();
+            return (await autenticacion.GetAuthenticationStateAsync()).User;
         }
         catch (InvalidOperationException error)
         {
@@ -46,8 +67,5 @@ public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IA
                 + $"({nameof(ActorDelHost)}.{nameof(DeclararSistema)}). Quien crea el ámbito lo declara, desde el host.",
                 error);
         }
-
-        return estado.User.Identity?.IsAuthenticated == true ? Actor.Administrador : Actor.Paciente;
-
     }
 }

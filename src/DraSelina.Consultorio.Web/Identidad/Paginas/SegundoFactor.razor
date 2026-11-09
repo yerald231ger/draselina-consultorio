@@ -1,0 +1,86 @@
+@page "/admin/entrar/segundo-factor"
+@inject UserManager<IdentityUser> Usuarios
+@inject SignInManager<IdentityUser> Entrada
+@inject NavigationManager Navegacion
+
+@*
+    El código de la app autenticadora (CAP-9; Decision 2026-11-09), en SSR estático (AD-11). Solo con la cookie parcial
+    que deja la contraseña correcta y con el segundo factor ya activo; sin ella vuelve a Entrar, y sin segundo factor
+    activo lleva al enrolamiento. Un código mal escrito cuenta para el bloqueo por intentos.
+*@
+
+<PageTitle>Código de tu app · Administración</PageTitle>
+<SinIndice />
+
+<section class="dsm-contenedor dsm-entrar" aria-labelledby="segundo-factor">
+    <h1 id="segundo-factor" class="dsm-titulo-de-estado">Escribe tu código</h1>
+    <p class="dsm-cuerpo">Abre tu app autenticadora y escribe el código de 6 dígitos del consultorio.</p>
+
+    @if (_mensaje is not null)
+    {
+        <div class="dsm-errores-del-objeto" role="alert" tabindex="-1" autofocus>
+            <div class="dsm-errores-del-objeto__mensaje">@_mensaje</div>
+        </div>
+    }
+
+    <EditForm Model="Datos!" FormName="segundo-factor" method="post" OnSubmit="VerificarAsync" class="dsm-formulario dsm-entrar__formulario">
+        <div class="dsm-campo">
+            <label for="codigo" class="dsm-campo__etiqueta">Código</label>
+            <InputText id="codigo" class="dsm-campo__control" inputmode="numeric" autocomplete="one-time-code"
+                       maxlength="7" @bind-Value="Datos!.Codigo" />
+        </div>
+        <button type="submit" class="btn btn-primary dsm-accion-principal">Entrar</button>
+    </EditForm>
+
+    <p class="dsm-entrar__alterno">
+        ¿No tienes tu teléfono? <a href="@Recuperacion" class="dsm-enlace-fuerte">Usa un código de recuperación</a>
+    </p>
+</section>
+
+@code {
+    /// <summary>Un código que no es el de ahora.</summary>
+    public const string Incorrecto = "El código no es correcto. Escribe el que se ve ahora en tu app.";
+
+    private string? _mensaje;
+
+    [SupplyParameterFromForm(FormName = "segundo-factor")]
+    private DatosDelCodigo? Datos { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string Recuperacion => $"{Registro.RutaDeRecuperacion}?ReturnUrl={Uri.EscapeDataString(Registro.RegresoSeguro(ReturnUrl))}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Datos ??= new();
+
+        var cuenta = await Entrada.GetTwoFactorAuthenticationUserAsync();
+        if (cuenta is null)
+        {
+            Navegacion.NavigateTo(Registro.RutaDeEntrar);
+        }
+        else if (!await Usuarios.GetTwoFactorEnabledAsync(cuenta))
+        {
+            Navegacion.NavigateTo($"{Registro.RutaDeActivar}?ReturnUrl={Uri.EscapeDataString(Registro.RegresoSeguro(ReturnUrl))}");
+        }
+    }
+
+    private async Task VerificarAsync()
+    {
+        var codigo = Codigos.Limpiar(Datos!.Codigo);
+        var resultado = await Entrada.TwoFactorAuthenticatorSignInAsync(codigo, isPersistent: false, rememberClient: false);
+        if (resultado.Succeeded)
+        {
+            Navegacion.NavigateTo(Registro.RegresoSeguro(ReturnUrl));
+            return;
+        }
+
+        _mensaje = resultado.IsLockedOut ? Entrar.Bloqueada : Incorrecto;
+    }
+
+    private sealed class DatosDelCodigo
+    {
+        public string Codigo { get; set; } = "";
+    }
+}

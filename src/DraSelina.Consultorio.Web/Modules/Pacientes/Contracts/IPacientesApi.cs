@@ -53,6 +53,14 @@ public interface IPacientesApi
     /// </summary>
     /// <returns>Nulo si el Paciente no existe.</returns>
     Task<Contactos?> ObtenerContactosAsync(PatientId paciente, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Los contactos de varios Pacientes en una sola consulta, para quien lista Citas (la Agenda del Administrador, AD-10).
+    /// Quien los recibe no escribe ninguno en registros, trazas ni tablas (AD-23). No registra nada.
+    /// </summary>
+    /// <returns>Uno por cada Paciente que existe; el que no existe no aparece. Vacío si no se pide ninguno.</returns>
+    Task<IReadOnlyDictionary<PatientId, Contactos>> ObtenerContactosAsync(
+        IReadOnlyCollection<PatientId> ids, CancellationToken cancellationToken);
 }
 
 /// <summary>

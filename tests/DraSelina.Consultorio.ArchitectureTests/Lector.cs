@@ -73,6 +73,14 @@ public static partial class Lector
             .OrderBy(f => f.Relativa, StringComparer.Ordinal)
             .Select(f => LeerFuente(f.Relativa, File.ReadAllText(f.Ruta)))];
 
+    /// <summary>Los <c>.razor</c> de Web con su texto, sin las salidas de compilación del proyecto.</summary>
+    public static IReadOnlyList<(string Ruta, string Texto)> Componentes(string carpetaWeb) =>
+        [.. Directory.EnumerateFiles(carpetaWeb, "*.razor", SearchOption.AllDirectories)
+            .Select(ruta => (Ruta: ruta, Relativa: Relativa(carpetaWeb, ruta)))
+            .Where(f => !f.Relativa.StartsWith("bin/", StringComparison.Ordinal) && !f.Relativa.StartsWith("obj/", StringComparison.Ordinal))
+            .OrderBy(f => f.Relativa, StringComparer.Ordinal)
+            .Select(f => (f.Relativa, File.ReadAllText(f.Ruta)))];
+
     /// <summary>
     /// Los <c>GlobalUsings.g.cs</c> que la compilación de Web deja en <c>obj/</c>: ahí quedan escritos los
     /// <c>using</c> implícitos del SDK. Vacío si Web no se ha compilado.

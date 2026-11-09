@@ -1,0 +1,73 @@
+@page "/admin/entrar/recuperacion"
+@inject UserManager<IdentityUser> Usuarios
+@inject SignInManager<IdentityUser> Entrada
+@inject NavigationManager Navegacion
+
+@*
+    Entrar con un código de recuperación en lugar del de la app (CAP-9), en SSR estático (AD-11). Las mismas condiciones
+    que el código de la app: cookie parcial de la contraseña y segundo factor activo. Cada código sirve una sola vez.
+*@
+
+<PageTitle>Código de recuperación · Administración</PageTitle>
+<SinIndice />
+
+<section class="dsm-contenedor dsm-entrar" aria-labelledby="recuperacion">
+    <h1 id="recuperacion" class="dsm-titulo-de-estado">Código de recuperación</h1>
+    <p class="dsm-cuerpo">Escribe uno de los códigos de recuperación que guardaste al activar tu app. Cada uno sirve una sola vez.</p>
+
+    @if (_mensaje is not null)
+    {
+        <div class="dsm-errores-del-objeto" role="alert" tabindex="-1" autofocus>
+            <div class="dsm-errores-del-objeto__mensaje">@_mensaje</div>
+        </div>
+    }
+
+    <EditForm Model="Datos!" FormName="recuperacion" method="post" OnSubmit="VerificarAsync" class="dsm-formulario dsm-entrar__formulario">
+        <div class="dsm-campo">
+            <label for="codigo" class="dsm-campo__etiqueta">Código de recuperación</label>
+            <InputText id="codigo" class="dsm-campo__control" autocomplete="off" @bind-Value="Datos!.Codigo" />
+        </div>
+        <button type="submit" class="btn btn-primary dsm-accion-principal">Entrar</button>
+    </EditForm>
+</section>
+
+@code {
+    /// <summary>Un código que no es de la cuenta o que ya se usó.</summary>
+    public const string Incorrecto = "El código no es correcto o ya se usó.";
+
+    private string? _mensaje;
+
+    [SupplyParameterFromForm(FormName = "recuperacion")]
+    private DatosDelCodigo? Datos { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Datos ??= new();
+
+        var cuenta = await Entrada.GetTwoFactorAuthenticationUserAsync();
+        if (cuenta is null || !await Usuarios.GetTwoFactorEnabledAsync(cuenta))
+        {
+            Navegacion.NavigateTo(Registro.RutaDeEntrar);
+        }
+    }
+
+    private async Task VerificarAsync()
+    {
+        var resultado = await Entrada.TwoFactorRecoveryCodeSignInAsync(Codigos.LimpiarRecuperacion(Datos!.Codigo));
+        if (resultado.Succeeded)
+        {
+            Navegacion.NavigateTo(Registro.RegresoSeguro(ReturnUrl));
+            return;
+        }
+
+        _mensaje = resultado.IsLockedOut ? Entrar.Bloqueada : Incorrecto;
+    }
+
+    private sealed class DatosDelCodigo
+    {
+        public string Codigo { get; set; } = "";
+    }
+}

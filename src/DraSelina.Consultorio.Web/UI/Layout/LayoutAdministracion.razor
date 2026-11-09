@@ -1,0 +1,34 @@
+@inherits LayoutComponentBase
+
+@*
+    El layout de la administración (CAP-9, CAP-12): la marca, la navegación y "Salir". La navegación muestra solo las
+    pantallas que existen (Gerardo, 2026-11-09): hoy, Agenda; la 5.7 agrega Pacientes y la épica 6 Calendario de
+    atención y Configuración. "Salir" es un POST con antiforgery a /admin/salir, que cierra la sesión (Identidad/).
+
+    Se pinta en la petición, en SSR estático, aunque la página sea Interactive Server: un layout no es interactivo si
+    las rutas no lo son. Ninguna página de administración se indexa (CAP-21): el meta robots va aquí y el host pone
+    X-Robots-Tag y no-store a todo /admin.
+*@
+
+<SinIndice />
+
+<header class="dsm-encabezado">
+    <div class="dsm-contenedor dsm-encabezado__fila dsm-administracion__fila">
+        <a class="dsm-marca" href="/admin">
+            <span class="dsm-marca__nombre">Dra. Selina Medina Castillo</span>
+            <span class="dsm-rotulo">Administración</span>
+        </a>
+        <nav class="dsm-administracion__navegacion" aria-label="Administración">
+            <NavLink href="/admin" Match="NavLinkMatch.All" class="dsm-administracion__enlace"
+                     ActiveClass="dsm-administracion__enlace--activo">Agenda</NavLink>
+            <form method="post" action="/admin/salir" class="dsm-administracion__salir">
+                <AntiforgeryToken />
+                <button type="submit" class="dsm-administracion__boton-salir">Salir</button>
+            </form>
+        </nav>
+    </div>
+</header>
+
+<main>
+    @Body
+</main>

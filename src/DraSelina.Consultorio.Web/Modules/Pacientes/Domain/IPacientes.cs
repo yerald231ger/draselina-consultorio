@@ -29,6 +29,13 @@ public interface IPacientes
     /// </summary>
     Task<(string Nombre, string? Correo)?> ContactosAsync(PatientId paciente, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Lo mismo que <see cref="ContactosAsync(PatientId, CancellationToken)"/> para varios Pacientes, en una sola
+    /// consulta. El que no existe no aparece. Sin rastrear.
+    /// </summary>
+    Task<IReadOnlyDictionary<PatientId, (string Nombre, string? Correo)>> ContactosAsync(
+        IReadOnlyCollection<PatientId> ids, CancellationToken cancellationToken);
+
     void Agregar(Paciente paciente);
 
     /// <summary>

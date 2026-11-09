@@ -93,6 +93,20 @@ public sealed class PacientesApi(ITransaccionDePacientes transaccion, IPacientes
             ? new Contactos(contactos.Nombre, contactos.Correo)
             : null;
 
+    // Solo lectura, como ConTelefonoAsync. Sin ids, ni se consulta la base.
+    public async Task<IReadOnlyDictionary<PatientId, Contactos>> ObtenerContactosAsync(
+        IReadOnlyCollection<PatientId> ids, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        if (ids.Count == 0)
+        {
+            return new Dictionary<PatientId, Contactos>();
+        }
+
+        var encontrados = await pacientes.ContactosAsync(ids, cancellationToken);
+        return encontrados.ToDictionary(par => par.Key, par => new Contactos(par.Value.Nombre, par.Value.Correo));
+    }
+
     // libphonenumber decide si el número existe en el plan de numeración de México y lo da en E.164; el dominio
     // solo acepta esa forma.
     private static Telefono? TelefonoDeMexico(string? texto)

@@ -6,6 +6,9 @@
     <!-- ASPIRE010 avisa que no se usa el paquete de la CLI `aspire` (AspireUseCliBundle=false). La CLI no está
          instalada y no hace falta: el panel y el orquestador llegan por NuGet y `dotnet run` arranca todo. -->
     <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
+    <!-- Los parámetros secretos (la contraseña inicial del Administrador) se guardan en user-secrets, fuera del
+         repositorio: dotnet user-secrets set "Parameters:clave-administrador" "..." -->
+    <UserSecretsId>5d0c8f0e-3a8b-4d7e-9f61-2c4b7a1e9d35</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
