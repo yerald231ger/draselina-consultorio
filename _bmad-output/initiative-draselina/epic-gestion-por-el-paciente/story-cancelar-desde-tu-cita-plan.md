@@ -3,7 +3,7 @@ title: 'Cancelar desde Tu cita'
 type: 'feature'
 ticket: '4'
 created: '2026-11-07'
-status: 'built'
+status: done
 baseline_revision: 'b20352368c6a408defdac4579f465277ca9ddd47'
 route: 'full'
 route_source: 'auto'

@@ -3,7 +3,7 @@ title: 'Tu cita con el enlace'
 type: 'feature'
 ticket: '1'
 created: '2026-11-06'
-status: 'built'
+status: done
 baseline_revision: '42118ab52e8457db3392288461403a86eeebeedc'
 route: 'full'
 route_source: 'auto'

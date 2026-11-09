@@ -3,7 +3,7 @@ title: 'Reprogramar en el dominio y el caso de uso'
 type: 'feature'
 ticket: '2'
 created: '2026-11-06'
-status: 'built'
+status: done
 baseline_revision: 'fcc4b6c112c093f03b3f6702e851c64ac1c7001d'
 route: 'full'
 route_source: 'auto'

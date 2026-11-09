@@ -3,7 +3,7 @@ title: 'Reprogramar desde Tu cita'
 type: 'feature'
 ticket: '3'
 created: '2026-11-06'
-status: 'built'
+status: done
 baseline_revision: 'c1c38f1cbe9fb64ebec7c633888a70e4df886a85'
 route: 'full'
 route_source: 'auto'
