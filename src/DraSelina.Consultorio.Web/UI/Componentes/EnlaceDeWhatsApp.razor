@@ -1,0 +1,26 @@
+@*
+    El enlace a la conversación de WhatsApp del consultorio: "444 123 4567" hacia wa.me/52<10 dígitos>. Nada si
+    Contenido no tiene un número de 10 dígitos: antes sin enlace que con uno roto (Gerardo, 2026-11-02). Es el único
+    lugar que arma el enlace; lo usan MensajeDeWhatsApp y Tu cita.
+*@
+
+@if (DigitosDe(WhatsApp) is { } digitos)
+{
+    <a href="https://wa.me/52@(digitos)" class="@Clase">@($"{digitos[..3]} {digitos[3..6]} {digitos[6..]}")</a>
+}
+
+@code {
+    /// <summary>El WhatsApp de <c>IContenidoApi</c>; nulo o vacío si no se conoce.</summary>
+    [Parameter]
+    public string? WhatsApp { get; set; }
+
+    /// <summary>La clase del enlace, según dónde va.</summary>
+    [Parameter]
+    public string? Clase { get; set; }
+
+    /// <summary>Si <paramref name="whatsApp"/> trae un número que se puede enlazar: 10 dígitos.</summary>
+    public static bool HayNumero(string? whatsApp) => DigitosDe(whatsApp) is not null;
+
+    private static string? DigitosDe(string? whatsApp) =>
+        new string((whatsApp ?? "").Where(char.IsAsciiDigit).ToArray()) is { Length: 10 } digitos ? digitos : null;
+}

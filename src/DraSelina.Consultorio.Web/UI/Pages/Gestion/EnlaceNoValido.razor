@@ -1,7 +1,8 @@
+@using Microsoft.AspNetCore.Http
 @*
     Enlace no válido: lo que ve quien abre un Enlace de gestión que no lleva a una Cita que se pueda ver. No dice por
-    qué (RN-22): un enlace inexistente, alterado, mal formado o de una Cita que ya empezó se ven igual. La página que lo
-    pinta responde 404 y pone el meta robots. Lo usan Tu cita, Reprogramar y Cancelar.
+    qué (RN-22): un enlace inexistente, alterado, mal formado o de una Cita que ya empezó se ven igual. Pone él mismo el
+    404; el meta robots lo pone la página que lo pinta, con SinIndice. Lo usan Tu cita, Reprogramar y Cancelar.
 *@
 
 <PageTitle>Enlace no válido · Dra. Selina Medina Castillo</PageTitle>
@@ -12,6 +13,23 @@
 </section>
 
 @code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
     /// <summary>El texto que ve el Paciente.</summary>
     public const string Titulo = "Este enlace ya no está disponible";
+
+    // El 404 se pone al empezar la respuesta, no durante el render: un 404 puesto durante el render hace que el host de
+    // Blazor deje el cuerpo vacío (para que lo pinte una página de estado), y esta página se perdería.
+    protected override void OnInitialized()
+    {
+        if (HttpContext is { } contexto)
+        {
+            contexto.Response.OnStarting(() =>
+            {
+                contexto.Response.StatusCode = StatusCodes.Status404NotFound;
+                return Task.CompletedTask;
+            });
+        }
+    }
 }

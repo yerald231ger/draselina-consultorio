@@ -21,11 +21,13 @@
     Toda respuesta bajo /c/ lleva X-Robots-Tag y no-store (Program.cs); la página, además, el meta robots (CAP-21).
 *@
 
-<HeadContent>
-    <meta name="robots" content="noindex, nofollow" />
-</HeadContent>
+<SinIndice />
 
-@if (_cita is not { } cita)
+@if (!_cargada)
+{
+    @* Mientras la consulta no ha vuelto no se pinta nada: Enlace no válido pondría el 404. *@
+}
+else if (_cita is not { } cita)
 {
     <EnlaceNoValido />
 }
@@ -115,10 +117,7 @@ else
 
         <div class="dsm-gestion__contacto">
             <div>¿Otra duda? Escríbenos por WhatsApp</div>
-            @if (MensajeDeWhatsApp.DigitosDe(Contenido.WhatsApp) is { } digitos)
-            {
-                <a href="https://wa.me/52@(digitos)" class="dsm-enlace-fuerte">@MensajeDeWhatsApp.Legible(digitos)</a>
-            }
+            <EnlaceDeWhatsApp WhatsApp="@Contenido.WhatsApp" Clase="dsm-enlace-fuerte" />
         </div>
     </section>
 }
@@ -132,6 +131,7 @@ else
         "Lo sentimos: el consultorio tuvo que cancelar tu cita. Elige otro horario cuando te acomode.";
 
     private CitaDelEnlace? _cita;
+    private bool _cargada;
 
     [Parameter]
     public string Token { get; set; } = "";
@@ -162,16 +162,6 @@ else
     {
         var resultado = await Consulta.HandleAsync(new CitaPorEnlace(Token), Cancelacion);
         _cita = resultado.EsExito ? resultado.Valor : null;
-
-        // El 404 se pone al empezar la respuesta, no durante el render: un 404 puesto durante el render hace que el
-        // host de Blazor deje el cuerpo vacío (para que lo pinte una página de estado), y Enlace no válido se perdería.
-        if (_cita is null && HttpContext is { } contexto)
-        {
-            contexto.Response.OnStarting(() =>
-            {
-                contexto.Response.StatusCode = StatusCodes.Status404NotFound;
-                return Task.CompletedTask;
-            });
-        }
+        _cargada = true;
     }
 }

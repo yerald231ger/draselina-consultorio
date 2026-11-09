@@ -22,9 +22,7 @@
     además del meta robots (CAP-21).
 *@
 
-<HeadContent>
-    <meta name="robots" content="noindex, nofollow" />
-</HeadContent>
+<SinIndice />
 
 @switch (_vista)
 {
@@ -42,8 +40,8 @@
 
     case Vista.Cancelada when _cancelada is { } cancelada:
         <PageTitle>Cita cancelada · Dra. Selina Medina Castillo</PageTitle>
-        <CitaCancelada Fecha="cancelada.Fecha" Hora="cancelada.Hora" TipoDeVisita="@cancelada.TipoDeVisita"
-                       Tardia="cancelada.Tardia" PorElConsultorio="cancelada.PorElConsultorio" />
+        <ConfirmacionDeCancelacion Fecha="cancelada.Fecha" Hora="cancelada.Hora" TipoDeVisita="@cancelada.TipoDeVisita"
+                                   Tardia="cancelada.Tardia" PorElConsultorio="cancelada.PorElConsultorio" />
         break;
 
     case Vista.YaCancelada:
@@ -110,6 +108,8 @@
 
     private enum Vista
     {
+        // Mientras la consulta no ha vuelto: no se pinta nada, ni Enlace no válido, que pondría el 404.
+        Cargando,
         NoValido,
         Envio,
         Pregunta,
@@ -180,19 +180,10 @@
         await CargarAsync();
     }
 
-    // El 404 se pone al empezar la respuesta, no durante el render, como en Tu cita: si no, el host de Blazor deja el
-    // cuerpo vacío y Enlace no válido se perdería.
+    // Enlace no válido pone su propio 404.
     private void NoValido()
     {
         _vista = Vista.NoValido;
         _cita = null;
-        if (HttpContext is { } contexto)
-        {
-            contexto.Response.OnStarting(() =>
-            {
-                contexto.Response.StatusCode = StatusCodes.Status404NotFound;
-                return Task.CompletedTask;
-            });
-        }
     }
 }

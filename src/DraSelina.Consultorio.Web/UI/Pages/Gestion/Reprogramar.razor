@@ -29,9 +29,7 @@
     y no-store (Program.cs) además del meta robots (CAP-21).
 *@
 
-<HeadContent>
-    <meta name="robots" content="noindex, nofollow" />
-</HeadContent>
+<SinIndice />
 
 @switch (_vista)
 {
@@ -49,8 +47,8 @@
 
     case Vista.Reprogramada when _cita is { } cita && _nuevo is { } nuevo:
         <PageTitle>Cita reprogramada · Dra. Selina Medina Castillo</PageTitle>
-        <CitaReprogramada Token="@Token" Fecha="nuevo.Fecha" Hora="nuevo.Hora" TipoDeVisita="@cita.TipoDeVisita"
-                          DuracionMin="cita.DuracionMin" Lugar="@cita.Lugar" />
+        <ConfirmacionDeReprogramacion Token="@Token" Fecha="nuevo.Fecha" Hora="nuevo.Hora" TipoDeVisita="@cita.TipoDeVisita"
+                                      DuracionMin="cita.DuracionMin" Lugar="@cita.Lugar" />
         break;
 
     case Vista.Cancelada:
@@ -187,6 +185,8 @@
 
     private enum Vista
     {
+        // Mientras la consulta no ha vuelto: no se pinta nada, ni Enlace no válido, que pondría el 404.
+        Cargando,
         NoValido,
         Envio,
         Selector,
@@ -341,20 +341,11 @@
         }
     }
 
-    // El 404 se pone al empezar la respuesta, no durante el render, como en Tu cita: si no, el host de Blazor deja el
-    // cuerpo vacío y Enlace no válido se perdería.
+    // Enlace no válido pone su propio 404.
     private void NoValido()
     {
         _vista = Vista.NoValido;
         _cita = null;
-        if (HttpContext is { } contexto)
-        {
-            contexto.Response.OnStarting(() =>
-            {
-                contexto.Response.StatusCode = StatusCodes.Status404NotFound;
-                return Task.CompletedTask;
-            });
-        }
     }
 
     private RenderFragment VerMiCita => @<a href="@RutaDeTuCita" class="btn dsm-boton-secundario dsm-gestion__accion">Ver mi cita</a>;

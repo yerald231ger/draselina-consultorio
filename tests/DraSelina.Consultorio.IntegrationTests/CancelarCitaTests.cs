@@ -12,7 +12,7 @@ using Npgsql;
 using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
 using PaginaCancelar = DraSelina.Consultorio.UI.Pages.Gestion.Cancelar;
 using PaginaReprogramar = DraSelina.Consultorio.UI.Pages.Gestion.Reprogramar;
-using VistaCitaCancelada = DraSelina.Consultorio.UI.Pages.Gestion.CitaCancelada;
+using VistaDeConfirmacion = DraSelina.Consultorio.UI.Pages.Gestion.ConfirmacionDeCancelacion;
 
 namespace DraSelina.Consultorio.IntegrationTests;
 
@@ -413,10 +413,10 @@ public sealed partial class CancelarCitaTests(Arnes arnes)
         SinIndiceNiCache(respuesta);
         Assert.Contains(Robots, html, StringComparison.Ordinal);
         Assert.Contains("<title>Cita cancelada · Dra. Selina Medina Castillo</title>", html, StringComparison.Ordinal);
-        Assert.Contains($">{VistaCitaCancelada.Titulo}</h1>", html, StringComparison.Ordinal);
+        Assert.Contains($">{VistaDeConfirmacion.Titulo}</h1>", html, StringComparison.Ordinal);
         Assert.Contains("Martes 3 de noviembre, 4:00 pm", html, StringComparison.Ordinal);
         Assert.Contains("Primera consulta", html, StringComparison.Ordinal);
-        Assert.DoesNotContain(VistaCitaCancelada.NotaTardia, html, StringComparison.Ordinal);
+        Assert.DoesNotContain(VistaDeConfirmacion.NotaTardia, html, StringComparison.Ordinal);
         Assert.Matches("""<a href="/reservar"[^>]*>Agendar otra cita</a>""", html);
         SinIdNiScripts(html, cita);
 
@@ -445,8 +445,8 @@ public sealed partial class CancelarCitaTests(Arnes arnes)
 
         var html = await EnviarAsync(cliente, accion, campos);
 
-        Assert.Contains($">{VistaCitaCancelada.Titulo}</h1>", html, StringComparison.Ordinal);
-        Assert.Contains(VistaCitaCancelada.NotaTardia, html, StringComparison.Ordinal);
+        Assert.Contains($">{VistaDeConfirmacion.Titulo}</h1>", html, StringComparison.Ordinal);
+        Assert.Contains(VistaDeConfirmacion.NotaTardia, html, StringComparison.Ordinal);
         Assert.Equal("tarde", (await CancelacionGuardadaAsync(escenario)).Motivo);
     }
 
@@ -464,8 +464,8 @@ public sealed partial class CancelarCitaTests(Arnes arnes)
         var antes = await ConteosAsync(escenario);
         var segundo = await EnviarAsync(cliente, accion, campos);
 
-        Assert.Contains($">{VistaCitaCancelada.Titulo}</h1>", segundo, StringComparison.Ordinal);
-        Assert.Contains(VistaCitaCancelada.NotaTardia, segundo, StringComparison.Ordinal);
+        Assert.Contains($">{VistaDeConfirmacion.Titulo}</h1>", segundo, StringComparison.Ordinal);
+        Assert.Contains(VistaDeConfirmacion.NotaTardia, segundo, StringComparison.Ordinal);
         Assert.Equal(antes, await ConteosAsync(escenario));
     }
 
@@ -483,11 +483,11 @@ public sealed partial class CancelarCitaTests(Arnes arnes)
 
         var html = await EnviarAsync(cliente, accion, campos);
 
-        Assert.Contains($">{VistaCitaCancelada.Titulo}</h1>", html, StringComparison.Ordinal);
+        Assert.Contains($">{VistaDeConfirmacion.Titulo}</h1>", html, StringComparison.Ordinal);
         Assert.Contains(UI.Pages.Gestion.TuCita.CanceladaPorElConsultorio, html, StringComparison.Ordinal);
         Assert.Matches("""<a href="/reservar"[^>]*>Elegir otro horario</a>""", html);
         Assert.DoesNotContain("Agendar otra cita", html, StringComparison.Ordinal);
-        Assert.DoesNotContain(VistaCitaCancelada.NotaTardia, html, StringComparison.Ordinal);
+        Assert.DoesNotContain(VistaDeConfirmacion.NotaTardia, html, StringComparison.Ordinal);
         Assert.Equal("consultorio", (await CancelacionGuardadaAsync(escenario)).Motivo);
         Assert.Equal(antes, await ConteosAsync(escenario));
     }
