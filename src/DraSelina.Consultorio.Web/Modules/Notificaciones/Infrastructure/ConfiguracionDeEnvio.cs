@@ -8,4 +8,10 @@ public sealed class ConfiguracionDeEnvio(NotificacionesDbContext db) : IConfigur
 {
     public async Task<string> CorreoDelAdministradorAsync(CancellationToken cancellationToken) =>
         await db.ConfiguracionDeEnvio.AsNoTracking().Select(c => c.CorreoAdministrador).SingleAsync(cancellationToken);
+
+    public async Task<string> CorreoDeLaDoctoraAsync(CancellationToken cancellationToken) =>
+        await db.ConfiguracionDeEnvio.AsNoTracking().Select(c => c.CorreoDoctora).SingleAsync(cancellationToken);
+
+    public async Task<TimeOnly> HoraDeLaAgendaDelDiaAsync(CancellationToken cancellationToken) =>
+        await db.ConfiguracionDeEnvio.AsNoTracking().Select(c => c.HoraAgendaDelDia).SingleAsync(cancellationToken);
 }

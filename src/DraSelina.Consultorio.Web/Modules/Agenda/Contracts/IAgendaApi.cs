@@ -24,4 +24,11 @@ public interface IAgendaApi
     /// la Cita no existe. Cualquier estado de la Cita; leerlo no escribe nada.
     /// </summary>
     Task<string?> ObtenerTipoDeVisitaAsync(CitaId citaId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// La Agenda de <paramref name="fecha"/>, fecha local del consultorio, para "Tus citas de hoy" (FR-25): si tiene
+    /// Tramos vigentes (INV-V1) y sus Citas Agendadas de cualquier origen, en orden de inicio. Una lectura sin rastrear
+    /// ni transacción; no registra el motivo (AD-23).
+    /// </summary>
+    Task<AgendaDelDia> AgendaDelDiaAsync(DateOnly fecha, CancellationToken cancellationToken);
 }

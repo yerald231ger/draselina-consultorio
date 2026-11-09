@@ -17,9 +17,12 @@ public interface IMensajes
     /// </summary>
     Task<bool> EnviadoDesdeAsync(CitaId citaId, TipoDeMensaje tipo, DateTimeOffset desde, CancellationToken cancellationToken);
 
+    /// <summary>Si ya hay un mensaje de ese tipo para esa fecha local, en cualquier estado. Por el índice único de (tipo, fecha).</summary>
+    Task<bool> ExisteDeLaFechaAsync(TipoDeMensaje tipo, DateOnly fecha, CancellationToken cancellationToken);
+
     /// <summary>
-    /// Guarda <paramref name="mensaje"/> en la transacción abierta. Si ya hay uno con su evento y su tipo, el índice
-    /// único lo rechaza y lanza: otra entrega del mismo evento llegó antes.
+    /// Guarda <paramref name="mensaje"/> en la transacción abierta. Si ya hay uno con su evento y su tipo (o con su tipo
+    /// y su fecha), el índice único lo rechaza y lanza: otra entrega del mismo evento (u otra vuelta) llegó antes.
     /// </summary>
     Task RegistrarAsync(MensajeRegistrado mensaje, CancellationToken cancellationToken);
 }
@@ -32,6 +35,7 @@ public interface IMensajes
 /// <param name="Canal">Por dónde salió: <see cref="CanalDeMensaje.Correo"/>.</param>
 /// <param name="Estado">Cómo terminó.</param>
 /// <param name="RegistradoEn">Del reloj inyectado.</param>
+/// <param name="Fecha">La fecha local de un envío por fecha (la Agenda del día); nula en los demás.</param>
 public sealed record MensajeRegistrado(
     Guid Id,
     Guid? EventoId,
@@ -39,7 +43,8 @@ public sealed record MensajeRegistrado(
     TipoDeMensaje Tipo,
     string Canal,
     EstadoDeMensaje Estado,
-    DateTimeOffset RegistradoEn);
+    DateTimeOffset RegistradoEn,
+    DateOnly? Fecha = null);
 
 /// <summary>Los mensajes de Notificaciones. Se guardan por su nombre, con <c>CHECK</c>.</summary>
 public enum TipoDeMensaje

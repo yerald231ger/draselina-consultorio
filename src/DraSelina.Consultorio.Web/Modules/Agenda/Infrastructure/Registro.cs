@@ -38,6 +38,7 @@ public static class Registro
             .AddScoped<ITiposDeVisitaReservables, TiposDeVisitaReservablesPersistidos>()
             .AddScoped<ICitasDelCalendario, CitasDelCalendario>()
             .AddScoped<ICitasDelEnlace, CitasDelEnlace>()
+            .AddScoped<ICitasDelDia, CitasDelDia>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()

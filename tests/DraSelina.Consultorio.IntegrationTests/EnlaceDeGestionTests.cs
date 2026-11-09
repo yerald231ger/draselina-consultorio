@@ -137,9 +137,9 @@ public sealed class EnlaceDeGestionTests(Arnes arnes)
         Assert.Contains("EnlaceDeGestion:Clave", Mensajes(error), StringComparison.Ordinal);
     }
 
-    // Solo para armar enlaces: el archivo de calendario, que lee la base, no se pide aquí.
+    // Solo para armar enlaces: el archivo de calendario y la Agenda del día, que leen la base, no se piden aquí.
     private static AgendaApi Api(string clave) =>
-        new(Options.Create(new OpcionesDeEnlaceDeGestion { Clave = clave, UrlBase = Arnes.UrlBaseDeEnlace }), null!, null!, null!);
+        new(Options.Create(new OpcionesDeEnlaceDeGestion { Clave = clave, UrlBase = Arnes.UrlBaseDeEnlace }), null!, null!, null!, null!, null!);
 
     private static string Token(string enlace) => enlace[(enlace.LastIndexOf("/c/", StringComparison.Ordinal) + 3)..];
 

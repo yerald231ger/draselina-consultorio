@@ -89,6 +89,10 @@ namespace DraSelina.Consultorio.Notificaciones.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("evento_id");
 
+                    b.Property<DateOnly?>("Fecha")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha");
+
                     b.Property<DateTimeOffset>("RegistradoEn")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("registrado_en");
@@ -103,6 +107,11 @@ namespace DraSelina.Consultorio.Notificaciones.Infrastructure.Migrations
                     b.HasIndex("EventoId", "Tipo")
                         .IsUnique()
                         .HasDatabaseName("ux_mensaje_evento_id_tipo");
+
+                    b.HasIndex("Tipo", "Fecha")
+                        .IsUnique()
+                        .HasDatabaseName("ux_mensaje_tipo_fecha")
+                        .HasFilter("fecha IS NOT NULL");
 
                     b.ToTable("mensaje", "notificaciones", t =>
                         {

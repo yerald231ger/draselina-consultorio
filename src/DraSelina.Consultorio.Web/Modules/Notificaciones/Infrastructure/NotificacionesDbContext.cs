@@ -58,7 +58,12 @@ public sealed class NotificacionesDbContext(DbContextOptions<NotificacionesDbCon
             mensaje.Property(m => m.Canal).HasColumnName("canal");
             mensaje.Property(m => m.Estado).HasColumnName("estado");
             mensaje.Property(m => m.RegistradoEn).HasColumnName("registrado_en");
+            mensaje.Property(m => m.Fecha).HasColumnName("fecha");
             mensaje.HasIndex(m => new { m.EventoId, m.Tipo }).IsUnique().HasDatabaseName(FilaDeMensaje.IndiceDeEventoYTipo);
+            mensaje.HasIndex(m => new { m.Tipo, m.Fecha })
+                .IsUnique()
+                .HasFilter("fecha IS NOT NULL")
+                .HasDatabaseName(FilaDeMensaje.IndiceDeTipoYFecha);
         });
 
         // notificaciones.recordatorio_programado: el Recordatorio pendiente de cada Cita (AD-20). Sin llaves foráneas.

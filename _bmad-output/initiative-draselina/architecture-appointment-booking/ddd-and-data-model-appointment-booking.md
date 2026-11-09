@@ -1020,8 +1020,10 @@ Registro de lo enviado, para no duplicar correos (AD-3 pide deduplicar por `Even
 | `canal` | `text` | no | `correo` |
 | `estado` | `text` | no | `Enviado`, `Fallido`, `Omitido` |
 | `registrado_en` | `timestamptz` | no | |
+| `fecha` | `date` | sí | Fecha local de un envío programado por fecha (la Agenda del día); nula en los demás (Gerardo, 2026-11-09, entrada 4.6) |
 
 - Único en `(evento_id, tipo)`.
+- Único en `(tipo, fecha)` donde `fecha` no es nula: la Agenda del día sale una vez por fecha.
 - No guarda dirección de correo ni contenido (AD-23).
 
 ### `notificaciones.recordatorio_programado` `[ASSUMPTION: tabla completa]`

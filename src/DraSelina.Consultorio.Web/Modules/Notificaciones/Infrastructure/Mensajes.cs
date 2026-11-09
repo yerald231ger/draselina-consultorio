@@ -24,6 +24,13 @@ public sealed class Mensajes(NotificacionesDbContext db) : IMensajes
             m => m.CitaId == cita && m.Tipo == texto && m.Estado == enviado && m.RegistradoEn >= desdeUtc, cancellationToken);
     }
 
+    // Por el índice único parcial (tipo, fecha).
+    public Task<bool> ExisteDeLaFechaAsync(TipoDeMensaje tipo, DateOnly fecha, CancellationToken cancellationToken)
+    {
+        var texto = tipo.ToString();
+        return db.Mensajes.AsNoTracking().AnyAsync(m => m.Tipo == texto && m.Fecha == fecha, cancellationToken);
+    }
+
     public async Task RegistrarAsync(MensajeRegistrado mensaje, CancellationToken cancellationToken)
     {
         if (db.Database.CurrentTransaction is null)
@@ -40,6 +47,7 @@ public sealed class Mensajes(NotificacionesDbContext db) : IMensajes
             Canal = mensaje.Canal,
             Estado = mensaje.Estado.ToString(),
             RegistradoEn = mensaje.RegistradoEn,
+            Fecha = mensaje.Fecha,
         });
 
         await db.SaveChangesAsync(cancellationToken);

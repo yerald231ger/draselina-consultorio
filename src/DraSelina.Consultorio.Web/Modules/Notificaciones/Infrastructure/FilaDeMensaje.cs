@@ -11,6 +11,12 @@ public sealed class FilaDeMensaje
     /// <summary>El índice único de <c>(evento_id, tipo)</c>: un mensaje de cada tipo por evento.</summary>
     public const string IndiceDeEventoYTipo = "ux_mensaje_evento_id_tipo";
 
+    /// <summary>
+    /// El índice único parcial de <c>(tipo, fecha)</c> donde <c>fecha</c> no es nula: un envío por fecha (la Agenda del
+    /// día).
+    /// </summary>
+    public const string IndiceDeTipoYFecha = "ux_mensaje_tipo_fecha";
+
     public Guid Id { get; set; }
 
     /// <summary>Nulo en los envíos programados.</summary>
@@ -28,4 +34,7 @@ public sealed class FilaDeMensaje
     public string Estado { get; set; } = "";
 
     public DateTimeOffset RegistradoEn { get; set; }
+
+    /// <summary>La fecha local de un envío programado por fecha (la Agenda del día); nula en los demás.</summary>
+    public DateOnly? Fecha { get; set; }
 }

@@ -420,7 +420,9 @@ public sealed class RecordatorioTests(Arnes arnes)
         while (quedan > 0 && DateTime.UtcNow < limite);
 
         Assert.Equal(0, quedan);
-        Assert.Empty(Arnes.Canal(web).Enviados);
+
+        // Según la hora real, la vuelta también puede enviar la Agenda del día (entrada 4.6): solo cuentan los Recordatorios.
+        Assert.DoesNotContain(Arnes.Canal(web).Enviados, c => c.Asunto.StartsWith(PlantillaDeRecordatorio.Titulo, StringComparison.Ordinal));
         Assert.DoesNotContain(Arnes.Registros(web), r =>
             r.Nivel >= LogLevel.Warning && r.Categoria.Contains("EnviosProgramados", StringComparison.Ordinal));
 
