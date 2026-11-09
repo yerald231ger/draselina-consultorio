@@ -174,7 +174,7 @@ Ninguna impide dividir el trabajo. Responsable: Gerardo.
 
 **Antes del primer Paciente**
 
-- ¿El Motivo de consulta viaja por correo en la Agenda del día, o solo hora y Paciente? ¿A qué hora sale cuando hay Citas por la mañana?
+- ¿A qué hora sale la Agenda del día cuando hay Citas por la mañana? (Resuelto el 2026-11-08: el Motivo de consulta sí viaja en la Agenda del día, como dice FR-25; Gerardo, inception de la épica 4.)
 - ¿Cómo se avisa a un Paciente sin correo cuando el Consultorio cancela?
 - ¿Qué Tipos de visita existen además de los dos públicos, y cuáles son solo "llámanos"?
 - ¿Quién es el abogado que revisa el aviso de privacidad, y valida el Consentimiento por Cita? Requisitos vigentes de COFEPRIS para publicidad médica.

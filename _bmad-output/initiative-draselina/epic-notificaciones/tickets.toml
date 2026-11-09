@@ -1,0 +1,90 @@
+# Historias de epic-notificaciones, en orden de construcción.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Confirmación por correo"
+description = "Camino trazador: Mailpit en el AppHost y el canal SMTP (MailKit) detrás de INotificationChannel; las tablas configuracion_de_envio (semilla con horas 09:00 y 14:00 y los correos doctora@consultorio.local y administrador@consultorio.local) y mensaje (único en evento_id y tipo, sin dirección ni contenido); IPacientesApi.ObtenerContactos (nombre y correo), que usan las entradas 4 a 6 y la épica 5; EnlaceDelMapa en IContenidoApi.DatosDelConsultorio, armado como búsqueda de Google Maps con la dirección actual; y el handler de CitaAgendada que envía la confirmación al Paciente con correo (fecha, hora, lugar, \"Abrir en el mapa\", el archivo de calendario de IAgendaApi adjunto y \"Ver o cambiar mi cita\" con el Enlace de gestión), sin enviar nada si no hay correo y sin duplicar por EventoId; si el canal falla, el handler lanza y el outbox reintenta."
+verify = "Con el AppHost arriba, una reserva con correo aparece en Mailpit con su .ics; pruebas de integración comprueban que entregar dos veces el mismo CitaAgendada envía un solo correo, que sin correo no se envía nada y que con el canal fallando la reserva se completa y el correo sale en el reintento."
+covers = ["CAP-18"]
+after = ["2.6", "2.9", "2.10"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Recordatorio programado"
+description = "La tabla recordatorio_programado: CitaAgendada lo programa para el día anterior a la hora_recordatorio local, o registra el mensaje como Omitido si esa hora ya pasó; CitaReprogramada lo mueve y CitaCancelada lo borra (T-25, AD-20); un BackgroundService de Notificaciones con PeriodicTimer revisa cada minuto, envía \"Mañana tienes cita\" con \"Ver o cambiar mi cita\" a los que ya tocan, borra la fila al enviarlo y deja pendiente el que falla para la siguiente vuelta; el mismo servicio lo usa la entrada 6."
+verify = "Pruebas de integración con el reloj de prueba: una Cita del jueves 4:00 pm deja su Recordatorio para el miércoles 9:00 y sale en esa vuelta y no antes; reprogramada al viernes, sale el jueves 9:00; cancelada, no sale; agendada el miércoles a las 10:00 para el jueves, queda Omitido; con el canal fallando, sale en una vuelta posterior."
+covers = ["CAP-18"]
+after = [1, "3.2", "3.4"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Frases del correo en Cita confirmada"
+description = "El traspaso de la épica 2: Cita confirmada, con correo, dice \"Te enviamos los detalles a tu correo. Un día antes, a las {hora}, te llegará un recordatorio.\" con la hora real de configuracion_de_envio, y en el estado Recordatorio omitido solo la primera frase (EXPERIENCE.md); la regla la responde una consulta de Notificaciones a partir del inicio de la Cita, y la página solo compone (AD-14)."
+verify = "Pruebas de componente o HTTP: una reserva con correo para pasado mañana muestra las dos frases con \"9:00 am\"; una para mañana reservada después de las 9:00 muestra solo la primera; sin correo no aparece ninguna."
+covers = ["CAP-18"]
+after = [2, "2.9", "2.12"]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Avisos de reprogramación y cancelación"
+description = "Los handlers de CitaReprogramada y CitaCancelada de la entrada 2 envían al Paciente con correo, sin duplicar por EventoId: Cita reprogramada con la nueva fecha y hora y \"Ver o cambiar mi cita\"; Cita cancelada por el Paciente, que si el motivo es tarde lo reconoce con amabilidad, con \"Agendar otra cita\"; y la disculpa sincera en nombre del Consultorio para el motivo consultorio, con \"Elegir otro horario\", cuya prueba de punta a punta es de la épica 5."
+verify = "Pruebas de integración: reprogramar envía un correo con la nueva fecha; cancelar a tiempo y tarde envían el correo con y sin la frase de tardía; un CitaCancelada con motivo consultorio (sembrado) envía la disculpa; cada evento entregado dos veces da un solo correo."
+covers = ["CAP-18"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Alerta de cancelación tardía"
+description = "Un CitaCancelada con motivo tarde envía al correo_administrador, en cuanto se entrega el evento y sin esperar a un proceso periódico, la alerta con el nombre del Paciente, la fecha y hora de la Cita y \"Abrir la Agenda\"; Notificaciones no recalcula si fue tardía (E-16, T-27) ni la envía para otros motivos."
+verify = "Pruebas de integración: una cancelación tardía deja la alerta al Administrador en la misma vuelta de entrega que el aviso al Paciente; una cancelación a tiempo o por el Consultorio no la envía; entregar dos veces el evento da una sola alerta."
+covers = ["CAP-19"]
+after = [4]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Agenda del día"
+description = "IAgendaApi.AgendaDelDia(fecha) dice si la fecha tiene Tramos vigentes y da sus Citas Agendadas de cualquier origen (hora, PatientId y Motivo de consulta, Decision del 2026-11-08); el servicio de la entrada 2 envía \"Tus citas de hoy\" al correo_doctora a la hora_agenda_del_dia de cada fecha con Tramos o con alguna Cita, una sola vez por fecha, con hora, Paciente y motivo de cada una o \"No hay citas hoy\"; Notificaciones no decide si un día se atiende (T-27)."
+verify = "Pruebas de integración con el reloj de prueba: un martes con dos Citas envía a las 14:00 un correo con las dos en orden y su motivo; un martes sin Citas envía \"No hay citas hoy\"; un sábado sin Tramos ni Citas no envía nada; un sábado con solo una Cita manual sí; vueltas posteriores el mismo día no lo repiten."
+covers = ["CAP-20"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Horas y destinatarios configurables"
+description = "La consulta y el comando de administración (IRequiereAdministrador) de configuracion_de_envio: hora del Recordatorio, hora de la Agenda del día, correo de la doctora y correo del Administrador, con su validación de forma; el siguiente envío ya usa los valores nuevos, sin desplegar (CAP-16, AD-14); la pantalla de Configuración que los compone es de la épica 6."
+verify = "Pruebas de integración: sin sesión el comando se rechaza; con sesión, cambiar la hora de la Agenda del día a 13:00 hace que salga a las 13:00 en la siguiente fecha; cambiar el correo de la doctora manda ahí el siguiente envío; una hora o un correo inválidos vuelven como Resultado inválido."
+covers = ["CAP-16"]
+after = [2, 6, "1.7"]
+hitl = false
+risk = "medium"
+unknown = "Al cambiar la hora del Recordatorio, ¿los Recordatorios ya programados se mueven a la nueva hora o conservan la que tenían?"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Refactor sweep"
+description = "Limpieza de lo aplazado en los planes y revisiones de la épica; su alcance se fija al empezar."
+verify = "Las pruebas de la épica siguen pasando y los pendientes de revisión anotados quedan cerrados o registrados."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7]
+hitl = false
+risk = "low"

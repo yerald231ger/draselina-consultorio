@@ -28,6 +28,7 @@ covers = ["CAP-18", "CAP-19", "CAP-20", "CAP-16"]
 after = [
   { epic = 2, needs = "CitaAgendada, IAgendaApi (enlace de gestión, archivo de calendario, citas del día) e IContenidoApi" },
   { epic = 3, needs = "CitaReprogramada y CitaCancelada" },
+  { epic = 1, needs = "el marcador de administración para el comando de configuración" },
 ]
 
 [[epic]]
