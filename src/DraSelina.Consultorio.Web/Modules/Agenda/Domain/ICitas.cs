@@ -1,3 +1,5 @@
+using DraSelina.Consultorio.Kernel;
+
 namespace DraSelina.Consultorio.Agenda.Domain;
 
 /// <summary>
@@ -20,6 +22,16 @@ public interface ICitas
     /// <exception cref="InvalidOperationException">Si no hay una transacción abierta: fuera de ella el bloqueo se
     /// soltaría en el acto.</exception>
     Task<Cita?> ObtenerPorTokenHashParaCambiarAsync(byte[] tokenHash, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// La Cita <paramref name="id"/>, rastreada para cambiarla y con su fila bloqueada hasta el fin de la transacción
+    /// (<c>FOR UPDATE</c>); nula si no hay. La lectura de la administración (AD-22): el mismo bloqueo que
+    /// <see cref="ObtenerPorTokenHashParaCambiarAsync"/>, así un cambio del Paciente y uno del Administrador a la misma
+    /// Cita se aplican uno tras otro.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Si no hay una transacción abierta: fuera de ella el bloqueo se
+    /// soltaría en el acto.</exception>
+    Task<Cita?> ObtenerPorIdParaCambiarAsync(CitaId id, CancellationToken cancellationToken);
 
     /// <summary>
     /// Guarda lo agregado. Si una Cita choca con otra no cancelada en la restricción de exclusión, devuelve

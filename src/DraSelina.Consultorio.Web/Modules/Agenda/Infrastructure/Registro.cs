@@ -50,6 +50,8 @@ public static class Registro
             .AddScoped<ICommandHandler<AgendarCitaPorConsultorio, CitaAgendadaPorConsultorio>, AgendarCitaPorConsultorioHandler>()
             .AddScoped<ICommandHandler<ReprogramarCitaPorEnlace, CitaReprogramadaPorEnlace>, ReprogramarCitaPorEnlaceHandler>()
             .AddScoped<ICommandHandler<CancelarCitaPorEnlace, CitaCanceladaPorEnlace>, CancelarCitaPorEnlaceHandler>()
+            .AddScoped<ICommandHandler<MarcarNoSePresento, CitaMarcadaNoSePresento>, MarcarNoSePresentoHandler>()
+            .AddScoped<ICommandHandler<CancelarCitaPorConsultorio, CitaCanceladaPorConsultorio>, CancelarCitaPorConsultorioHandler>()
             .AddScoped<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>, HorariosLibresHandler>()
             .AddScoped<IQueryHandler<VentanaDeReservaPublica, VentanaDeReservaVigente>, VentanaDeReservaPublicaHandler>()
             .AddScoped<IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario>, ArchivoDeCalendarioPorEnlaceHandler>()

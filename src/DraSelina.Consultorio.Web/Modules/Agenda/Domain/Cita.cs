@@ -394,9 +394,70 @@ public sealed class Cita
         CanceladaEn = now.ToUniversalTime();
         return null;
     }
+
+    /// <summary>
+    /// Marca que el Paciente no se presentó (CAP-14, FR-16, AD-9). Solo si está Agendada y su inicio ya llegó (RN-31):
+    /// en el inicio mismo ya se puede. Queda <see cref="EstadoCita.NoSePresento"/>, que es final (INV-C7), sin motivo ni
+    /// instante de cancelación (INV-C8). El rango no cambia.
+    /// </summary>
+    /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    /// <returns>Nulo si se marcó; si no, por qué no, y la Cita queda como estaba.</returns>
+    public RechazoAlMarcarNoSePresento? MarcarNoSePresento(DateTimeOffset now)
+    {
+        if (Estado != EstadoCita.Agendada)
+        {
+            return RechazoAlMarcarNoSePresento.CitaNoAgendada;
+        }
+
+        // RN-31: "ya pasó" se mide desde el inicio. Antes del inicio todavía no hay a quién esperar.
+        if (now < Rango.Inicio)
+        {
+            return RechazoAlMarcarNoSePresento.AunNoEmpieza;
+        }
+
+        Estado = EstadoCita.NoSePresento;
+        return null;
+    }
+
+    /// <summary>
+    /// Cancela la Cita a nombre del Consultorio (CAP-14, FR-17, AD-9); la misma transición que usa la política P-1. Solo
+    /// si está Agendada y su inicio no ha llegado (RN-31): en el inicio mismo ya no. Sin umbral de tardía: el Consultorio
+    /// nunca cancela tarde. Fija el estado, el motivo <see cref="Domain.MotivoDeCancelacion.Consultorio"/> y el instante
+    /// de la cancelación (INV-C8); el rango no cambia, y la restricción de exclusión deja de contarla (AD-8).
+    /// </summary>
+    /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    /// <returns>Nulo si se canceló; si no, por qué no, y la Cita queda como estaba.</returns>
+    public RechazoAlCancelar? CancelarPorConsultorio(DateTimeOffset now)
+    {
+        if (Estado != EstadoCita.Agendada)
+        {
+            return RechazoAlCancelar.CitaNoAgendada;
+        }
+
+        // RN-31: en el inicio mismo, ya no se cancela.
+        if (Rango.Inicio <= now)
+        {
+            return RechazoAlCancelar.YaEmpezo;
+        }
+
+        MotivoDeCancelacion = Domain.MotivoDeCancelacion.Consultorio;
+        Estado = EstadoCita.Cancelada;
+        CanceladaEn = now.ToUniversalTime();
+        return null;
+    }
 }
 
-/// <summary>Por qué <see cref="Cita.Cancelar"/> no canceló.</summary>
+/// <summary>Por qué <see cref="Cita.MarcarNoSePresento"/> no marcó.</summary>
+public enum RechazoAlMarcarNoSePresento
+{
+    /// <summary>La Cita ya está Cancelada o No se presentó.</summary>
+    CitaNoAgendada = 1,
+
+    /// <summary>El inicio de la Cita todavía no llega (RN-31).</summary>
+    AunNoEmpieza = 2,
+}
+
+/// <summary>Por qué <see cref="Cita.Cancelar"/> o <see cref="Cita.CancelarPorConsultorio"/> no canceló.</summary>
 public enum RechazoAlCancelar
 {
     /// <summary>La Cita ya está Cancelada o No se presentó.</summary>

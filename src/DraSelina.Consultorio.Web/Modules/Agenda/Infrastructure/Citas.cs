@@ -1,4 +1,5 @@
 using DraSelina.Consultorio.Agenda.Domain;
+using DraSelina.Consultorio.Kernel;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -15,12 +16,7 @@ public sealed class Citas(AgendaDbContext db) : ICitas
     public async Task<Cita?> ObtenerPorTokenHashParaCambiarAsync(byte[] tokenHash, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tokenHash);
-
-        if (db.Database.CurrentTransaction is null)
-        {
-            throw new InvalidOperationException(
-                "Leer la Cita para cambiarla exige la transacción abierta del handler: fuera de ella el bloqueo de su fila se soltaría en el acto.");
-        }
+        ExigirTransaccion();
 
         // Primero el bloqueo de la fila, por el índice único ux_cita_token_hash; espera si otro la tiene. Después la
         // lectura rastreada, que en READ COMMITTED ya ve lo que el otro confirmó. En dos sentencias porque FromSql no
@@ -29,6 +25,26 @@ public sealed class Citas(AgendaDbContext db) : ICitas
             $"select 1 from agenda.cita where token_hash = {tokenHash} for update",
             cancellationToken);
         return await db.Citas.SingleOrDefaultAsync(c => c.TokenHash == tokenHash, cancellationToken);
+    }
+
+    public async Task<Cita?> ObtenerPorIdParaCambiarAsync(CitaId id, CancellationToken cancellationToken)
+    {
+        ExigirTransaccion();
+
+        // Como por el token: primero el bloqueo de la fila, por su llave primaria; después la lectura rastreada.
+        await db.Database.ExecuteSqlAsync(
+            $"select 1 from agenda.cita where id = {id.Valor} for update",
+            cancellationToken);
+        return await db.Citas.SingleOrDefaultAsync(c => c.Id == id, cancellationToken);
+    }
+
+    private void ExigirTransaccion()
+    {
+        if (db.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException(
+                "Leer la Cita para cambiarla exige la transacción abierta del handler: fuera de ella el bloqueo de su fila se soltaría en el acto.");
+        }
     }
 
     public async Task<GuardadoDeCita> GuardarAsync(CancellationToken cancellationToken)

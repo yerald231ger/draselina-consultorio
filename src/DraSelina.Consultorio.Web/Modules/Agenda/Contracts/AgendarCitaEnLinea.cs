@@ -124,14 +124,22 @@ public static class CodigosDeAgenda
 
     /// <summary>
     /// No hay Cita para ese Enlace de gestión, o (para el archivo de calendario) no está Agendada, o su inicio ya pasó;
-    /// no se dice cuál (RN-22). Reprogramar una Cita que no está Agendada, o cancelar una que No se presentó, es
-    /// <see cref="CitaNoAgendada"/>.
+    /// no se dice cuál (RN-22). Para el Administrador, no hay Cita con ese id. Reprogramar una Cita que no está
+    /// Agendada, o cancelar una que No se presentó, es <see cref="CitaNoAgendada"/>.
     /// </summary>
     public const string CitaNoEncontrada = "agenda.cita_no_encontrada";
 
-    /// <summary>La Cita está Cancelada o No se presentó: ya no se reprograma; si No se presentó, tampoco se cancela.</summary>
+    /// <summary>
+    /// La Cita está Cancelada o No se presentó: ya no se reprograma ni se marca; si No se presentó, tampoco se cancela.
+    /// </summary>
     public const string CitaNoAgendada = "agenda.cita_no_agendada";
 
     /// <summary>Falta menos que el umbral de cancelación tardía para el inicio de la Cita: ya no se reprograma (RN-17).</summary>
     public const string ReprogramacionCerrada = "agenda.reprogramacion_cerrada";
+
+    /// <summary>El inicio de la Cita todavía no llega: aún no se marca que el Paciente no se presentó (RN-31).</summary>
+    public const string AunNoEmpieza = "agenda.aun_no_empieza";
+
+    /// <summary>El inicio de la Cita ya llegó o pasó: el Consultorio ya no la cancela (RN-31).</summary>
+    public const string YaEmpezo = "agenda.ya_empezo";
 }
