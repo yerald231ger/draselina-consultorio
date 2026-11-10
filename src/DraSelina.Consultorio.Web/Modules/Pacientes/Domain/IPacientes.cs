@@ -14,6 +14,12 @@ public interface IPacientes
     /// </summary>
     Task<Paciente?> BuscarAsync(Telefono telefono, NombreCompleto nombre, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// El id del Paciente con ese teléfono y ese nombre, con la misma igualdad de <see cref="BuscarAsync"/>; nulo si no
+    /// existe. Sin rastrear: en un ámbito largo (el circuito de administración) no deja un Paciente en caché.
+    /// </summary>
+    Task<PatientId?> IdAsync(Telefono telefono, NombreCompleto nombre, CancellationToken cancellationToken);
+
     /// <summary>Los ids de los Pacientes con ese teléfono, con cualquier nombre (INV-P3). Sin rastrear.</summary>
     Task<IReadOnlyList<PatientId>> ConTelefonoAsync(Telefono telefono, CancellationToken cancellationToken);
 

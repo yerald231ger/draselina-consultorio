@@ -2010,8 +2010,26 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
 
 .dsm-agenda__cabeza {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--dsm-spacing-5) var(--dsm-spacing-9);
+}
+
+.dsm-agenda__titulo {
+  display: flex;
   flex-direction: column;
   gap: var(--dsm-spacing-1);
+}
+
+/* "Agendar cita", la acción principal de la Agenda (EXPERIENCE.md): vino sólido, como el botón principal. */
+.dsm-agenda__agendar {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--dsm-spacing-touch-min);
+  padding-inline: var(--dsm-spacing-9);
+  border-radius: var(--dsm-rounded-lg);
+  font-weight: var(--dsm-button-font-weight);
 }
 
 .dsm-agenda__fecha {
@@ -2271,4 +2289,84 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   .dsm-agenda__semana .dsm-agenda__estado {
     font-size: var(--dsm-help-font-size);
   }
+}
+
+/* Agendar cita (UI/Pages/Administracion/AgendarCita.razor, entrada 5.4): una columna, como la reserva. */
+.dsm-agendar {
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+  padding-block: 32px 56px;
+}
+
+.dsm-agendar__grupo {
+  margin: 0 0 var(--dsm-spacing-9);
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.dsm-agendar__leyenda {
+  margin-bottom: var(--dsm-spacing-7);
+  color: var(--dsm-ink);
+}
+
+/* Día y hora lado a lado desde 576 px; apilados en el teléfono. */
+.dsm-agendar__cuando {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--dsm-spacing-7);
+}
+
+@media (min-width: 576px) {
+  .dsm-agendar__cuando {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Paciente reconocido: el panel rosa (DESIGN.md, info-panel) de lo que ya existe y se conserva. */
+.dsm-paciente-reconocido {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-2);
+  margin: calc(-1 * var(--dsm-spacing-3)) 0 var(--dsm-spacing-8);
+  padding: var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-xl);
+  background: var(--dsm-tint);
+}
+
+.dsm-paciente-reconocido__titulo {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 700;
+  color: var(--dsm-primary-strong);
+}
+
+.dsm-paciente-reconocido__cita {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  line-height: var(--dsm-body-small-line-height);
+  color: var(--dsm-ink-soft);
+}
+
+/* Fuera de horario: contorno vino sobre rosa, como la marca de la Agenda; sin ámbar (DESIGN.md: el ámbar es solo de la
+   cancelación tardía). Informa; no impide guardar. */
+.dsm-aviso-de-horario {
+  margin: calc(-1 * var(--dsm-spacing-3)) 0 var(--dsm-spacing-8);
+  padding: var(--dsm-spacing-5) var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-md);
+  border-left: 4px solid var(--dsm-primary);
+  background: var(--dsm-tint);
+}
+
+.dsm-aviso-de-horario__mensaje {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 600;
+  line-height: var(--dsm-body-small-line-height);
+  color: var(--dsm-primary-strong);
+}
+
+.dsm-agendar .dsm-aviso {
+  margin-block: 0 var(--dsm-spacing-7);
 }

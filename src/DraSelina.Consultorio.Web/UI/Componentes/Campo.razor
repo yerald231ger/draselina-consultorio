@@ -54,6 +54,13 @@
     [Parameter]
     public string Tipo { get; set; } = "text";
 
+    /// <summary>
+    /// Lo que se hace después de que el control cambia el valor de su propiedad, como consultar algo con el valor nuevo.
+    /// Opcional.
+    /// </summary>
+    [Parameter]
+    public EventCallback AlCambiar { get; set; }
+
     /// <summary>Atributos que pasan al control, como <c>autocomplete</c> o <c>inputmode</c>. No reemplazan los propios del Campo.</summary>
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? AtributosAdicionales { get; set; }
@@ -90,7 +97,11 @@
     internal ValueTask EnfocarAsync() =>
         _control?.Element is { } elemento ? elemento.FocusAsync() : ValueTask.CompletedTask;
 
-    private void CambiarValor(string? valor) => _propiedad.SetValue(_campo.Model, valor);
+    private async Task CambiarValor(string? valor)
+    {
+        _propiedad.SetValue(_campo.Model, valor);
+        await AlCambiar.InvokeAsync();
+    }
 
     private string? DescritoPor()
     {

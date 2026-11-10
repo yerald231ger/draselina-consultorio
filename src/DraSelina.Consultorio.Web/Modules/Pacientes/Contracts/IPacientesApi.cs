@@ -25,6 +25,17 @@ public interface IPacientesApi
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// El Paciente con ese teléfono y ese nombre, si ya existe, con la misma igualdad que
+    /// <see cref="BuscarOCrearAsync"/> (RN-25, RN-26): el mismo teléfono con otro nombre es otro Paciente. No crea ni
+    /// registra nada. Es para que el Administrador sepa, mientras captura una Cita del consultorio, si el Paciente ya
+    /// existe (entrada 5.4); quien lo pide no escribe nombre ni teléfono en registros (AD-23).
+    /// </summary>
+    /// <param name="nombre">Como lo escribió la persona.</param>
+    /// <param name="telefono">Celular de México, en la misma forma que acepta <see cref="BuscarOCrearAsync"/>.</param>
+    /// <returns>Su <see cref="PatientId"/>; nulo si no existe o si el teléfono o el nombre no son válidos.</returns>
+    Task<PatientId?> BuscarAsync(string nombre, string telefono, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Los Pacientes que tienen ese teléfono, con cualquier nombre (RN-25, INV-P3). Es para el tope semanal de Agenda
     /// (AD-13, RN-18): Pacientes solo contesta quiénes son; nunca cuenta Citas (RN-29). No registra nada.
     /// </summary>

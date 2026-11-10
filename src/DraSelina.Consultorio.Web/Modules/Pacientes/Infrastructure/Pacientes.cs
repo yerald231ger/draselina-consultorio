@@ -14,6 +14,14 @@ public sealed class Pacientes(PacientesDbContext db) : IPacientes
             p => p.Telefono == telefono && p.Nombre.Normalizado == nombre.Normalizado,
             cancellationToken);
 
+    // La misma igualdad de BuscarAsync, sin rastrear: solo el id.
+    public async Task<PatientId?> IdAsync(Telefono telefono, NombreCompleto nombre, CancellationToken cancellationToken) =>
+        await db.Pacientes
+            .AsNoTracking()
+            .Where(p => p.Telefono == telefono && p.Nombre.Normalizado == nombre.Normalizado)
+            .Select(p => (PatientId?)p.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
     // Por el índice ix_paciente_telefono (AD-13).
     public async Task<IReadOnlyList<PatientId>> ConTelefonoAsync(Telefono telefono, CancellationToken cancellationToken) =>
         await db.Pacientes

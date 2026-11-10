@@ -1,0 +1,547 @@
+@page "/admin/agendar"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@layout LayoutAdministracion
+@implements IDisposable
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@inject ICommandHandler<AgendarCitaPorConsultorio, CitaAgendadaPorConsultorio> Agendar
+@inject IQueryHandler<TiposDeVisitaActivos, IReadOnlyList<TipoDeVisitaActivo>> Tipos
+@inject IQueryHandler<PacienteReconocido, PacienteDeLaCita> Reconocer
+@inject IQueryHandler<HorarioDeLaCitaDelConsultorio, HorarioDeLaCita> Horario
+@inject IClock Reloj
+@inject NavigationManager Navegacion
+@inject ILogger<AgendarCita> Registro
+
+@*
+    Agendar cita (CAP-13, FR-15, UJ-4, UJ-6; entrada 5.4): el Administrador captura una Cita del consultorio, la que se
+    pactó por teléfono o WhatsApp o la que Selina aceptó fuera de horario. Se abre desde la Agenda con la fecha que se
+    estaba viendo (/admin/agendar?fecha=2026-11-10); sin fecha, o con una que no se entiende, hoy (fecha local del
+    consultorio, AD-17). Nada de datos personales en la dirección (AD-11, AD-23): nombre, celular, correo, motivo y
+    nota viven solo en el circuito.
+
+    El formulario se liga directo al comando AgendarCitaPorConsultorio (sin modelo aparte) y pinta los errores de su
+    Resultado con ErroresDelResultado y Campo (AD-12). Mientras se captura, dos consultas de apoyo solo informan, sin
+    impedir guardar ni cambiar el comando:
+    - Paciente reconocido: con celular y nombre, si ya existe (RN-25: el mismo celular con otro nombre es otro
+      Paciente), con su próxima Cita Agendada y la última que ya empezó, cada una si existe. Si no existe, nada.
+    - Horario: con tipo, fecha y hora, si la Cita cae fuera de los Tramos vigentes o en un día que no se atiende, con
+      la regla de la Cita (INV-C6); la página no la recalcula. Fuera de horario la nota pasa a obligatoria en pantalla;
+      quien la exige al guardar es el comando (NotaObligatoria va como error del campo Nota).
+    Solo dos reglas impiden guardar: otra Cita en ese horario y la hora pasada (EXPERIENCE.md). Lo capturado se conserva.
+    Al guardar se vuelve a la Agenda de la fecha de la Cita, en vista de día.
+
+    Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar y el regreso conserva la
+    dirección. El comando y las consultas llevan IRequiereAdministrador (AD-22). Comparten los contextos del circuito:
+    una llamada a la vez (_ocupado). El botón de guardar se deshabilita mientras el comando corre y un segundo clic no
+    manda otro. Una respuesta que llega cuando los datos ya cambiaron se descarta. Textos `[ASSUMPTION: texto]`.
+*@
+
+<PageTitle>Agendar cita · Administración</PageTitle>
+
+<section class="dsm-contenedor dsm-agendar" aria-labelledby="agendar-cita">
+    <a href="@Agenda.Direccion(_fechaDeOrigen, semana: false)" class="dsm-volver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 12H5M11 6l-6 6 6 6"></path>
+        </svg>
+        Volver a la agenda
+    </a>
+    <h1 id="agendar-cita" class="dsm-titulo-de-estado">Agendar cita</h1>
+
+    @if (_sinTipos)
+    {
+        <div class="dsm-aviso" role="alert">
+            <p class="dsm-aviso__mensaje">@NoSeCargaronLosTipos</p>
+        </div>
+    }
+
+    <EditForm Model="Comando" OnValidSubmit="GuardarAsync" class="dsm-formulario dsm-agendar__formulario">
+        <ErroresDelResultado Resultado="_resultado">
+            <fieldset class="dsm-agendar__grupo">
+                <legend class="dsm-seccion dsm-agendar__leyenda">Paciente</legend>
+
+                <Campo Para="() => Comando.Telefono" Etiqueta="Celular" Tipo="tel"
+                       Ayuda="Celular de México, 10 dígitos."
+                       AlCambiar="ReconocerAsync"
+                       inputmode="tel" autocomplete="off" placeholder="10 dígitos" />
+
+                <Campo Para="() => Comando.Nombre" Etiqueta="Nombre completo"
+                       Ayuda="Como aparece en su identificación."
+                       AlCambiar="ReconocerAsync"
+                       autocomplete="off" />
+
+                @if (_paciente is { Existe: true } paciente)
+                {
+                    <div class="dsm-paciente-reconocido" role="status">
+                        <p class="dsm-paciente-reconocido__titulo">@YaExiste</p>
+                        @if (paciente.Proxima is { } proxima)
+                        {
+                            <p class="dsm-paciente-reconocido__cita dsm-paciente-reconocido__cita--proxima">Próxima: @Linea(proxima, conEstado: false)</p>
+                        }
+                        @if (paciente.Anterior is { } anterior)
+                        {
+                            <p class="dsm-paciente-reconocido__cita dsm-paciente-reconocido__cita--anterior">Anterior: @Linea(anterior, conEstado: true)</p>
+                        }
+                    </div>
+                }
+
+                <Campo Para="() => Comando.Correo" Etiqueta="Correo (opcional)" Tipo="email"
+                       Ayuda="Ahí le llegan la confirmación, el recordatorio y el enlace para cambiar su cita."
+                       autocomplete="off" placeholder="nombre@correo.com" />
+            </fieldset>
+
+            <fieldset class="dsm-agendar__grupo">
+                <legend class="dsm-seccion dsm-agendar__leyenda">Cita</legend>
+
+                <div class="dsm-campo">
+                    <label for="TipoDeVisitaId" class="dsm-campo__etiqueta">Tipo de consulta</label>
+                    <select @ref="_tipo" id="TipoDeVisitaId" class="dsm-campo__control"
+                            autofocus="@LlevaElFoco(nameof(AgendarCitaPorConsultorio.TipoDeVisitaId))" value="@(Comando.TipoDeVisitaId?.ToString() ?? "")"
+                            @onchange="ElegirTipoAsync"
+                            aria-invalid="@Invalido(nameof(AgendarCitaPorConsultorio.TipoDeVisitaId))"
+                            aria-describedby="@DescritoPor(nameof(AgendarCitaPorConsultorio.TipoDeVisitaId), conAyuda: false)">
+                        <option value="">Elige el tipo de consulta</option>
+                        @foreach (var tipo in _tipos)
+                        {
+                            <option value="@tipo.Id">@tipo.Nombre · @tipo.DuracionMin min</option>
+                        }
+                    </select>
+                    @ErroresDe(nameof(AgendarCitaPorConsultorio.TipoDeVisitaId))
+                </div>
+
+                <div class="dsm-agendar__cuando">
+                    <div class="dsm-campo">
+                        <label for="Fecha" class="dsm-campo__etiqueta">Día</label>
+                        <InputDate @ref="_fecha" id="Fecha" autofocus="@LlevaElFoco(nameof(AgendarCitaPorConsultorio.Fecha))" @bind-Value="Comando.Fecha" @bind-Value:after="RevisarHorarioAsync"
+                                   class="dsm-campo__control"
+                                   aria-describedby="@DescritoPor(nameof(AgendarCitaPorConsultorio.Fecha), conAyuda: false)" />
+                        @ErroresDe(nameof(AgendarCitaPorConsultorio.Fecha))
+                    </div>
+
+                    <div class="dsm-campo">
+                        <label for="Hora" class="dsm-campo__etiqueta">Hora</label>
+                        <InputDate @ref="_hora" id="Hora" autofocus="@LlevaElFoco(nameof(AgendarCitaPorConsultorio.Hora))" Type="InputDateType.Time" @bind-Value="Comando.Hora" @bind-Value:after="RevisarHorarioAsync"
+                                   class="dsm-campo__control"
+                                   aria-describedby="@DescritoPor(nameof(AgendarCitaPorConsultorio.Hora), conAyuda: true)" />
+                        <div id="Hora-ayuda" class="dsm-campo__ayuda">Cualquier hora, aunque no esté en los horarios del sitio.</div>
+                        @ErroresDe(nameof(AgendarCitaPorConsultorio.Hora))
+                    </div>
+                </div>
+
+                @if (_horario is { FueraDeHorario: true } horario)
+                {
+                    <div class="dsm-aviso-de-horario" role="status">
+                        <p class="dsm-aviso-de-horario__mensaje">@(horario.DiaSinAtencion ? DiaSinAtencion : FueraDeHorario)</p>
+                    </div>
+                }
+
+                @* El área del motivo: el Campo solo hace texto de una línea. *@
+                <div class="dsm-campo">
+                    <label for="Motivo" class="dsm-campo__etiqueta">Motivo de la consulta (opcional)</label>
+                    <InputTextArea @ref="_motivo" id="Motivo" autofocus="@LlevaElFoco(nameof(AgendarCitaPorConsultorio.Motivo))" @bind-Value="Comando.Motivo" rows="3"
+                                   class="dsm-campo__control dsm-campo__control--area"
+                                   placeholder="Ej. dolor de rodilla derecha desde hace dos semanas"
+                                   aria-describedby="@DescritoPor(nameof(AgendarCitaPorConsultorio.Motivo), conAyuda: false)" />
+                    @ErroresDe(nameof(AgendarCitaPorConsultorio.Motivo))
+                </div>
+
+                <div class="dsm-campo">
+                    <label for="Nota" class="dsm-campo__etiqueta">@(NotaObligatoriaEnPantalla ? "Nota (obligatoria)" : "Nota (opcional)")</label>
+                    <InputTextArea @ref="_nota" id="Nota" autofocus="@LlevaElFoco(nameof(AgendarCitaPorConsultorio.Nota))" @bind-Value="Comando.Nota" rows="2"
+                                   class="dsm-campo__control dsm-campo__control--area"
+                                   aria-required="@(NotaObligatoriaEnPantalla ? "true" : null)"
+                                   aria-describedby="@DescritoPor(nameof(AgendarCitaPorConsultorio.Nota), conAyuda: true)" />
+                    <div id="Nota-ayuda" class="dsm-campo__ayuda">@(NotaObligatoriaEnPantalla ? AyudaDeNotaObligatoria : AyudaDeNota)</div>
+                    @ErroresDe(nameof(AgendarCitaPorConsultorio.Nota))
+                </div>
+            </fieldset>
+
+            @* El Consentimiento obtenido por fuera del sitio (AD-24): canal externo. *@
+            <div class="dsm-campo">
+                <label class="dsm-casilla" for="Consentimiento">
+                    <InputCheckbox @ref="_consentimiento" id="Consentimiento" autofocus="@LlevaElFoco(nameof(AgendarCitaPorConsultorio.Consentimiento))" @bind-Value="Comando.Consentimiento" class="dsm-casilla__control"
+                                   aria-describedby="@DescritoPor(nameof(AgendarCitaPorConsultorio.Consentimiento), conAyuda: false)" />
+                    <span class="dsm-casilla__texto">
+                        El paciente aceptó el <a href="/aviso-de-privacidad" target="_blank" class="dsm-enlace-en-texto">Aviso de privacidad</a>
+                        y dio su consentimiento expreso para el uso de sus datos de salud con el fin de agendar su cita.
+                    </span>
+                </label>
+                @ErroresDe(nameof(AgendarCitaPorConsultorio.Consentimiento))
+            </div>
+        </ErroresDelResultado>
+
+        @if (_aviso is not null)
+        {
+            <div id="aviso" class="dsm-aviso" role="alert">
+                <p class="dsm-aviso__mensaje">@_aviso</p>
+            </div>
+        }
+
+        <div class="dsm-barra-de-accion">
+            <button type="submit" class="btn btn-primary dsm-accion-principal" disabled="@_guardando">
+                @(_guardando ? "Guardando…" : "Guardar cita")
+            </button>
+        </div>
+    </EditForm>
+</section>
+
+@code {
+    private static readonly IReadOnlyList<string> SinMensajes = [];
+
+    /// <summary>El Paciente capturado ya existe (EXPERIENCE.md, "Paciente reconocido").</summary>
+    public const string YaExiste = "Este paciente ya existe.";
+
+    /// <summary>La Cita no cabe en los Tramos vigentes de un día que sí se atiende (INV-C6).</summary>
+    public const string FueraDeHorario = "Esta cita queda fuera del horario de atención de ese día. Puedes agendarla, pero escribe una nota.";
+
+    /// <summary>La Cita cae en un día sin Tramos vigentes.</summary>
+    public const string DiaSinAtencion = "Ese día no se atiende. Puedes agendarla, pero escribe una nota.";
+
+    /// <summary>Otra Cita ocupa ese horario (RN-1, AD-8).</summary>
+    public const string HorarioOcupado = "Ese horario ya lo ocupa otra cita.";
+
+    /// <summary>La hora ya pasó (INV-C4).</summary>
+    public const string HoraPasada = "Esa hora ya pasó.";
+
+    /// <summary>Fuera de horario sin nota (INV-C6): error del campo Nota.</summary>
+    public const string NotaObligatoria = "Escribe una nota: esta cita queda fuera de horario.";
+
+    /// <summary>El tipo ya no existe o se desactivó: error del campo del tipo.</summary>
+    public const string TipoNoActivo = "Ese tipo de consulta ya no está activo. Elige otro.";
+
+    /// <summary>El comando volvió no autorizado: la sesión terminó.</summary>
+    public const string SinSesion = "Tu sesión terminó. Vuelve a entrar para agendar la cita.";
+
+    /// <summary>Cualquier otro fallo, sin error técnico (AD-8).</summary>
+    public const string NoSeAgendo = "No se pudo agendar la cita. Inténtalo de nuevo.";
+
+    /// <summary>La lista de tipos no se cargó.</summary>
+    public const string NoSeCargaronLosTipos = "No se pudieron cargar los tipos de consulta. Vuelve a entrar.";
+
+    private const string AyudaDeNota = "Por ejemplo, por dónde la pidió o algo que la doctora deba saber.";
+
+    private const string AyudaDeNotaObligatoria = "Fuera de horario, anota por qué se aceptó.";
+
+    /// <summary>La dirección de esta página con una fecha puesta: <c>/admin/agendar?fecha=2026-11-10</c>.</summary>
+    public static string Direccion(DateOnly fecha) =>
+        $"/admin/agendar?fecha={fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}";
+
+    /// <summary>
+    /// Los tipos activos cargados en el prerenderizado, que pasan al circuito (.NET 10, <c>[PersistentState]</c>): la
+    /// consulta no se repite. Nulo si no se cargaron.
+    /// </summary>
+    [PersistentState]
+    public List<TipoDeVisitaActivo>? TiposCargados { get; set; }
+
+    /// <summary>La fecha que se veía en la Agenda, <c>yyyy-MM-dd</c>; si falta o no se entiende, hoy.</summary>
+    [SupplyParameterFromQuery(Name = "fecha")]
+    public string? FechaPedida { get; set; }
+
+    /// <summary>El comando que el formulario llena.</summary>
+    public AgendarCitaPorConsultorio Comando { get; private set; } = new();
+
+    private readonly CancellationTokenSource _cierre = new();
+    private readonly SemaphoreSlim _ocupado = new(1, 1);
+    private IReadOnlyList<TipoDeVisitaActivo> _tipos = [];
+    private bool _sinTipos;
+    private DateOnly _hoy;
+    private DateOnly _fechaDeOrigen;
+    private PacienteDeLaCita? _paciente;
+    private HorarioDeLaCita? _horario;
+    private int _vueltaDelPaciente;
+    private int _vueltaDelHorario;
+    private Resultado? _resultado;
+    private string? _aviso;
+    private bool _guardando;
+    private bool _enfocarAlPintar;
+    private ElementReference _tipo;
+    private InputDate<DateOnly?>? _fecha;
+    private InputDate<TimeOnly?>? _hora;
+    private InputTextArea? _motivo;
+    private InputTextArea? _nota;
+    private InputCheckbox? _consentimiento;
+
+    // Las propiedades que pintan sus errores con Campo (y la del objeto), en orden de lectura: si alguna tiene error,
+    // el foco es de ErroresDelResultado. Si no, lo lleva el primero con error de estas, también en orden de lectura.
+    private static readonly string[] ConCampo =
+    [
+        "",
+        nameof(AgendarCitaPorConsultorio.Telefono),
+        nameof(AgendarCitaPorConsultorio.Nombre),
+        nameof(AgendarCitaPorConsultorio.Correo),
+    ];
+
+    private static readonly string[] SinCampo =
+    [
+        nameof(AgendarCitaPorConsultorio.TipoDeVisitaId),
+        nameof(AgendarCitaPorConsultorio.Fecha),
+        nameof(AgendarCitaPorConsultorio.Hora),
+        nameof(AgendarCitaPorConsultorio.Motivo),
+        nameof(AgendarCitaPorConsultorio.Nota),
+        nameof(AgendarCitaPorConsultorio.Consentimiento),
+    ];
+
+    private bool NotaObligatoriaEnPantalla => _horario?.FueraDeHorario == true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
+        _fechaDeOrigen = DateOnly.TryParseExact(FechaPedida, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha)
+            ? fecha
+            : _hoy;
+        Comando.Fecha = _fechaDeOrigen;
+
+        if (TiposCargados is null)
+        {
+            var resultado = await ConsultarAsync(() => Tipos.HandleAsync(new TiposDeVisitaActivos(), _cierre.Token));
+            TiposCargados = resultado is { EsExito: true } ? [.. resultado.Valor] : null;
+        }
+
+        _tipos = TiposCargados ?? [];
+        _sinTipos = TiposCargados is null;
+    }
+
+    private async Task ElegirTipoAsync(ChangeEventArgs evento)
+    {
+        Comando.TipoDeVisitaId = Guid.TryParse(evento.Value?.ToString(), out var id) ? new TipoDeVisitaId(id) : null;
+        await RevisarHorarioAsync();
+    }
+
+    // Con celular y nombre: si el Paciente ya existe. Sin alguno de los dos, nada que decir.
+    private async Task ReconocerAsync()
+    {
+        var vuelta = ++_vueltaDelPaciente;
+        var (nombre, telefono) = (Comando.Nombre, Comando.Telefono);
+        if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(telefono))
+        {
+            _paciente = null;
+            return;
+        }
+
+        var resultado = await ConsultarAsync(() => Reconocer.HandleAsync(new PacienteReconocido(nombre, telefono), _cierre.Token));
+
+        // Si mientras tanto cambió el celular o el nombre, esta respuesta ya no es la del Paciente capturado.
+        if (vuelta == _vueltaDelPaciente)
+        {
+            _paciente = resultado is { EsExito: true } ? resultado.Valor : null;
+        }
+    }
+
+    // Con tipo, fecha y hora: si la Cita caería fuera de horario. Sin alguno, sin aviso.
+    private async Task RevisarHorarioAsync()
+    {
+        var vuelta = ++_vueltaDelHorario;
+        if (Comando is not { TipoDeVisitaId: { } tipo, Fecha: { } fecha, Hora: { } hora })
+        {
+            _horario = null;
+            return;
+        }
+
+        var resultado = await ConsultarAsync(() => Horario.HandleAsync(new HorarioDeLaCitaDelConsultorio(tipo, fecha, hora), _cierre.Token));
+        if (vuelta == _vueltaDelHorario)
+        {
+            _horario = resultado is { EsExito: true } ? resultado.Valor : null;
+        }
+    }
+
+    private async Task GuardarAsync()
+    {
+        // Un segundo clic mientras el comando corre no manda otro.
+        if (_guardando)
+        {
+            return;
+        }
+
+        _guardando = true;
+        _aviso = null;
+        var agendada = false;
+        try
+        {
+            Resultado<CitaAgendadaPorConsultorio> resultado;
+            await _ocupado.WaitAsync(_cierre.Token);
+            try
+            {
+                resultado = await Agendar.HandleAsync(Comando, _cierre.Token);
+            }
+            finally
+            {
+                _ocupado.Release();
+            }
+
+            if (resultado.EsExito)
+            {
+                agendada = true;
+                Navegacion.NavigateTo(Agenda.Direccion(resultado.Valor.Fecha, semana: false));
+                return;
+            }
+
+            Mostrar(resultado);
+        }
+        catch (OperationCanceledException) when (_cierre.IsCancellationRequested)
+        {
+            // Se salió de la página.
+        }
+        catch (Exception error)
+        {
+            // Sin datos personales (AD-23): ni el comando ni sus valores.
+            Registro.LogWarning(error, "La Cita del consultorio no se pudo agendar");
+            _resultado = null;
+            _aviso = NoSeAgendo;
+        }
+        finally
+        {
+            // Agendada, el botón sigue deshabilitado mientras se vuelve a la Agenda.
+            _guardando = agendada;
+        }
+    }
+
+    // Los textos viven aquí; el comando devuelve códigos. Lo que es de un campo va bajo su campo (AD-12).
+    private void Mostrar(Resultado resultado)
+    {
+        _resultado = resultado.Forma switch
+        {
+            FormaDeResultado.Invalido => resultado,
+            FormaDeResultado.Fallo when resultado.Codigo == CodigosDeAgenda.NotaObligatoria =>
+                Resultado.Invalido(nameof(AgendarCitaPorConsultorio.Nota), NotaObligatoria),
+            FormaDeResultado.Fallo when resultado.Codigo == CodigosDeAgenda.TipoNoReservable =>
+                Resultado.Invalido(nameof(AgendarCitaPorConsultorio.TipoDeVisitaId), TipoNoActivo),
+            _ => null,
+        };
+
+        _enfocarAlPintar = _resultado is not null;
+        _aviso = _resultado is not null
+            ? null
+            : resultado switch
+            {
+                { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.HorarioOcupado } => HorarioOcupado,
+                { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.EnElPasado } => HoraPasada,
+                { Forma: FormaDeResultado.NoAutorizado } => SinSesion,
+                _ => NoSeAgendo,
+            };
+    }
+
+    // Una llamada a la vez sobre los contextos del circuito. Una consulta que lanza no tumba el circuito: se queda sin
+    // aviso y se registra sin datos personales (AD-23).
+    private async Task<Resultado<T>?> ConsultarAsync<T>(Func<Task<Resultado<T>>> consulta)
+    {
+        try
+        {
+            await _ocupado.WaitAsync(_cierre.Token);
+            try
+            {
+                return await consulta();
+            }
+            finally
+            {
+                _ocupado.Release();
+            }
+        }
+        catch (OperationCanceledException) when (_cierre.IsCancellationRequested)
+        {
+            // Se salió de la página.
+            return null;
+        }
+        catch (Exception error)
+        {
+            Registro.LogWarning(error, "Una consulta de Agendar cita no se pudo hacer ({Consulta})", typeof(T).Name);
+            return null;
+        }
+    }
+
+    // "Martes 10 de noviembre, 4:00 pm · Primera consulta · Atendida"; con el año si no es el de hoy.
+    private string Linea(CitaDelPaciente cita, bool conEstado)
+    {
+        var partes = new List<string>
+        {
+            $"{FormatoDeCita.Largo(cita.Fecha)}{(cita.Fecha.Year == _hoy.Year ? "" : $" de {cita.Fecha.Year}")}, {FormatoDeCita.Hora(cita.Hora)}",
+        };
+        if (cita.TipoDeVisita is not null)
+        {
+            partes.Add(cita.TipoDeVisita);
+        }
+
+        if (conEstado)
+        {
+            partes.Add(Agenda.Etiqueta(cita.Estado, cita.Cancelacion));
+        }
+
+        return string.Join(" · ", partes);
+    }
+
+    private IReadOnlyList<string> Mensajes(string propiedad) =>
+        _resultado is { Forma: FormaDeResultado.Invalido } invalido && invalido.Errores.TryGetValue(propiedad, out var mensajes)
+            ? mensajes
+            : SinMensajes;
+
+    // Como TusDatos: el primer control sin Campo con error, en orden de lectura, si ningún Campo tiene error.
+    private bool LlevaElFoco(string propiedad) =>
+        !ConCampo.Any(p => Mensajes(p).Count > 0)
+        && SinCampo.FirstOrDefault(p => Mensajes(p).Count > 0) == propiedad;
+
+    // En interactivo autofocus no mueve el foco al volver a pintar: al llegar un Resultado inválido nuevo, se enfoca una
+    // vez el control que lo lleva (los Campo los enfoca ErroresDelResultado).
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_enfocarAlPintar)
+        {
+            return;
+        }
+
+        _enfocarAlPintar = false;
+        ElementReference? control = SinCampo.FirstOrDefault(LlevaElFoco) switch
+        {
+            nameof(AgendarCitaPorConsultorio.TipoDeVisitaId) => _tipo,
+            nameof(AgendarCitaPorConsultorio.Fecha) => _fecha?.Element,
+            nameof(AgendarCitaPorConsultorio.Hora) => _hora?.Element,
+            nameof(AgendarCitaPorConsultorio.Motivo) => _motivo?.Element,
+            nameof(AgendarCitaPorConsultorio.Nota) => _nota?.Element,
+            nameof(AgendarCitaPorConsultorio.Consentimiento) => _consentimiento?.Element,
+            _ => null,
+        };
+
+        if (control is { } elemento)
+        {
+            await elemento.FocusAsync();
+        }
+    }
+
+    private string? Invalido(string propiedad) => Mensajes(propiedad).Count > 0 ? "true" : null;
+
+    private RenderFragment ErroresDe(string propiedad) => __builder =>
+    {
+        var mensajes = Mensajes(propiedad);
+        for (var i = 0; i < mensajes.Count; i++)
+        {
+            <div id="@propiedad-error-@(i + 1)" class="dsm-campo__error">@mensajes[i]</div>
+        }
+    };
+
+    private string? DescritoPor(string propiedad, bool conAyuda)
+    {
+        var ids = new List<string>();
+        if (conAyuda)
+        {
+            ids.Add($"{propiedad}-ayuda");
+        }
+
+        for (var i = 0; i < Mensajes(propiedad).Count; i++)
+        {
+            ids.Add($"{propiedad}-error-{i + 1}");
+        }
+
+        return ids.Count > 0 ? string.Join(' ', ids) : null;
+    }
+
+    // El semáforo no se libera aquí: una llamada en curso todavía lo suelta al terminar.
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

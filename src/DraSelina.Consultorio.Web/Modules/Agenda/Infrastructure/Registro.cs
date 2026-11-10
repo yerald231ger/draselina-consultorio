@@ -37,6 +37,8 @@ public static class Registro
             .AddScoped<IReglasDeReserva, ReglasDeReservaPersistidas>()
             .AddScoped<ICitasActivas, CitasActivas>()
             .AddScoped<ITiposDeVisitaReservables, TiposDeVisitaReservablesPersistidos>()
+            .AddScoped<ITiposDeVisitaActivos, TiposDeVisitaActivosPersistidos>()
+            .AddScoped<ICitasDelPaciente, CitasDelPaciente>()
             .AddScoped<ICitasDelCalendario, CitasDelCalendario>()
             .AddScoped<ICitasDelEnlace, CitasDelEnlace>()
             .AddScoped<ICitasDelDia, CitasDelDia>()
@@ -53,7 +55,10 @@ public static class Registro
             .AddScoped<IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario>, ArchivoDeCalendarioPorEnlaceHandler>()
             .AddScoped<IQueryHandler<CitaPorEnlace, CitaDelEnlace>, CitaPorEnlaceHandler>()
             .AddScoped<IQueryHandler<TiposDeVisitaReservables, IReadOnlyList<TipoDeVisitaReservable>>, TiposDeVisitaReservablesHandler>()
-            .AddScoped<IQueryHandler<DiasDeLaAgenda, IReadOnlyList<DiaDeLaAgenda>>, DiasDeLaAgendaHandler>();
+            .AddScoped<IQueryHandler<DiasDeLaAgenda, IReadOnlyList<DiaDeLaAgenda>>, DiasDeLaAgendaHandler>()
+            .AddScoped<IQueryHandler<TiposDeVisitaActivos, IReadOnlyList<TipoDeVisitaActivo>>, TiposDeVisitaActivosHandler>()
+            .AddScoped<IQueryHandler<HorarioDeLaCitaDelConsultorio, HorarioDeLaCita>, HorarioDeLaCitaDelConsultorioHandler>()
+            .AddScoped<IQueryHandler<PacienteReconocido, PacienteDeLaCita>, PacienteReconocidoHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

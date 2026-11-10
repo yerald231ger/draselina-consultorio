@@ -382,6 +382,20 @@ public sealed partial class EntrarConSegundoFactorTests(Arnes arnes)
         return clave;
     }
 
+    /// <summary>
+    /// Un navegador con la sesión del Administrador: entra con la contraseña y activa el segundo factor, que inicia la
+    /// sesión. La cuenta de la base queda con el segundo factor activo. Quien lo pide lo desecha.
+    /// </summary>
+    internal static async Task<HttpClient> ClienteConSesionAsync(WebApplicationFactory<Program> web)
+    {
+        var cliente = Cliente(web);
+        var activar = await EntrarConContrasenaAsync(cliente);
+        var (pagina, clave) = await AbrirEnrolamientoAsync(cliente, activar);
+        var activada = await EnviarAsync(cliente, activar, pagina, "activar", ("Datos.Codigo", Totp(clave)));
+        Assert.Equal(10, CodigosDeRecuperacion(activada.Html).Count);
+        return cliente;
+    }
+
     /// <summary>Entrar con el correo y la contraseña del arnés. Devuelve adónde lleva (activar o el código).</summary>
     internal static async Task<string> EntrarConContrasenaAsync(HttpClient cliente)
     {

@@ -285,8 +285,15 @@ public sealed class Cita
         return QuedaFueraDe(Rango, tramosVigentes);
     }
 
-    private static bool QuedaFueraDe(RangoDeTiempo rango, TramosVigentes tramosVigentes)
+    /// <summary>
+    /// La misma regla de <see cref="QuedaFueraDeHorario"/> para un rango que todavía no es Cita: si
+    /// <paramref name="rango"/> no cabe completo en ningún Tramo de <paramref name="tramosVigentes"/>, los de la fecha
+    /// local de su inicio (INV-C6). Con ella la pantalla "Agendar cita" avisa antes de guardar, sin recalcularla.
+    /// </summary>
+    public static bool QuedaFueraDe(RangoDeTiempo rango, TramosVigentes tramosVigentes)
     {
+        ArgumentNullException.ThrowIfNull(rango);
+        ArgumentNullException.ThrowIfNull(tramosVigentes);
         var (fechaInicio, horaInicio) = HoraLocal.DesdeUtc(rango.Inicio);
         var (fechaFin, horaFin) = HoraLocal.DesdeUtc(rango.Fin);
         return fechaInicio != fechaFin || !tramosVigentes.Tramos.Any(t => t.Contiene(horaInicio, horaFin));

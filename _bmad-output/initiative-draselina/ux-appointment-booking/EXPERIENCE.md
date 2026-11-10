@@ -150,7 +150,7 @@ Reglas:
 | Cambio de Agenda base con fechas custom | Configuración | Al guardar: lista de fechas con Agenda custom que no cambian. |
 | Cita fuera de horario | Agendar cita | Aviso de que cae fuera de los Tramos vigentes o en un día cerrado; la nota pasa a ser obligatoria. No impide guardar. |
 | Conflicto al agendar | Agendar cita | Solo dos reglas impiden guardar: traslapa otra Cita, o cae en el pasado. |
-| Paciente reconocido | Agendar cita | Al capturar teléfono y nombre, indica que ya existe y muestra su última Cita. |
+| Paciente reconocido | Agendar cita | Al capturar teléfono y nombre, indica que ya existe y muestra su próxima Cita Agendada y la última que ya pasó, cada una si existe (Gerardo, 2026-11-10). |
 
 ## Interaction Primitives
 

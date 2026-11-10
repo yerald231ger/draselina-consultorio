@@ -21,7 +21,7 @@
     la dirección (/admin?fecha=2026-11-10&vista=semana); sin parámetros, o con una fecha que no se entiende, hoy en vista
     de día. Nada de datos personales en la dirección (AD-11, AD-23). Las canceladas se ocultan por omisión; un control
     las muestra. Sin mockup: los tratamientos son los de EXPERIENCE.md (State Patterns, Administrador). El Detalle de
-    Cita es de la entrada 6 y "Agendar cita" de la 4.
+    Cita es de la entrada 6; "Agendar cita" (entrada 4) abre su página con la fecha que se está viendo.
 
     Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar y el regreso conserva fecha y
     vista. La consulta lleva IRequiereAdministrador (AD-22): no se confía en esta protección. Las marcas y los nombres
@@ -34,8 +34,12 @@
 
 <section class="dsm-contenedor dsm-agenda" aria-labelledby="agenda">
     <div class="dsm-agenda__cabeza">
-        <h1 id="agenda" class="dsm-titulo-de-estado">Agenda</h1>
-        <p class="dsm-agenda__fecha">@Encabezado</p>
+        <div class="dsm-agenda__titulo">
+            <h1 id="agenda" class="dsm-titulo-de-estado">Agenda</h1>
+            <p class="dsm-agenda__fecha">@Encabezado</p>
+        </div>
+        @* La acción principal de la Agenda (EXPERIENCE.md): abre Agendar cita con la fecha que se está viendo. *@
+        <a class="btn btn-primary dsm-agenda__agendar" href="@AgendarCita.Direccion(_fecha)">Agendar cita</a>
     </div>
 
     <div class="dsm-agenda__controles">
@@ -184,7 +188,10 @@
         cuantas == 1 ? "1 cancelada oculta" : $"{cuantas} canceladas ocultas";
 
     /// <summary>La etiqueta del estado de una Cita en la Agenda.</summary>
-    public static string Etiqueta(CitaDeLaAgenda cita) => (cita.Estado, cita.Cancelacion) switch
+    public static string Etiqueta(CitaDeLaAgenda cita) => Etiqueta(cita.Estado, cita.Cancelacion);
+
+    /// <summary>La etiqueta de un estado mostrado, con su cancelación; la misma en la Agenda y en Agendar cita.</summary>
+    public static string Etiqueta(EstadoEnLaAgenda estado, CancelacionEnLaAgenda? cancelacion) => (estado, cancelacion) switch
     {
         (EstadoEnLaAgenda.Agendada, _) => "Agendada",
         (EstadoEnLaAgenda.Atendida, _) => "Atendida",
@@ -192,7 +199,7 @@
         (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "Cancelada (tardía)",
         (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio) => "Cancelada (por el consultorio)",
         (EstadoEnLaAgenda.Cancelada, _) => "Cancelada (por el paciente)",
-        _ => cita.Estado.ToString(),
+        _ => estado.ToString(),
     };
 
     // DESIGN.md: el ámbar (warning) es solo de la cancelación tardía y el rojo (danger) solo de la acción de cancelar;

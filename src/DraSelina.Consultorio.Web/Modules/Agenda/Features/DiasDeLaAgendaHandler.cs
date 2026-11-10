@@ -9,7 +9,8 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// <summary>
 /// Los días de la Agenda del Administrador. Una consulta: no abre transacción ni cambia estado. Reúne en una vuelta las
 /// Citas del rango, la agenda de atención del rango (base y customs, una lectura cada una) y los contactos en lote de
-/// Pacientes (AD-10, RN-29): la página no compone módulos ni decide marcas. Atendida se deriva aquí (RN-19, RN-31);
+/// Pacientes (AD-10, RN-29): la página no compone módulos ni decide marcas. Atendida se deriva aquí, con
+/// <see cref="EstadoMostrado"/> (RN-19, RN-31);
 /// "fuera de horario" sale de <see cref="AgendaAtencion.TramosVigentes"/> y <see cref="Tramo.Contiene"/> (INV-C6).
 /// </summary>
 public sealed class DiasDeLaAgendaHandler(
@@ -90,31 +91,11 @@ public sealed class DiasDeLaAgendaHandler(
             fin,
             contacto?.Nombre,
             cita.MotivoDeConsulta,
-            Estado(cita, ahora),
-            Cancelacion(cita.MotivoDeCancelacion),
+            EstadoMostrado.Estado(cita.Estado, cita.Inicio, ahora),
+            EstadoMostrado.Cancelacion(cita.MotivoDeCancelacion),
             SinCorreo: contacto?.Correo is null,
             // INV-C6: solo una Cita del Consultorio puede quedar fuera de los Tramos; una en línea nunca lleva la marca.
             FueraDeHorario: cita.Origen == OrigenDeCita.Consultorio && !vigentes.Tramos.Any(t => t.Contiene(inicio, fin)),
             cita.Nota);
     }
-
-    // RN-31: "ya pasó" se mide desde el inicio; en el inicio mismo ya cuenta como Atendida, el mismo corte de
-    // Cita.Cancelar.
-    private static EstadoEnLaAgenda Estado(CitaLeidaDeLaAgenda cita, DateTimeOffset ahora) => cita.Estado switch
-    {
-        EstadoCita.Agendada when cita.Inicio <= ahora => EstadoEnLaAgenda.Atendida,
-        EstadoCita.Agendada => EstadoEnLaAgenda.Agendada,
-        EstadoCita.NoSePresento => EstadoEnLaAgenda.NoSePresento,
-        EstadoCita.Cancelada => EstadoEnLaAgenda.Cancelada,
-        _ => throw new InvalidOperationException($"Estado de Cita desconocido: {cita.Estado}."),
-    };
-
-    private static CancelacionEnLaAgenda? Cancelacion(MotivoDeCancelacion? motivo) => motivo switch
-    {
-        null => null,
-        MotivoDeCancelacion.Paciente => CancelacionEnLaAgenda.PorElPaciente,
-        MotivoDeCancelacion.Tarde => CancelacionEnLaAgenda.Tardia,
-        MotivoDeCancelacion.Consultorio => CancelacionEnLaAgenda.PorElConsultorio,
-        _ => throw new InvalidOperationException($"Motivo de cancelación desconocido: {motivo}."),
-    };
 }

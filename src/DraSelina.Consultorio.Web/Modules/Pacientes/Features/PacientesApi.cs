@@ -73,6 +73,19 @@ public sealed class PacientesApi(ITransaccionDePacientes transaccion, IPacientes
         }
     }
 
+    // Solo lectura, como ConTelefonoAsync: la misma búsqueda de BuscarOCrear, sin registrar.
+    public async Task<PatientId?> BuscarAsync(string nombre, string telefono, CancellationToken cancellationToken)
+    {
+        if (TelefonoDeMexico(telefono) is not { } tel || NombreCompleto.Crear(nombre) is not { } nom)
+        {
+            return null;
+        }
+
+        // Sin rastrear: en el circuito de administración el contexto dura lo que el circuito, y un Paciente rastreado
+        // aquí sería el que BuscarOCrear encontraría después, con lo que tenía entonces (RN-30).
+        return await pacientes.IdAsync(tel, nom, cancellationToken);
+    }
+
     // Solo lectura: no abre transacción; lo que ya confirmó BuscarOCrear se ve.
     public async Task<IReadOnlyList<PatientId>> ConTelefonoAsync(string telefono, CancellationToken cancellationToken) =>
         TelefonoDeMexico(telefono) is { } tel
