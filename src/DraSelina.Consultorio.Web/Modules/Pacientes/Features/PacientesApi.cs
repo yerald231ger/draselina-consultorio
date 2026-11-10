@@ -120,6 +120,12 @@ public sealed class PacientesApi(ITransaccionDePacientes transaccion, IPacientes
         return encontrados.ToDictionary(par => par.Key, par => new Contactos(par.Value.Nombre, par.Value.Correo));
     }
 
+    // Solo lectura, como ConTelefonoAsync.
+    public async Task<ContactoConTelefono?> ObtenerContactoConTelefonoAsync(PatientId paciente, CancellationToken cancellationToken) =>
+        await pacientes.ContactoConTelefonoAsync(paciente, cancellationToken) is { } contacto
+            ? new ContactoConTelefono(contacto.Nombre, contacto.Telefono, contacto.Correo)
+            : null;
+
     // libphonenumber decide si el número existe en el plan de numeración de México y lo da en E.164; el dominio
     // solo acepta esa forma.
     private static Telefono? TelefonoDeMexico(string? texto)

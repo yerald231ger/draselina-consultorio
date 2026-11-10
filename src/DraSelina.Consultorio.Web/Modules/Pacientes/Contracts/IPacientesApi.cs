@@ -72,6 +72,14 @@ public interface IPacientesApi
     /// <returns>Uno por cada Paciente que existe; el que no existe no aparece. Vacío si no se pide ninguno.</returns>
     Task<IReadOnlyDictionary<PatientId, Contactos>> ObtenerContactosAsync(
         IReadOnlyCollection<PatientId> ids, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// El contacto completo del Paciente: su nombre tal como se guardó, su teléfono y su correo, si tiene (RN-29,
+    /// RN-30). Es para el Detalle de Cita del Administrador (entrada 6), que le avisa a mano si no tiene correo. Quien lo
+    /// recibe no escribe ninguno en registros, trazas ni tablas (AD-23). No registra nada.
+    /// </summary>
+    /// <returns>Nulo si el Paciente no existe.</returns>
+    Task<ContactoConTelefono?> ObtenerContactoConTelefonoAsync(PatientId paciente, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -83,6 +91,18 @@ public interface IPacientesApi
 public sealed record Contactos(string Nombre, string? Correo)
 {
     public override string ToString() => $"Contactos(oculto, {(Correo is null ? "sin correo" : "con correo")})";
+}
+
+/// <summary>
+/// El contacto de un Paciente con su teléfono. Nunca va a registros (AD-23): <see cref="ToString"/> no muestra nombre,
+/// teléfono ni correo.
+/// </summary>
+/// <param name="Nombre">Como se guardó.</param>
+/// <param name="Telefono">En E.164, como <c>+524441234567</c>.</param>
+/// <param name="Correo">La dirección guardada; nulo si no dio correo.</param>
+public sealed record ContactoConTelefono(string Nombre, string Telefono, string? Correo)
+{
+    public override string ToString() => $"ContactoConTelefono(oculto, {(Correo is null ? "sin correo" : "con correo")})";
 }
 
 /// <summary>El conjunto cerrado de códigos de fallo esperado de Pacientes.</summary>

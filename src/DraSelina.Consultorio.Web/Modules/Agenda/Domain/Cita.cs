@@ -396,6 +396,26 @@ public sealed class Cita
     }
 
     /// <summary>
+    /// Si ahora procede <see cref="MarcarNoSePresento"/>: la Cita está Agendada y su inicio ya llegó (RN-31); en el
+    /// inicio mismo, sí. La misma regla que aplica la transición; con ella el Detalle de Cita ofrece la acción (entrada
+    /// 6) sin recalcularla.
+    /// </summary>
+    /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    public bool PuedeMarcarNoSePresento(DateTimeOffset now) =>
+        // RN-31: "ya pasó" se mide desde el inicio. Antes del inicio todavía no hay a quién esperar.
+        Estado == EstadoCita.Agendada && Rango.Inicio <= now;
+
+    /// <summary>
+    /// Si ahora procede <see cref="CancelarPorConsultorio"/>: la Cita está Agendada y su inicio no ha llegado (RN-31);
+    /// en el inicio mismo, ya no. La misma regla que aplica la transición; con ella el Detalle de Cita ofrece la acción
+    /// (entrada 6) sin recalcularla.
+    /// </summary>
+    /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    public bool PuedeCancelarPorConsultorio(DateTimeOffset now) =>
+        // RN-31: en el inicio mismo, ya no se cancela.
+        Estado == EstadoCita.Agendada && now < Rango.Inicio;
+
+    /// <summary>
     /// Marca que el Paciente no se presentó (CAP-14, FR-16, AD-9). Solo si está Agendada y su inicio ya llegó (RN-31):
     /// en el inicio mismo ya se puede. Queda <see cref="EstadoCita.NoSePresento"/>, que es final (INV-C7), sin motivo ni
     /// instante de cancelación (INV-C8). El rango no cambia.
@@ -409,8 +429,7 @@ public sealed class Cita
             return RechazoAlMarcarNoSePresento.CitaNoAgendada;
         }
 
-        // RN-31: "ya pasó" se mide desde el inicio. Antes del inicio todavía no hay a quién esperar.
-        if (now < Rango.Inicio)
+        if (!PuedeMarcarNoSePresento(now))
         {
             return RechazoAlMarcarNoSePresento.AunNoEmpieza;
         }
@@ -434,8 +453,7 @@ public sealed class Cita
             return RechazoAlCancelar.CitaNoAgendada;
         }
 
-        // RN-31: en el inicio mismo, ya no se cancela.
-        if (Rango.Inicio <= now)
+        if (!PuedeCancelarPorConsultorio(now))
         {
             return RechazoAlCancelar.YaEmpezo;
         }

@@ -6,8 +6,14 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure;
 /// <summary>El puerto de transacción de Agenda sobre su contexto: la transacción es la de <see cref="AgendaDbContext"/>.</summary>
 public sealed class TransaccionDeAgenda(AgendaDbContext db) : ITransaccionDeAgenda
 {
-    public async Task<ITransaccionAbiertaDeAgenda> AbrirAsync(CancellationToken cancellationToken) =>
-        new Abierta(db, await db.Database.BeginTransactionAsync(cancellationToken));
+    // En administración el contexto dura lo que el circuito: lo rastreado por un comando ya confirmado puede estar
+    // viejo (otro ámbito lo cambió después), y una lectura rastreada lo devolvería tal cual aunque la fila se acabe de
+    // bloquear. Cada comando empieza sin nada rastreado: lee lo guardado.
+    public async Task<ITransaccionAbiertaDeAgenda> AbrirAsync(CancellationToken cancellationToken)
+    {
+        db.ChangeTracker.Clear();
+        return new Abierta(db, await db.Database.BeginTransactionAsync(cancellationToken));
+    }
 
     private sealed class Abierta(AgendaDbContext db, IDbContextTransaction transaccion) : ITransaccionAbiertaDeAgenda
     {

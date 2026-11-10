@@ -479,6 +479,47 @@ public sealed class NoSePresentoYCancelarPorConsultorioTests(Arnes arnes)
         Assert.Single(await BitacoraAsync(escenario, "NoSePresento"));
     }
 
+    [Fact]
+    public async Task En_el_mismo_circuito_un_cambio_hecho_por_otro_ambito_se_ve_y_no_se_cancela_dos_veces()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        // Un solo ámbito, como el circuito del Administrador: agenda la Cita (queda rastreada en su contexto).
+        await using var circuito = escenario.Web.Services.CreateAsyncScope();
+        ComoAdministrador(circuito);
+        var agendada = await circuito.ServiceProvider
+            .GetRequiredService<ICommandHandler<AgendarCitaPorConsultorio, CitaAgendadaPorConsultorio>>()
+            .HandleAsync(
+                new AgendarCitaPorConsultorio
+                {
+                    TipoDeVisitaId = TiposDeVisitaSembrados.PrimeraConsulta,
+                    Fecha = Manana,
+                    Hora = new TimeOnly(16, 0),
+                    Nombre = "Ana Sofía López",
+                    Telefono = "444 123 4567",
+                    Correo = "ana@correo.com",
+                    Consentimiento = true,
+                },
+                Cancelacion);
+        Assert.True(agendada.EsExito, $"{agendada.Forma} {agendada.Codigo}");
+        var cita = agendada.Valor.CitaId;
+
+        // El Paciente la cancela desde otro ámbito, con su Enlace de gestión.
+        var token = EnlaceDeGestion.Derivar(escenario.Web.Services.GetRequiredService<ClaveDeGestion>(), cita).Token;
+        var delPaciente = await EnviarAsync<CancelarCitaPorEnlace, CitaCanceladaPorEnlace>(escenario, new() { Token = token }, SinSesion);
+        Assert.True(delPaciente.EsExito, $"{delPaciente.Forma} {delPaciente.Codigo}");
+
+        // El circuito cancela la misma Cita: lee lo guardado, no la que tenía rastreada.
+        var delConsultorio = await circuito.ServiceProvider
+            .GetRequiredService<ICommandHandler<CancelarCitaPorConsultorio, CitaCanceladaPorConsultorio>>()
+            .HandleAsync(new CancelarCitaPorConsultorio { CitaId = cita }, Cancelacion);
+
+        Assert.Equal(CodigosDeAgenda.CitaNoAgendada, delConsultorio.Codigo);
+        Assert.Equal(("Cancelada", "paciente"), await EstadoYMotivoAsync(escenario));
+        Assert.Single(await EventosCanceladaAsync(escenario, cita));
+        Assert.Single(await BitacoraAsync(escenario, "Cancelada"));
+    }
+
     private static async Task<CitaId> AgendarAsync(Escenario escenario)
     {
         var resultado = await escenario.AgendarAsync(Comando(Manana, new TimeOnly(16, 0)));

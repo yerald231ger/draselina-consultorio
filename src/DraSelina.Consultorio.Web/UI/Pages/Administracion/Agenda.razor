@@ -20,8 +20,8 @@
     fechas locales del consultorio, con las Citas en todos sus estados y en orden de inicio. La fecha y la vista viajan en
     la dirección (/admin?fecha=2026-11-10&vista=semana); sin parámetros, o con una fecha que no se entiende, hoy en vista
     de día. Nada de datos personales en la dirección (AD-11, AD-23). Las canceladas se ocultan por omisión; un control
-    las muestra. Sin mockup: los tratamientos son los de EXPERIENCE.md (State Patterns, Administrador). El Detalle de
-    Cita es de la entrada 6; "Agendar cita" (entrada 4) abre su página con la fecha que se está viendo.
+    las muestra. Sin mockup: los tratamientos son los de EXPERIENCE.md (State Patterns, Administrador). Cada tarjeta abre
+    el Detalle de su Cita (entrada 6); "Agendar cita" (entrada 4) abre su página con la fecha que se está viendo.
 
     Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar y el regreso conserva fecha y
     vista. La consulta lleva IRequiereAdministrador (AD-22): no se confía en esta protección. Las marcas y los nombres
@@ -204,7 +204,10 @@
 
     // DESIGN.md: el ámbar (warning) es solo de la cancelación tardía y el rojo (danger) solo de la acción de cancelar;
     // las demás cancelaciones y No se presentó van en un chip neutro.
-    internal static string ClaseDeEtiqueta(CitaDeLaAgenda cita) => (cita.Estado, cita.Cancelacion) switch
+    internal static string ClaseDeEtiqueta(CitaDeLaAgenda cita) => ClaseDeEtiqueta(cita.Estado, cita.Cancelacion);
+
+    /// <summary>La clase del chip de un estado mostrado, con su cancelación; la misma en la Agenda y en el Detalle de Cita.</summary>
+    internal static string ClaseDeEtiqueta(EstadoEnLaAgenda estado, CancelacionEnLaAgenda? cancelacion) => (estado, cancelacion) switch
     {
         (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "dsm-chip-de-estado dsm-chip-de-estado--tardia",
         (EstadoEnLaAgenda.Cancelada or EstadoEnLaAgenda.NoSePresento, _) => "dsm-chip-de-estado dsm-chip-de-estado--neutro",

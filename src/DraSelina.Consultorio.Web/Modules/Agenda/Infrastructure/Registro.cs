@@ -44,6 +44,8 @@ public static class Registro
             .AddScoped<ICitasDelDia, CitasDelDia>()
             .AddScoped<ICitasDeLaAgenda, CitasDeLaAgenda>()
             .AddScoped<IAgendaDelRango, AgendaDelRango>()
+            .AddScoped<ICitaDelDetalle, CitaDelDetalle>()
+            .AddScoped<IBitacoraDeLaCita, BitacoraDeLaCita>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
@@ -60,7 +62,8 @@ public static class Registro
             .AddScoped<IQueryHandler<DiasDeLaAgenda, IReadOnlyList<DiaDeLaAgenda>>, DiasDeLaAgendaHandler>()
             .AddScoped<IQueryHandler<TiposDeVisitaActivos, IReadOnlyList<TipoDeVisitaActivo>>, TiposDeVisitaActivosHandler>()
             .AddScoped<IQueryHandler<HorarioDeLaCitaDelConsultorio, HorarioDeLaCita>, HorarioDeLaCitaDelConsultorioHandler>()
-            .AddScoped<IQueryHandler<PacienteReconocido, PacienteDeLaCita>, PacienteReconocidoHandler>();
+            .AddScoped<IQueryHandler<PacienteReconocido, PacienteDeLaCita>, PacienteReconocidoHandler>()
+            .AddScoped<IQueryHandler<DetalleDeCita, CitaEnDetalle>, DetalleDeCitaHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

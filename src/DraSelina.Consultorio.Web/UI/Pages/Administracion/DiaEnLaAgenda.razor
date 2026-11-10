@@ -4,8 +4,8 @@
 
 @*
     Un día de la Agenda (entrada 5.2), en la vista de día o como columna de la semana: la marca del día (sin Tramos o
-    con Agenda custom, siempre con su motivo), sus Tramos vigentes y sus Citas. Las marcas las decidió la consulta; aquí
-    solo se pintan. Las canceladas se ocultan si así lo pide la página, con un aviso de cuántas.
+    con Agenda custom, siempre con su motivo), sus Tramos vigentes y sus Citas, cada una con el enlace a su Detalle (entrada 6). Las marcas las decidió la consulta;
+    aquí solo se pintan. Las canceladas se ocultan si así lo pide la página, con un aviso de cuántas.
 *@
 
 <section class="@ClaseDelDia" data-fecha="@Iso(Dia.Fecha)">
@@ -49,7 +49,8 @@
                             <span class="dsm-agenda__fin">a @FormatoDeCita.Hora(cita.Fin)</span>
                         </div>
                         <div class="dsm-agenda__datos">
-                            <div class="dsm-agenda__paciente">@(cita.Paciente ?? Agenda.PacienteNoEncontrado)</div>
+                            @* El enlace cubre toda la tarjeta (entrada 6): abre el Detalle de la Cita. *@
+                            <div class="dsm-agenda__paciente"><a class="dsm-agenda__abrir" href="@DetalleDeCita.Direccion(cita.CitaId)">@(cita.Paciente ?? Agenda.PacienteNoEncontrado)</a></div>
                             @if (cita.MotivoDeConsulta is { Length: > 0 } motivo)
                             {
                                 <div class="dsm-agenda__motivo">@motivo</div>

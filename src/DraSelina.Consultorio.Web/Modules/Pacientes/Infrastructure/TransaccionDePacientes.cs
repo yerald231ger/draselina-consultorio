@@ -6,8 +6,14 @@ namespace DraSelina.Consultorio.Pacientes.Infrastructure;
 /// <summary>El puerto de transacción de Pacientes sobre su contexto: la transacción es la de <see cref="PacientesDbContext"/>.</summary>
 public sealed class TransaccionDePacientes(PacientesDbContext db) : ITransaccionDePacientes
 {
-    public async Task<ITransaccionAbiertaDePacientes> AbrirAsync(CancellationToken cancellationToken) =>
-        new Abierta(db, await db.Database.BeginTransactionAsync(cancellationToken));
+    // En administración el contexto dura lo que el circuito: lo rastreado por un comando ya confirmado puede estar
+    // viejo (otro ámbito lo cambió después), y una lectura rastreada lo devolvería tal cual aunque la fila se acabe de
+    // bloquear. Cada comando empieza sin nada rastreado: lee lo guardado.
+    public async Task<ITransaccionAbiertaDePacientes> AbrirAsync(CancellationToken cancellationToken)
+    {
+        db.ChangeTracker.Clear();
+        return new Abierta(db, await db.Database.BeginTransactionAsync(cancellationToken));
+    }
 
     private sealed class Abierta(PacientesDbContext db, IDbContextTransaction transaccion) : ITransaccionAbiertaDePacientes
     {

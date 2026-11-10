@@ -180,6 +180,51 @@ public class CitaNoSePresentoYCancelarPorConsultorioTests
         Assert.Equal(OrigenDeCita.EnLinea, cita.Origen);
     }
 
+    // Lo que procede ahora (entrada 6): la misma regla de las transiciones.
+
+    [Theory]
+    [InlineData(-1, false, true)]
+    [InlineData(0, true, false)]
+    [InlineData(10, true, false)]
+    public void Agendada_procede_cancelar_antes_del_inicio_y_marcar_desde_el_inicio(int minutos, bool marcar, bool cancelar)
+    {
+        var cita = Agendada();
+        var ahora = Inicio.AddMinutes(minutos);
+
+        Assert.Equal(marcar, cita.PuedeMarcarNoSePresento(ahora));
+        Assert.Equal(cancelar, cita.PuedeCancelarPorConsultorio(ahora));
+
+        // Las transiciones deciden igual.
+        Assert.Equal(marcar, Agendada().MarcarNoSePresento(ahora) is null);
+        Assert.Equal(cancelar, Agendada().CancelarPorConsultorio(ahora) is null);
+    }
+
+    [Fact]
+    public void Un_instante_antes_del_inicio_procede_cancelar_y_no_marcar()
+    {
+        var cita = Agendada();
+
+        Assert.True(cita.PuedeCancelarPorConsultorio(Inicio.AddTicks(-1)));
+        Assert.False(cita.PuedeMarcarNoSePresento(Inicio.AddTicks(-1)));
+    }
+
+    [Fact]
+    public void Cancelada_o_No_se_presento_no_procede_ninguna()
+    {
+        var cancelada = Agendada();
+        Assert.Null(cancelada.CancelarPorConsultorio(Inicio.AddHours(-1)));
+        var marcada = Agendada();
+        Assert.Null(marcada.MarcarNoSePresento(Inicio.AddMinutes(5)));
+
+        foreach (var ahora in new[] { Inicio.AddHours(-2), Inicio.AddHours(2) })
+        {
+            Assert.False(cancelada.PuedeMarcarNoSePresento(ahora));
+            Assert.False(cancelada.PuedeCancelarPorConsultorio(ahora));
+            Assert.False(marcada.PuedeMarcarNoSePresento(ahora));
+            Assert.False(marcada.PuedeCancelarPorConsultorio(ahora));
+        }
+    }
+
     private static Cita Agendada()
     {
         Assert.Null(Cita.AgendarPorConsultorio(

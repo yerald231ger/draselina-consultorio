@@ -42,6 +42,13 @@ public interface IPacientes
     Task<IReadOnlyDictionary<PatientId, (string Nombre, string? Correo)>> ContactosAsync(
         IReadOnlyCollection<PatientId> ids, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// El nombre como lo escribió, el teléfono en E.164 (<see cref="Telefono.Valor"/>) y el correo guardado (nulo si no
+    /// tiene); nulo si el Paciente no existe. Sin rastrear.
+    /// </summary>
+    Task<(string Nombre, string Telefono, string? Correo)?> ContactoConTelefonoAsync(
+        PatientId paciente, CancellationToken cancellationToken);
+
     void Agregar(Paciente paciente);
 
     /// <summary>

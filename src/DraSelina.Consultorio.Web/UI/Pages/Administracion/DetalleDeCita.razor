@@ -1,0 +1,489 @@
+@page "/admin/citas/{Id:guid}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@layout LayoutAdministracion
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@using ConsultaDelDetalle = DraSelina.Consultorio.Agenda.Contracts.DetalleDeCita
+@inject IQueryHandler<ConsultaDelDetalle, CitaEnDetalle> Consulta
+@inject ICommandHandler<MarcarNoSePresento, CitaMarcadaNoSePresento> Marcar
+@inject ICommandHandler<CancelarCitaPorConsultorio, CitaCanceladaPorConsultorio> Cancelar
+@inject IClock Reloj
+@inject ILogger<DetalleDeCita> Registro
+
+@*
+    Detalle de Cita (CAP-12, CAP-14, CAP-17, FR-16, FR-17, FR-20; entrada 6): se abre desde cada tarjeta de la Agenda,
+    en vista de día y de semana. Pinta la consulta DetalleDeCita: los datos de la Cita, el contacto de su Paciente, su
+    estado con los colores de la Agenda, las acciones que proceden ahora y su bitácora. Las reglas (qué acción procede,
+    Atendida, sin correo) las decide la consulta; aquí solo se pintan. En la dirección solo va el id de la Cita (AD-11,
+    AD-23).
+
+    Las dos acciones llaman a los comandos de la entrada 5.5 y piden confirmación en la propia página, sin diálogos del
+    navegador; la de cancelar dice si el Paciente recibirá la disculpa por correo o si hay que avisarle a mano. Después
+    de confirmar la página se queda aquí y vuelve a pedir la consulta: el estado y la bitácora mostrados son los nuevos
+    (Gerardo, 2026-11-10). Un rechazo del comando (por ejemplo, la hora pasó mientras se confirmaba) se muestra y también
+    vuelve a pedir la consulta, que ofrece lo que ahora procede.
+
+    Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar. La consulta y los comandos
+    llevan IRequiereAdministrador (AD-22). Comparten los contextos del circuito: una llamada a la vez. El botón de
+    confirmar se deshabilita mientras el comando corre y un segundo clic no manda otro. Textos `[ASSUMPTION: texto]`.
+*@
+
+<PageTitle>Detalle de cita · Administración</PageTitle>
+
+<section class="dsm-contenedor dsm-detalle" aria-labelledby="detalle-de-cita">
+    <a href="@Volver" class="dsm-volver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 12H5M11 6l-6 6 6 6"></path>
+        </svg>
+        @VolverALaAgenda
+    </a>
+
+    @if (Vigente is { NoExiste: true })
+    {
+        <h1 id="detalle-de-cita" class="dsm-titulo-de-estado">@NoExiste</h1>
+    }
+    else if (Vigente is { Fallo: true })
+    {
+        <h1 id="detalle-de-cita" class="dsm-titulo-de-estado">Detalle de cita</h1>
+        <p class="dsm-detalle__no-cargo">@NoSeCargo</p>
+    }
+    else if (Vigente?.Cita is { } cita)
+    {
+        <div class="dsm-detalle__cabeza">
+            <h1 id="detalle-de-cita" class="dsm-titulo-de-estado dsm-detalle__paciente">@(cita.Paciente?.Nombre ?? Agenda.PacienteNoEncontrado)</h1>
+            <span class="@Agenda.ClaseDeEtiqueta(cita.Estado, cita.Cancelacion) dsm-detalle__estado">@Agenda.Etiqueta(cita.Estado, cita.Cancelacion)</span>
+        </div>
+        <p class="dsm-detalle__cuando">@Fecha(cita.Fecha), @Horario(cita)</p>
+
+        @if (_aviso is not null)
+        {
+            <div class="dsm-aviso dsm-detalle__aviso" role="alert">
+                <p class="dsm-aviso__mensaje">@_aviso</p>
+            </div>
+        }
+
+        @if (cita.PuedeMarcarNoSePresento || cita.PuedeCancelar)
+        {
+            <div class="dsm-detalle__acciones">
+                @if (_confirmando == Accion.Ninguna)
+                {
+                    @if (cita.PuedeMarcarNoSePresento)
+                    {
+                        <button type="button" class="btn dsm-boton-neutro dsm-detalle__marcar" @onclick="() => Pedir(Accion.NoSePresento)">@MarcarNoSePresentoTexto</button>
+                    }
+                    @if (cita.PuedeCancelar)
+                    {
+                        <button type="button" class="btn dsm-boton-peligro dsm-detalle__cancelar" @onclick="() => Pedir(Accion.Cancelar)">@CancelarCitaTexto</button>
+                    }
+                }
+                else
+                {
+                    <div class="dsm-detalle__confirmacion" role="group" aria-labelledby="confirmacion-pregunta">
+                        <p id="confirmacion-pregunta" class="dsm-detalle__pregunta">@(_confirmando == Accion.Cancelar ? PreguntaDeCancelar : PreguntaDeNoSePresento)</p>
+                        <p class="dsm-detalle__consecuencia">@Consecuencia(cita)</p>
+                        <button type="button" class="btn @(_confirmando == Accion.Cancelar ? "dsm-boton-cancelar" : "btn-primary dsm-accion-principal") dsm-detalle__confirmar"
+                                disabled="@_enCurso" @onclick="ConfirmarAsync">
+                            @(_enCurso ? "Guardando…" : _confirmando == Accion.Cancelar ? ConfirmarCancelar : ConfirmarNoSePresento)
+                        </button>
+                        <button type="button" class="btn dsm-boton-neutro dsm-detalle__no-confirmar" disabled="@_enCurso" @onclick="NoConfirmar">@NoConfirmarTexto</button>
+                    </div>
+                }
+            </div>
+        }
+
+        <dl class="dsm-detalle__datos">
+            @if (cita.Paciente is { } paciente)
+            {
+                <div class="dsm-detalle__dato" data-dato="telefono">
+                    <dt>Teléfono</dt>
+                    <dd><a href="tel:@paciente.Telefono" class="dsm-enlace-en-texto">@Telefono(paciente.Telefono)</a></dd>
+                </div>
+            }
+            <div class="dsm-detalle__dato" data-dato="correo">
+                <dt>Correo</dt>
+                @if (cita.Paciente?.Correo is { } correo)
+                {
+                    <dd>@correo</dd>
+                }
+                else
+                {
+                    <dd class="dsm-detalle__sin-correo">@SinCorreo</dd>
+                }
+            </div>
+            <div class="dsm-detalle__dato" data-dato="tipo">
+                <dt>Tipo de consulta</dt>
+                <dd>@(cita.TipoDeVisita ?? TipoNoEncontrado)</dd>
+            </div>
+            <div class="dsm-detalle__dato" data-dato="fecha">
+                <dt>Fecha</dt>
+                <dd>@Fecha(cita.Fecha)</dd>
+            </div>
+            <div class="dsm-detalle__dato" data-dato="hora">
+                <dt>Hora</dt>
+                <dd>@Horario(cita)</dd>
+            </div>
+            <div class="dsm-detalle__dato" data-dato="origen">
+                <dt>Origen</dt>
+                <dd>@Origen(cita.Origen)</dd>
+            </div>
+            @if (cita.MotivoDeConsulta is { Length: > 0 } motivo)
+            {
+                <div class="dsm-detalle__dato" data-dato="motivo">
+                    <dt>Motivo de la consulta</dt>
+                    <dd>@motivo</dd>
+                </div>
+            }
+            @if (cita.Nota is { Length: > 0 } nota)
+            {
+                <div class="dsm-detalle__dato" data-dato="nota">
+                    <dt>Nota</dt>
+                    <dd>@nota</dd>
+                </div>
+            }
+            <div class="dsm-detalle__dato" data-dato="consentimiento">
+                <dt>Consentimiento</dt>
+                <dd>@Consentimiento(cita.Consentimiento)</dd>
+            </div>
+        </dl>
+
+        <h2 class="dsm-seccion dsm-detalle__titulo-bitacora">Bitácora</h2>
+        <ol class="dsm-detalle__bitacora">
+            @foreach (var entrada in cita.Bitacora)
+            {
+                <li class="dsm-detalle__entrada">
+                    <span class="dsm-detalle__entrada-cuando">@Cuando(entrada)</span>
+                    <span class="dsm-detalle__entrada-que">@Que(entrada, _hoy.Year)</span>
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    /// <summary>La Cita no existe (o el id no es de ninguna).</summary>
+    public const string NoExiste = "Esta cita no existe.";
+
+    /// <summary>La consulta no volvió con éxito (sin sesión no se llega aquí).</summary>
+    public const string NoSeCargo = "No se pudo cargar la cita. Vuelve a entrar.";
+
+    /// <summary>El enlace a la Agenda, en la fecha de la Cita.</summary>
+    public const string VolverALaAgenda = "Volver a la Agenda";
+
+    /// <summary>El Paciente no tiene correo guardado (RN-30): hay que avisarle a mano.</summary>
+    public const string SinCorreo = "sin correo: avisa a mano";
+
+    /// <summary>El tipo de la Cita ya no existe.</summary>
+    public const string TipoNoEncontrado = "Tipo no encontrado";
+
+    public const string MarcarNoSePresentoTexto = "No se presentó";
+
+    public const string CancelarCitaTexto = "Cancelar cita";
+
+    public const string PreguntaDeNoSePresento = "¿Marcar que el paciente no se presentó?";
+
+    public const string PreguntaDeCancelar = "¿Cancelar esta cita?";
+
+    /// <summary>No se presentó es final (INV-C7): no se revierte.</summary>
+    public const string NoSeDeshace = "Esto no se puede deshacer.";
+
+    /// <summary>Con correo, Notificaciones le manda la disculpa (4.4).</summary>
+    public const string RecibiraDisculpa = "El paciente recibirá una disculpa por correo.";
+
+    /// <summary>Sin correo, no sale nada: hay que avisarle a mano (RN-30).</summary>
+    public const string AvisarleAMano = "El paciente no tiene correo: avísale a mano.";
+
+    public const string ConfirmarNoSePresento = "Sí, no se presentó";
+
+    public const string ConfirmarCancelar = "Sí, cancelar la cita";
+
+    public const string NoConfirmarTexto = "No, regresar";
+
+    /// <summary>La hora llegó mientras se confirmaba la cancelación (RN-31).</summary>
+    public const string YaEmpezo = "La cita ya empezó: ya no se puede cancelar.";
+
+    /// <summary>La hora todavía no llega para marcar que no se presentó (RN-31).</summary>
+    public const string AunNoEmpieza = "La cita todavía no empieza: aún no se puede marcar que no se presentó.";
+
+    /// <summary>Otro cambio la dejó Cancelada o No se presentó.</summary>
+    public const string YaNoEstaAgendada = "Esta cita ya no está agendada.";
+
+    /// <summary>El comando volvió no autorizado: la sesión terminó.</summary>
+    public const string SinSesion = "Tu sesión terminó. Vuelve a entrar.";
+
+    /// <summary>Cualquier otro fallo, sin error técnico.</summary>
+    public const string NoSeHizo = "No se pudo guardar el cambio. Inténtalo de nuevo.";
+
+    /// <summary>La dirección del Detalle de una Cita: <c>/admin/citas/{id}</c>. Solo el id (AD-11, AD-23).</summary>
+    public static string Direccion(CitaId cita) => $"/admin/citas/{cita.Valor}";
+
+    /// <summary>El id de la Cita, de la dirección.</summary>
+    [Parameter]
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// Lo cargado en el prerenderizado, que pasa al circuito (.NET 10, <c>[PersistentState]</c>): la consulta no se repite
+    /// y el Detalle no desaparece mientras el circuito arranca. Lleva el id: si la dirección pide otra Cita, se consulta
+    /// de nuevo.
+    /// </summary>
+    [PersistentState]
+    public DetalleCargado? Cargado { get; set; }
+
+    /// <summary>Lo que volvió la consulta para una Cita: su Detalle, que no existe, o que no se pudo cargar.</summary>
+    public sealed record DetalleCargado(Guid Id, CitaEnDetalle? Cita, bool NoExiste, bool Fallo);
+
+    private enum Accion
+    {
+        Ninguna,
+        NoSePresento,
+        Cancelar,
+    }
+
+    private readonly CancellationTokenSource _cierre = new();
+    private readonly SemaphoreSlim _ocupado = new(1, 1);
+    private DateOnly _hoy;
+    private Accion _confirmando;
+    private bool _enCurso;
+    private string? _aviso;
+
+    private DetalleCargado? Vigente => Cargado?.Id == Id ? Cargado : null;
+
+    // A la Agenda de la fecha de la Cita, en vista de día; sin Cita, a la de hoy.
+    private string Volver => Vigente?.Cita is { } cita ? Agenda.Direccion(cita.Fecha, semana: false) : "/admin";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
+
+        // Ya cargada para esta Cita en el prerenderizado: el circuito la recibe y no consulta otra vez. Si allá falló,
+        // el circuito lo vuelve a intentar.
+        if (Vigente is { Fallo: false })
+        {
+            return;
+        }
+
+        _confirmando = Accion.Ninguna;
+        _aviso = null;
+        await CargarAsync(conservarSiFalla: false);
+    }
+
+    private void Pedir(Accion accion)
+    {
+        _confirmando = accion;
+        _aviso = null;
+    }
+
+    private void NoConfirmar()
+    {
+        if (!_enCurso)
+        {
+            _confirmando = Accion.Ninguna;
+        }
+    }
+
+    private async Task ConfirmarAsync()
+    {
+        // Un segundo clic mientras el comando corre no manda otro.
+        if (_enCurso || _confirmando == Accion.Ninguna || Vigente?.Cita is not { } cita)
+        {
+            return;
+        }
+
+        _enCurso = true;
+        _aviso = null;
+        var accion = _confirmando;
+        try
+        {
+            Resultado resultado;
+            await _ocupado.WaitAsync(_cierre.Token);
+            try
+            {
+                resultado = accion == Accion.Cancelar
+                    ? await Cancelar.HandleAsync(new CancelarCitaPorConsultorio { CitaId = cita.CitaId }, _cierre.Token)
+                    : await Marcar.HandleAsync(new MarcarNoSePresento { CitaId = cita.CitaId }, _cierre.Token);
+            }
+            finally
+            {
+                _ocupado.Release();
+            }
+
+            _aviso = resultado.EsExito ? null : Rechazo(resultado);
+        }
+        catch (OperationCanceledException) when (_cierre.IsCancellationRequested)
+        {
+            // Se salió de la página.
+            return;
+        }
+        catch (Exception error)
+        {
+            // Sin datos personales (AD-23): solo qué acción.
+            Registro.LogWarning(error, "La acción {Accion} del Detalle de Cita no se pudo hacer", accion);
+            _aviso = NoSeHizo;
+        }
+        finally
+        {
+            _enCurso = false;
+            _confirmando = Accion.Ninguna;
+        }
+
+        // Con éxito o con rechazo, lo que se muestra es lo guardado ahora: el estado, las acciones y la bitácora.
+        await CargarAsync(conservarSiFalla: true);
+    }
+
+    // Una llamada a la vez sobre los contextos del circuito. Una consulta que lanza no tumba el circuito; se registra
+    // sin datos personales (AD-23). Al volver a pedirla tras una acción, si falla se conserva lo mostrado.
+    private async Task CargarAsync(bool conservarSiFalla)
+    {
+        var id = Id;
+        DetalleCargado cargado;
+        try
+        {
+            await _ocupado.WaitAsync(_cierre.Token);
+            try
+            {
+                var resultado = await Consulta.HandleAsync(new ConsultaDelDetalle(new CitaId(id)), _cierre.Token);
+                cargado = resultado switch
+                {
+                    { EsExito: true } => new DetalleCargado(id, resultado.Valor, NoExiste: false, Fallo: false),
+                    { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.CitaNoEncontrada } =>
+                        new DetalleCargado(id, null, NoExiste: true, Fallo: false),
+                    _ => new DetalleCargado(id, null, NoExiste: false, Fallo: true),
+                };
+            }
+            finally
+            {
+                _ocupado.Release();
+            }
+        }
+        catch (OperationCanceledException) when (_cierre.IsCancellationRequested)
+        {
+            // Se salió de la página.
+            return;
+        }
+        catch (Exception error)
+        {
+            Registro.LogWarning(error, "El Detalle de Cita no se pudo cargar");
+            cargado = new DetalleCargado(id, null, NoExiste: false, Fallo: true);
+        }
+
+        if (cargado.Fallo && conservarSiFalla && Vigente is not null)
+        {
+            _aviso ??= NoSeCargo;
+            return;
+        }
+
+        Cargado = cargado;
+    }
+
+    // Los textos viven aquí; el comando devuelve códigos. Una Cita que ya no existe la dice la consulta al recargar.
+    private static string? Rechazo(Resultado resultado) => resultado switch
+    {
+        { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.YaEmpezo } => YaEmpezo,
+        { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.AunNoEmpieza } => AunNoEmpieza,
+        { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.CitaNoAgendada } => YaNoEstaAgendada,
+        { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.CitaNoEncontrada } => null,
+        { Forma: FormaDeResultado.NoAutorizado } => SinSesion,
+        _ => NoSeHizo,
+    };
+
+    private string Consecuencia(CitaEnDetalle cita) =>
+        _confirmando == Accion.Cancelar ? (cita.SinCorreo ? AvisarleAMano : RecibiraDisculpa) : NoSeDeshace;
+
+    // "Martes 3 de noviembre"; con el año si no es el de hoy.
+    private string Fecha(DateOnly fecha) =>
+        fecha.Year == _hoy.Year ? FormatoDeCita.Largo(fecha) : $"{FormatoDeCita.Largo(fecha)} de {fecha.Year}";
+
+    private static string Horario(CitaEnDetalle cita) => $"{FormatoDeCita.Hora(cita.Inicio)} a {FormatoDeCita.Hora(cita.Fin)}";
+
+    // "Lun 2 nov · 12:00 pm"; con el año si no es el de hoy: "Lun 2 nov 2025 · 12:00 pm".
+    private string Cuando(EntradaDeLaBitacora entrada) =>
+        entrada.Fecha.Year == _hoy.Year
+            ? FormatoDeCita.Corto(entrada.Fecha, entrada.Hora)
+            : $"{FormatoDeCita.DiaCorto(entrada.Fecha)} {entrada.Fecha.Day} {FormatoDeCita.MesCorto(entrada.Fecha)} {entrada.Fecha.Year} · {FormatoDeCita.Hora(entrada.Hora)}";
+
+    // "3 de noviembre, 4:00 pm"; con el año si no es <paramref name="anio"/>: "3 de noviembre de 2025, 4:00 pm".
+    private static string FechaYHora(MomentoLocal momento, int? anio) =>
+        anio is null || momento.Fecha.Year == anio
+            ? FormatoDeCita.FechaYHora(momento.Fecha, momento.Hora)
+            : $"{FormatoDeCita.DiaYMes(momento.Fecha)} de {momento.Fecha.Year}, {FormatoDeCita.Hora(momento.Hora)}";
+
+    /// <summary>"En línea" o "Del consultorio".</summary>
+    public static string Origen(OrigenEnLaAgenda origen) => origen switch
+    {
+        OrigenEnLaAgenda.EnLinea => "En línea",
+        OrigenEnLaAgenda.DelConsultorio => "Del consultorio",
+        _ => origen.ToString(),
+    };
+
+    /// <summary>"En línea · 2 de noviembre de 2026, 12:00 pm · aviso 2026-11".</summary>
+    public static string Consentimiento(ConsentimientoEnDetalle consentimiento)
+    {
+        var canal = consentimiento.Canal switch
+        {
+            CanalEnDetalle.EnLinea => "En línea",
+            CanalEnDetalle.Externo => "Por fuera del sitio",
+            _ => consentimiento.Canal.ToString(),
+        };
+        var cuando = $"{FormatoDeCita.DiaYMes(consentimiento.Fecha)} de {consentimiento.Fecha.Year}, {FormatoDeCita.Hora(consentimiento.Hora)}";
+        return $"{canal} · {cuando} · aviso {consentimiento.VersionDelAviso}";
+    }
+
+    /// <summary>"444 123 4567" de un celular de México en E.164; cualquier otra forma, tal cual.</summary>
+    public static string Telefono(string e164) =>
+        e164 is { Length: 13 } && e164.StartsWith("+52", StringComparison.Ordinal)
+            ? $"{e164[3..6]} {e164[6..9]} {e164[9..]}"
+            : e164;
+
+    /// <summary>
+    /// Qué pasó y quién lo hizo: "Agendada · en línea · Paciente", "Reprogramada de 3 de noviembre, 4:00 pm a 5 de
+    /// noviembre, 4:30 pm · Paciente", "Cancelada · por el Consultorio · Administrador", "No se presentó · Administrador".
+    /// Con <paramref name="anioActual"/>, las fechas de otro año llevan su año, como la fecha de la Cita.
+    /// </summary>
+    public static string Que(EntradaDeLaBitacora entrada, int? anioActual = null)
+    {
+        var que = entrada.Accion switch
+        {
+            AccionEnLaBitacora.Agendada => entrada.Origen switch
+            {
+                OrigenEnLaAgenda.EnLinea => "Agendada · en línea",
+                OrigenEnLaAgenda.DelConsultorio => "Agendada · del consultorio",
+                _ => "Agendada",
+            },
+            AccionEnLaBitacora.Reprogramada when entrada is { De: { } de, A: { } a } =>
+                $"Reprogramada de {FechaYHora(de, anioActual)} a {FechaYHora(a, anioActual)}",
+            AccionEnLaBitacora.Reprogramada => "Reprogramada",
+            AccionEnLaBitacora.Cancelada => entrada.Cancelacion switch
+            {
+                CancelacionEnLaAgenda.PorElPaciente => "Cancelada · por el Paciente",
+                CancelacionEnLaAgenda.Tardia => "Cancelada · tardía",
+                CancelacionEnLaAgenda.PorElConsultorio => "Cancelada · por el Consultorio",
+                _ => "Cancelada",
+            },
+            AccionEnLaBitacora.NoSePresento => "No se presentó",
+            _ => entrada.Accion.ToString(),
+        };
+
+        var quien = entrada.Quien switch
+        {
+            Actor.Paciente => "Paciente",
+            Actor.Administrador => "Administrador",
+            Actor.Sistema => "Sistema",
+            _ => entrada.Quien.ToString(),
+        };
+
+        return $"{que} · {quien}";
+    }
+
+    // El semáforo no se libera aquí: una llamada en curso todavía lo suelta al terminar.
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

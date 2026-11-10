@@ -2103,6 +2103,41 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   color: var(--dsm-ink);
 }
 
+/* Cada tarjeta abre el Detalle de su Cita (entrada 6): el nombre es el enlace y cubre toda la tarjeta. */
+.dsm-agenda__cita {
+  position: relative;
+}
+
+.dsm-agenda__abrir {
+  color: inherit;
+  text-decoration: none;
+}
+
+.dsm-agenda__abrir::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--dsm-rounded-2xl);
+}
+
+.dsm-agenda__cita:hover {
+  border-color: var(--dsm-border-input);
+}
+
+.dsm-agenda__cita:hover .dsm-agenda__abrir {
+  color: var(--dsm-primary);
+  text-decoration: underline;
+}
+
+.dsm-agenda__abrir:focus-visible {
+  outline: none;
+}
+
+.dsm-agenda__abrir:focus-visible::after {
+  outline: 2px solid var(--dsm-primary);
+  outline-offset: 2px;
+}
+
 @media (max-width: 575.98px) {
   .dsm-agenda__cita {
     grid-template-columns: minmax(0, 1fr);
@@ -2369,4 +2404,160 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
 
 .dsm-agendar .dsm-aviso {
   margin-block: 0 var(--dsm-spacing-7);
+}
+
+/* Detalle de Cita (UI/Pages/Administracion/DetalleDeCita.razor, entrada 6): una columna, usable en el teléfono, con las
+   acciones arriba, al alcance. Los chips de estado son los de la Agenda. */
+.dsm-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-7);
+  max-width: 640px;
+  padding-block: 32px 56px;
+}
+
+.dsm-detalle .dsm-volver {
+  margin-bottom: 0;
+}
+
+.dsm-detalle__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dsm-spacing-4) var(--dsm-spacing-7);
+}
+
+.dsm-detalle__paciente {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dsm-detalle__estado {
+  align-self: center;
+}
+
+.dsm-detalle__cuando {
+  margin: calc(-1 * var(--dsm-spacing-4)) 0 0;
+  font-size: var(--dsm-section-font-size);
+  font-weight: var(--dsm-section-font-weight);
+  color: var(--dsm-eyebrow);
+}
+
+.dsm-detalle__no-cargo {
+  margin: 0;
+  color: var(--dsm-muted);
+}
+
+.dsm-detalle .dsm-aviso {
+  margin-top: 0;
+}
+
+/* Las acciones: apiladas a todo lo ancho en el teléfono; lado a lado desde 576 px. */
+.dsm-detalle__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+}
+
+.dsm-detalle__confirmacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  padding: var(--dsm-spacing-7);
+  border-radius: var(--dsm-rounded-xl);
+  background: var(--dsm-surface);
+  border: 2px solid var(--dsm-border);
+}
+
+.dsm-detalle__pregunta {
+  margin: 0;
+  font-size: var(--dsm-section-font-size);
+  font-weight: 700;
+  color: var(--dsm-ink);
+}
+
+.dsm-detalle__consecuencia {
+  margin: 0 0 var(--dsm-spacing-3);
+  font-size: var(--dsm-body-small-font-size);
+  line-height: var(--dsm-body-small-line-height);
+  color: var(--dsm-ink-soft);
+}
+
+.dsm-detalle__acciones .dsm-accion-principal {
+  min-height: 54px;
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .dsm-detalle__acciones {
+    flex-direction: row;
+  }
+
+  .dsm-detalle__acciones > .btn,
+  .dsm-detalle__acciones > .dsm-detalle__confirmacion {
+    flex: 1 1 0;
+  }
+}
+
+/* Los datos: cada etiqueta sobre su valor, una columna en cualquier ancho. */
+.dsm-detalle__datos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-6);
+  margin: 0;
+  padding: var(--dsm-spacing-8);
+  border-radius: var(--dsm-rounded-2xl);
+  background: var(--dsm-surface);
+  border: 1px solid var(--dsm-border);
+}
+
+.dsm-detalle__dato dt {
+  font-size: var(--dsm-help-font-size);
+  font-weight: 600;
+  color: var(--dsm-muted);
+}
+
+.dsm-detalle__dato dd {
+  margin: var(--dsm-spacing-1) 0 0;
+  font-weight: 600;
+  color: var(--dsm-ink);
+  overflow-wrap: anywhere;
+}
+
+.dsm-detalle__sin-correo {
+  color: var(--dsm-primary-strong);
+}
+
+.dsm-detalle__titulo-bitacora {
+  margin: var(--dsm-spacing-3) 0 0;
+  color: var(--dsm-ink);
+}
+
+/* La bitácora: cuándo arriba, en pequeño; qué y quién debajo. */
+.dsm-detalle__bitacora {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsm-detalle__entrada {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+  padding-left: var(--dsm-spacing-5);
+  border-left: 3px solid var(--dsm-border);
+}
+
+.dsm-detalle__entrada-cuando {
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-detalle__entrada-que {
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 600;
+  color: var(--dsm-ink);
 }
