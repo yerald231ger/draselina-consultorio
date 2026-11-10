@@ -25,10 +25,20 @@ public sealed class CitasDelPaciente(AgendaDbContext db) : ICitasDelPaciente
         return (proxima, anterior);
     }
 
+    // El id desempata dos Citas con el mismo inicio (una cancelada y la que tomó su horario).
+    public async Task<IReadOnlyList<CitaLeidaDelPaciente>> TodasAsync(PatientId paciente, CancellationToken cancellationToken) =>
+        await Leidas(db.Citas.AsNoTracking()
+                .Where(c => c.PacienteId == paciente)
+                .OrderByDescending(c => c.Rango.Inicio)
+                .ThenByDescending(c => c.Id))
+            .ToListAsync(cancellationToken);
+
     private IQueryable<CitaLeidaDelPaciente> Leidas(IQueryable<Cita> citas) =>
         citas.Select(c => new CitaLeidaDelPaciente(
+            c.Id,
             c.Rango.Inicio,
             db.TiposDeVisita.Where(t => t.Id == c.TipoDeVisitaId).Select(t => t.Nombre).FirstOrDefault(),
+            c.Origen,
             c.Estado,
             c.MotivoDeCancelacion));
 }

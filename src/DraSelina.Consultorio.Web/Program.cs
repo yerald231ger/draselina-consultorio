@@ -71,6 +71,9 @@ builder.Services
 // La Agenda vuelve a consultar cada 30 segundos mientras su circuito está abierto (entrada 5.2).
 builder.Services.AddSingleton(DraSelina.Consultorio.UI.Pages.Administracion.RefrescoDeLaAgenda.PorOmision);
 
+// La búsqueda de Pacientes se recuerda mientras dura el circuito, nunca en la dirección (entrada 5.7, AD-23).
+builder.Services.AddScoped<DraSelina.Consultorio.UI.Pages.Administracion.BusquedaRecordada>();
+
 // Protección de las páginas de reserva (FR-7, CAP-5), sin scripts ni servicios de terceros: el límite de frecuencia
 // por IP (LimiteDeFrecuencia.cs, valores en configuración) y la verificación anti-bots de Tus datos.
 builder.Services

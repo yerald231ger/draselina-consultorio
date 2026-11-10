@@ -2561,3 +2561,143 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   font-weight: 600;
   color: var(--dsm-ink);
 }
+
+/* La navegación de administración (Agenda · Pacientes · Salir) se parte en dos renglones si el teléfono no le da. */
+.dsm-administracion__navegacion {
+  flex-wrap: wrap;
+}
+
+/* Pacientes (UI/Pages/Administracion/Pacientes.razor, entrada 5.7): la búsqueda arriba y la lista en una columna, usable
+   en el teléfono. Cada fila abre el historial del Paciente; "sin correo" con el chip de la Agenda. */
+.dsm-pacientes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-7);
+  max-width: 720px;
+  padding-block: 32px 56px;
+}
+
+.dsm-pacientes .dsm-titulo-de-estado {
+  margin: 0;
+}
+
+.dsm-pacientes__busqueda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-2);
+  margin: 0;
+}
+
+.dsm-pacientes__fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dsm-spacing-4);
+}
+
+.dsm-pacientes__texto {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.dsm-pacientes__buscar {
+  min-height: 50px;
+}
+
+.dsm-pacientes__aviso {
+  margin: 0;
+  color: var(--dsm-muted);
+}
+
+.dsm-pacientes__lista,
+.dsm-historial__citas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La fila entera es clicable: el enlace del nombre se extiende sobre ella, como las tarjetas de la Agenda. */
+.dsm-pacientes__paciente,
+.dsm-historial__cita {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dsm-spacing-2) var(--dsm-spacing-5);
+  min-height: var(--dsm-spacing-touch-min);
+  padding: var(--dsm-spacing-5) var(--dsm-spacing-6);
+  border-radius: var(--dsm-rounded-md);
+  background: var(--dsm-surface);
+  border: 1px solid var(--dsm-border);
+}
+
+.dsm-pacientes__paciente:hover,
+.dsm-historial__cita:hover {
+  border-color: var(--dsm-border-input);
+}
+
+.dsm-pacientes__abrir,
+.dsm-historial__abrir {
+  font-weight: 700;
+  color: var(--dsm-ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.dsm-pacientes__abrir::after,
+.dsm-historial__abrir::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.dsm-pacientes__abrir:focus-visible,
+.dsm-historial__abrir:focus-visible {
+  outline: none;
+}
+
+.dsm-pacientes__abrir:focus-visible::after,
+.dsm-historial__abrir:focus-visible::after {
+  outline: 3px solid var(--dsm-primary);
+  outline-offset: 2px;
+}
+
+.dsm-pacientes__telefono {
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-ink-soft);
+}
+
+/* Historial del Paciente (UI/Pages/Administracion/HistorialDelPaciente.razor): la columna del Detalle de Cita, con el
+   resumen bajo el nombre y cada Cita con su chip de estado a la derecha. */
+.dsm-historial__resumen {
+  margin: calc(-1 * var(--dsm-spacing-4)) 0 0;
+  font-size: var(--dsm-section-font-size);
+  font-weight: var(--dsm-section-font-weight);
+  color: var(--dsm-eyebrow);
+}
+
+.dsm-historial__titulo-citas {
+  margin: var(--dsm-spacing-3) 0 0;
+  color: var(--dsm-ink);
+}
+
+.dsm-historial__vacio {
+  margin: 0;
+  color: var(--dsm-muted);
+}
+
+.dsm-historial__datos-cita {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+  min-width: 0;
+}
+
+.dsm-historial__tipo {
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-ink-soft);
+}

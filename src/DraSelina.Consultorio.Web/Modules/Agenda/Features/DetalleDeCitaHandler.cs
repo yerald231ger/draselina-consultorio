@@ -43,7 +43,7 @@ public sealed class DetalleDeCitaHandler(
             fecha,
             inicio,
             fin,
-            Origen(cita.Origen),
+            EstadoMostrado.Origen(cita.Origen),
             cita.Nota,
             cita.MotivoDeConsulta,
             new ConsentimientoEnDetalle(
@@ -73,7 +73,7 @@ public sealed class DetalleDeCitaHandler(
             hora,
             entrada.Actor,
             accion,
-            accion == AccionEnLaBitacora.Agendada && entrada.Origen is { } origen ? Origen(origen) : null,
+            accion == AccionEnLaBitacora.Agendada && entrada.Origen is { } origen ? EstadoMostrado.Origen(origen) : null,
             accion == AccionEnLaBitacora.Cancelada ? EstadoMostrado.Cancelacion(entrada.Motivo) : null,
             accion == AccionEnLaBitacora.Reprogramada ? Momento(entrada.InicioAnterior) : null,
             accion == AccionEnLaBitacora.Reprogramada ? Momento(entrada.InicioNuevo) : null);
@@ -89,13 +89,6 @@ public sealed class DetalleDeCitaHandler(
         var (fecha, hora) = HoraLocal.DesdeUtc(valor);
         return new MomentoLocal(fecha, hora);
     }
-
-    private static OrigenEnLaAgenda Origen(OrigenDeCita origen) => origen switch
-    {
-        OrigenDeCita.EnLinea => OrigenEnLaAgenda.EnLinea,
-        OrigenDeCita.Consultorio => OrigenEnLaAgenda.DelConsultorio,
-        _ => throw new InvalidOperationException($"Origen de Cita desconocido: {origen}."),
-    };
 
     private static CanalEnDetalle Canal(CanalDeConsentimiento canal) => canal switch
     {

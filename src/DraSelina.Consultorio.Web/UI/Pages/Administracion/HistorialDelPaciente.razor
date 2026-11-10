@@ -1,0 +1,223 @@
+@page "/admin/pacientes/{Id:guid}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@layout LayoutAdministracion
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@using ConsultaDelHistorial = DraSelina.Consultorio.Agenda.Contracts.HistorialDelPaciente
+@inject IQueryHandler<ConsultaDelHistorial, PacienteConHistorial> Consulta
+@inject IClock Reloj
+@inject ILogger<HistorialDelPaciente> Registro
+
+@*
+    Historial del Paciente (CAP-15, FR-18; entrada 5.7): se abre desde la lista de Pacientes. Pinta la consulta
+    HistorialDelPaciente: el contacto del Paciente, el resumen ("6 citas · 1 no se presentó · 1 cancelación tardía", sin
+    las partes en cero; Gerardo, 2026-11-10) y todas sus Citas, de la más reciente a la más antigua, con su estado en los
+    chips de la Agenda. Cada Cita abre su Detalle (5.6). Sin motivo ni nota: se ven en el Detalle. Las reglas (Atendida,
+    el resumen) las decide la consulta; aquí solo se pintan. En la dirección solo va el id del Paciente (AD-11, AD-23).
+    "Volver a Pacientes" lleva a /admin/pacientes sin texto en la dirección: la lista muestra la búsqueda que recuerda el
+    circuito (BusquedaRecordada).
+
+    Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar. La consulta lleva
+    IRequiereAdministrador (AD-22). Textos `[ASSUMPTION: texto]` salvo los de la matriz del plan.
+*@
+
+<PageTitle>Historial del paciente · Administración</PageTitle>
+
+<section class="dsm-contenedor dsm-detalle dsm-historial" aria-labelledby="historial">
+    <a href="@Pacientes.Ruta" class="dsm-volver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 12H5M11 6l-6 6 6 6"></path>
+        </svg>
+        @VolverAPacientes
+    </a>
+
+    @if (Vigente is { NoExiste: true })
+    {
+        <h1 id="historial" class="dsm-titulo-de-estado">@NoExiste</h1>
+    }
+    else if (Vigente is { Fallo: true })
+    {
+        <h1 id="historial" class="dsm-titulo-de-estado">Historial del paciente</h1>
+        <p class="dsm-detalle__no-cargo">@NoSeCargo</p>
+    }
+    else if (Vigente?.Historial is { } historial)
+    {
+        <h1 id="historial" class="dsm-titulo-de-estado dsm-detalle__paciente">@historial.Paciente.Nombre</h1>
+        @if (Resumen(historial.Resumen) is { } resumen)
+        {
+            <p class="dsm-historial__resumen">@resumen</p>
+        }
+
+        <dl class="dsm-detalle__datos">
+            <div class="dsm-detalle__dato" data-dato="telefono">
+                <dt>Teléfono</dt>
+                <dd><a href="tel:@historial.Paciente.Telefono" class="dsm-enlace-en-texto">@DetalleDeCita.Telefono(historial.Paciente.Telefono)</a></dd>
+            </div>
+            <div class="dsm-detalle__dato" data-dato="correo">
+                <dt>Correo</dt>
+                @if (historial.Paciente.Correo is { } correo)
+                {
+                    <dd>@correo</dd>
+                }
+                else
+                {
+                    <dd><span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-historial__sin-correo">@Agenda.SinCorreo</span></dd>
+                }
+            </div>
+        </dl>
+
+        <h2 class="dsm-seccion dsm-historial__titulo-citas">Citas</h2>
+        @if (historial.Citas.Count == 0)
+        {
+            <p class="dsm-historial__vacio">@SinCitas</p>
+        }
+        else
+        {
+            <ol class="dsm-historial__citas">
+                @foreach (var cita in historial.Citas)
+                {
+                    <li class="dsm-historial__cita" data-cita="@cita.CitaId.Valor" @key="cita.CitaId">
+                        <div class="dsm-historial__datos-cita">
+                            <a class="dsm-historial__abrir" href="@DetalleDeCita.Direccion(cita.CitaId)">@Cuando(cita)</a>
+                            <span class="dsm-historial__tipo">@($"{cita.TipoDeVisita ?? DetalleDeCita.TipoNoEncontrado} · {DetalleDeCita.Origen(cita.Origen)}")</span>
+                        </div>
+                        <span class="@Agenda.ClaseDeEtiqueta(cita.Estado, cita.Cancelacion) dsm-historial__estado">@Agenda.Etiqueta(cita.Estado, cita.Cancelacion)</span>
+                    </li>
+                }
+            </ol>
+        }
+    }
+</section>
+
+@code {
+    /// <summary>Pacientes no conoce a ese Paciente.</summary>
+    public const string NoExiste = "Este paciente no existe.";
+
+    /// <summary>La consulta no volvió con éxito (sin sesión no se llega aquí).</summary>
+    public const string NoSeCargo = "No se pudo cargar el historial. Vuelve a entrar.";
+
+    /// <summary>El enlace a la lista de Pacientes.</summary>
+    public const string VolverAPacientes = "Volver a Pacientes";
+
+    /// <summary>Un Paciente que reservó y nunca tuvo Cita (AD-28).</summary>
+    public const string SinCitas = "Este paciente no tiene citas.";
+
+    /// <summary>La dirección del historial de un Paciente: <c>/admin/pacientes/{id}</c>. Solo el id (AD-11, AD-23).</summary>
+    public static string Direccion(PatientId paciente) => $"{Pacientes.Ruta}/{paciente.Valor}";
+
+    /// <summary>El id del Paciente, de la dirección.</summary>
+    [Parameter]
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// Lo cargado en el prerenderizado, que pasa al circuito (.NET 10, <c>[PersistentState]</c>): la consulta no se repite
+    /// y el historial no desaparece mientras el circuito arranca. Lleva el id: si la dirección pide otro Paciente, se
+    /// consulta de nuevo.
+    /// </summary>
+    [PersistentState]
+    public HistorialCargado? Cargado { get; set; }
+
+    /// <summary>Lo que volvió la consulta para un Paciente: su historial, que no existe, o que no se pudo cargar.</summary>
+    public sealed record HistorialCargado(Guid Id, PacienteConHistorial? Historial, bool NoExiste, bool Fallo);
+
+    private readonly CancellationTokenSource _cierre = new();
+    private readonly SemaphoreSlim _consultando = new(1, 1);
+    private DateOnly _hoy;
+
+    private HistorialCargado? Vigente => Cargado?.Id == Id ? Cargado : null;
+
+    /// <summary>
+    /// "6 citas · 1 no se presentó · 1 cancelación tardía"; las partes en cero se omiten y sin Citas no hay resumen
+    /// (Gerardo, 2026-11-10).
+    /// </summary>
+    public static string? Resumen(ResumenDelHistorial resumen)
+    {
+        if (resumen.Citas == 0)
+        {
+            return null;
+        }
+
+        List<string> partes = [resumen.Citas == 1 ? "1 cita" : $"{resumen.Citas} citas"];
+        if (resumen.NoSePresento > 0)
+        {
+            partes.Add($"{resumen.NoSePresento} no se presentó");
+        }
+
+        if (resumen.CancelacionesTardias > 0)
+        {
+            partes.Add(resumen.CancelacionesTardias == 1 ? "1 cancelación tardía" : $"{resumen.CancelacionesTardias} cancelaciones tardías");
+        }
+
+        return string.Join(" · ", partes);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
+
+        // Ya cargado para este Paciente en el prerenderizado: el circuito lo recibe y no consulta otra vez. Si allá falló,
+        // el circuito lo vuelve a intentar.
+        if (Vigente is { Fallo: false })
+        {
+            return;
+        }
+
+        var id = Id;
+        HistorialCargado cargado;
+        try
+        {
+            await _consultando.WaitAsync(_cierre.Token);
+            try
+            {
+                var resultado = await Consulta.HandleAsync(new ConsultaDelHistorial(new PatientId(id)), _cierre.Token);
+                cargado = resultado switch
+                {
+                    { EsExito: true } => new HistorialCargado(id, resultado.Valor, NoExiste: false, Fallo: false),
+                    { Forma: FormaDeResultado.Fallo, Codigo: CodigosDeAgenda.PacienteNoEncontrado } =>
+                        new HistorialCargado(id, null, NoExiste: true, Fallo: false),
+                    _ => new HistorialCargado(id, null, NoExiste: false, Fallo: true),
+                };
+            }
+            finally
+            {
+                _consultando.Release();
+            }
+        }
+        catch (OperationCanceledException) when (_cierre.IsCancellationRequested)
+        {
+            // Se salió de la página.
+            return;
+        }
+        catch (Exception error)
+        {
+            // Una consulta que lanza no tumba el circuito; se registra sin datos personales (AD-23).
+            Registro.LogWarning(error, "El historial del Paciente no se pudo cargar");
+            cargado = new HistorialCargado(id, null, NoExiste: false, Fallo: true);
+        }
+
+        Cargado = cargado;
+    }
+
+    // "Martes 3 de noviembre, 4:00 pm"; con el año si no es el de hoy: "Lunes 3 de noviembre de 2025, 4:00 pm".
+    private string Cuando(CitaDelHistorial cita)
+    {
+        var fecha = cita.Fecha.Year == _hoy.Year
+            ? FormatoDeCita.Largo(cita.Fecha)
+            : $"{FormatoDeCita.Largo(cita.Fecha)} de {cita.Fecha.Year}";
+        return $"{fecha}, {FormatoDeCita.Hora(cita.Hora)}";
+    }
+
+    // El semáforo no se libera aquí: una consulta en curso todavía lo suelta al terminar.
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

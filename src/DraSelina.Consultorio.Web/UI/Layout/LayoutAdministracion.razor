@@ -2,8 +2,8 @@
 
 @*
     El layout de la administración (CAP-9, CAP-12): la marca, la navegación y "Salir". La navegación muestra solo las
-    pantallas que existen (Gerardo, 2026-11-09): hoy, Agenda; la 5.7 agrega Pacientes y la épica 6 Calendario de
-    atención y Configuración. "Salir" es un POST con antiforgery a /admin/salir, que cierra la sesión (Identidad/).
+    pantallas que existen (Gerardo, 2026-11-09): Agenda y Pacientes (5.7); la épica 6 agrega Calendario de atención y
+    Configuración. Pacientes queda activo en la lista y en el historial de cada Paciente (/admin/pacientes/...). "Salir" es un POST con antiforgery a /admin/salir, que cierra la sesión (Identidad/).
 
     Se pinta en la petición, en SSR estático, aunque la página sea Interactive Server: un layout no es interactivo si
     las rutas no lo son. Ninguna página de administración se indexa (CAP-21): el meta robots va aquí y el host pone
@@ -21,6 +21,8 @@
         <nav class="dsm-administracion__navegacion" aria-label="Administración">
             <NavLink href="/admin" Match="NavLinkMatch.All" class="dsm-administracion__enlace"
                      ActiveClass="dsm-administracion__enlace--activo">Agenda</NavLink>
+            <NavLink href="/admin/pacientes" Match="NavLinkMatch.Prefix" class="dsm-administracion__enlace"
+                     ActiveClass="dsm-administracion__enlace--activo">Pacientes</NavLink>
             <form method="post" action="/admin/salir" class="dsm-administracion__salir">
                 <AntiforgeryToken />
                 <button type="submit" class="dsm-administracion__boton-salir">Salir</button>

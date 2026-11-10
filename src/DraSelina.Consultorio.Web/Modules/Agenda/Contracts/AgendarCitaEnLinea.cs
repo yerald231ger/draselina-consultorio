@@ -142,4 +142,7 @@ public static class CodigosDeAgenda
 
     /// <summary>El inicio de la Cita ya llegó o pasó: el Consultorio ya no la cancela (RN-31).</summary>
     public const string YaEmpezo = "agenda.ya_empezo";
+
+    /// <summary>Pacientes no conoce a ese Paciente: no hay historial que mostrar (entrada 5.7).</summary>
+    public const string PacienteNoEncontrado = "agenda.paciente_no_encontrado";
 }

@@ -1,3 +1,4 @@
+using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.Pacientes.Contracts;
 using DraSelina.Consultorio.Pacientes.Domain;
 using DraSelina.Consultorio.Pacientes.Features;
@@ -18,5 +19,7 @@ public static class Registro
             .AddDbContext<PacientesDbContext>(opciones => PacientesDbContext.Configurar(opciones, cadenaDeConexion))
             .AddScoped<ITransaccionDePacientes, TransaccionDePacientes>()
             .AddScoped<IPacientes, Pacientes>()
-            .AddScoped<IPacientesApi, PacientesApi>();
+            .AddScoped<IBusquedaDePacientes, BusquedaDePacientes>()
+            .AddScoped<IPacientesApi, PacientesApi>()
+            .AddScoped<IQueryHandler<BuscarPacientes, PacientesEncontrados>, BuscarPacientesHandler>();
 }

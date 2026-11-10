@@ -41,15 +41,26 @@ public sealed record NombreCompleto
             return null;
         }
 
-        var normalizado = string.Join(' ', original.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        var normalizado = SinEspaciosDeMas(original);
         return new NombreCompleto(original, normalizado, SinAcentos(normalizado).ToLowerInvariant());
     }
+
+    /// <summary>
+    /// Un texto en la forma de <see cref="Busqueda"/>: sin espacios al principio, al final ni de más, en minúsculas y sin
+    /// acentos (AD-18). Así se compara lo que escribe el Administrador con lo guardado: "  López " da "lopez". No valida:
+    /// vacío si el texto es nulo o solo espacios.
+    /// </summary>
+    public static string ParaBuscar(string? texto) =>
+        SinAcentos(SinEspaciosDeMas(texto?.Trim() ?? "")).ToLowerInvariant();
 
     /// <summary>Reconstitución desde la base: no valida (T-6).</summary>
     internal static NombreCompleto Reconstituir(string original, string normalizado, string busqueda) =>
         new(original, normalizado, busqueda);
 
     public override string ToString() => Original;
+
+    private static string SinEspaciosDeMas(string texto) =>
+        string.Join(' ', texto.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     // "José Ñúñez" -> "Jose Nunez": se separa cada letra de su acento y se quitan los acentos.
     private static string SinAcentos(string texto)

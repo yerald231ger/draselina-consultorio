@@ -1,0 +1,193 @@
+@page "/admin/pacientes"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@layout LayoutAdministracion
+@implements IDisposable
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.Pacientes.Contracts
+@inject IQueryHandler<BuscarPacientes, PacientesEncontrados> Consulta
+@inject BusquedaRecordada Recordada
+@inject ILogger<Pacientes> Registro
+
+@*
+    Pacientes (CAP-15, FR-18; entrada 5.7): la lista de Pacientes con su búsqueda por nombre. La búsqueda es "contiene"
+    sin distinguir mayúsculas ni acentos ("lop" encuentra a "Mariana López" y a "Rosa Lopera"); sin texto, todos en orden
+    alfabético, hasta BuscarPacientes.Maximo (Gerardo, 2026-11-10). Cada fila abre el historial del Paciente. Solo nombre,
+    teléfono y si tiene correo: nada de Citas aquí (RN-29).
+
+    El texto buscado nunca va en la dirección (AD-11, AD-23; Gerardo, 2026-11-10): vive en la página y en
+    BusquedaRecordada, que dura lo que el circuito. "Volver a Pacientes" desde el historial muestra la misma búsqueda; al
+    recargar (circuito nuevo) la búsqueda está vacía. El campo no tiene name y el formulario no tiene action: antes de que
+    arranque el circuito, enviarlo no lleva el texto a ninguna parte. El prerenderizado (otro ámbito) pinta la lista sin
+    texto; el circuito la vuelve a pedir si recuerda una búsqueda. Interactive Server (AD-11), con [Authorize]: sin
+    sesión, el host lleva a /admin/entrar. La consulta lleva IRequiereAdministrador (AD-22). Textos `[ASSUMPTION: texto]` salvo los de la matriz
+    del plan.
+*@
+
+<PageTitle>Pacientes · Administración</PageTitle>
+
+<section class="dsm-contenedor dsm-pacientes" aria-labelledby="pacientes">
+    <h1 id="pacientes" class="dsm-titulo-de-estado">Pacientes</h1>
+
+    <form class="dsm-pacientes__busqueda" role="search" @onsubmit="BuscarAsync" @onsubmit:preventDefault>
+        <label for="q" class="dsm-campo__etiqueta">Buscar por nombre</label>
+        <div class="dsm-pacientes__fila">
+            <input id="q" type="search" class="dsm-campo__control dsm-pacientes__texto" autocomplete="off"
+                   @bind="_escrito" />
+            <button type="submit" class="btn btn-primary dsm-pacientes__buscar">Buscar</button>
+        </div>
+    </form>
+
+    @if (Vigente is { Fallo: true })
+    {
+        <p class="dsm-pacientes__aviso">@NoSeCargo</p>
+    }
+    else if (Vigente?.Encontrados is { } encontrados)
+    {
+        @if (encontrados.Pacientes.Count == 0)
+        {
+            <p class="dsm-pacientes__aviso">@(Buscado.Length > 0 ? NoEncontramos : SinPacientes)</p>
+        }
+        else
+        {
+            <ul class="dsm-pacientes__lista">
+                @foreach (var paciente in encontrados.Pacientes)
+                {
+                    <li class="dsm-pacientes__paciente" data-paciente="@paciente.PatientId.Valor" @key="paciente.PatientId">
+                        <a class="dsm-pacientes__abrir" href="@HistorialDelPaciente.Direccion(paciente.PatientId)">@paciente.Nombre</a>
+                        <span class="dsm-pacientes__telefono">@DetalleDeCita.Telefono(paciente.Telefono)</span>
+                        @if (!paciente.TieneCorreo)
+                        {
+                            <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-pacientes__sin-correo">@Agenda.SinCorreo</span>
+                        }
+                    </li>
+                }
+            </ul>
+            @if (encontrados.HayMas)
+            {
+                <p class="dsm-pacientes__aviso dsm-pacientes__hay-mas">@(Buscado.Length > 0 ? AcotaLaBusqueda : EscribeUnNombre)</p>
+            }
+        }
+    }
+</section>
+
+@code {
+    /// <summary>La dirección de la lista.</summary>
+    public const string Ruta = "/admin/pacientes";
+
+    /// <summary>Una búsqueda sin coincidencias.</summary>
+    public const string NoEncontramos = "No encontramos pacientes con ese nombre.";
+
+    /// <summary>Sin texto hay más Pacientes de los que caben (Gerardo, 2026-11-10).</summary>
+    public const string EscribeUnNombre = "Escribe un nombre para buscar entre los demás";
+
+    /// <summary>Con texto, hay más coincidencias de las que caben `[ASSUMPTION]`.</summary>
+    public const string AcotaLaBusqueda = "Hay más pacientes con ese nombre: escribe más para acotar la búsqueda.";
+
+    /// <summary>Todavía no hay ningún Paciente `[ASSUMPTION]`.</summary>
+    public const string SinPacientes = "Todavía no hay pacientes.";
+
+    /// <summary>La consulta no volvió con éxito (sin sesión no se llega aquí).</summary>
+    public const string NoSeCargo = "No se pudo cargar la lista de pacientes. Vuelve a entrar.";
+
+    /// <summary>
+    /// Lo cargado en el prerenderizado, que pasa al circuito (.NET 10, <c>[PersistentState]</c>): la consulta no se repite
+    /// y la lista no desaparece mientras el circuito arranca. Lleva el texto: si el circuito recuerda otro, se consulta de
+    /// nuevo.
+    /// </summary>
+    [PersistentState]
+    public ListaCargada? Cargada { get; set; }
+
+    /// <summary>Lo que volvió la consulta para un texto: los Pacientes, o que no se pudo cargar.</summary>
+    public sealed record ListaCargada(string Texto, PacientesEncontrados? Encontrados, bool Fallo)
+    {
+        // El texto es parte de un nombre (AD-23).
+        private bool PrintMembers(System.Text.StringBuilder texto)
+        {
+            texto.Append($"Texto = oculto, Encontrados = {Encontrados}, Fallo = {Fallo}");
+            return true;
+        }
+    }
+
+    private readonly CancellationTokenSource _cierre = new();
+    private readonly SemaphoreSlim _consultando = new(1, 1);
+    private string? _escrito;
+
+    private string Buscado => Recordada.Texto;
+
+    private ListaCargada? Vigente => Cargada?.Texto == Buscado ? Cargada : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _escrito = Recordada.Texto;
+
+        // Ya cargada para este texto en el prerenderizado: el circuito la recibe y no consulta otra vez. Si allá falló,
+        // el circuito lo vuelve a intentar.
+        if (Vigente is { Fallo: false })
+        {
+            return;
+        }
+
+        await CargarAsync();
+    }
+
+    // Buscar no navega: el texto se queda en el circuito, nunca en la dirección (AD-23).
+    private async Task BuscarAsync()
+    {
+        Recordada.Texto = _escrito?.Trim() ?? "";
+        if (Vigente is { Fallo: false })
+        {
+            return;
+        }
+
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        var buscado = Buscado;
+        ListaCargada cargada;
+        try
+        {
+            await _consultando.WaitAsync(_cierre.Token);
+            try
+            {
+                var resultado = await Consulta.HandleAsync(new BuscarPacientes(buscado), _cierre.Token);
+                cargada = resultado.EsExito
+                    ? new ListaCargada(buscado, resultado.Valor, Fallo: false)
+                    : new ListaCargada(buscado, null, Fallo: true);
+            }
+            finally
+            {
+                _consultando.Release();
+            }
+        }
+        catch (OperationCanceledException) when (_cierre.IsCancellationRequested)
+        {
+            // Se salió de la página.
+            return;
+        }
+        catch (Exception error)
+        {
+            // Una consulta que lanza no tumba el circuito: se dice que no se cargó, sin el texto (AD-23).
+            Registro.LogWarning(error, "La lista de Pacientes no se pudo cargar");
+            cargada = new ListaCargada(buscado, null, Fallo: true);
+        }
+
+        // Si mientras tanto se buscó otro texto, esta consulta ya no es la que se muestra.
+        if (buscado == Buscado)
+        {
+            Cargada = cargada;
+        }
+    }
+
+    // El semáforo no se libera aquí: una consulta en curso todavía lo suelta al terminar.
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

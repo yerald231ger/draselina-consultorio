@@ -46,4 +46,22 @@ public class NombreCompletoTests
         Assert.Null(NombreCompleto.Crear(new string('a', NombreCompleto.LargoMaximo + 1)));
         Assert.NotNull(NombreCompleto.Crear(new string('a', NombreCompleto.LargoMaximo)));
     }
+
+    [Theory]
+    [InlineData("  LÓPEZ ", "lopez")]
+    [InlineData("José   PÉREZ Ñúñez", "jose perez nunez")]
+    [InlineData("riana", "riana")]
+    [InlineData("12 3", "12 3")]
+    [InlineData("   ", "")]
+    [InlineData(null, "")]
+    public void El_texto_para_buscar_queda_en_la_forma_del_nombre_de_busqueda(string? texto, string esperado)
+    {
+        Assert.Equal(esperado, NombreCompleto.ParaBuscar(texto));
+    }
+
+    [Fact]
+    public void Un_nombre_y_su_texto_para_buscar_coinciden()
+    {
+        Assert.Equal(NombreCompleto.Crear("Mariana  López")!.Busqueda, NombreCompleto.ParaBuscar(" MARIANA lopez "));
+    }
 }

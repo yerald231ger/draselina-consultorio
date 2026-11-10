@@ -4,8 +4,10 @@ using DraSelina.Consultorio.Agenda.Domain;
 namespace DraSelina.Consultorio.Agenda.Features;
 
 /// <summary>
-/// Cómo se ve el estado de una Cita en la administración: la Agenda (<see cref="DiasDeLaAgendaHandler"/>) y el Paciente
-/// reconocido de "Agendar cita" (<see cref="PacienteReconocidoHandler"/>) lo muestran igual. Atendida no se guarda: es
+/// Cómo se ve el estado de una Cita en la administración: la Agenda (<see cref="DiasDeLaAgendaHandler"/>), el Paciente
+/// reconocido de "Agendar cita" (<see cref="PacienteReconocidoHandler"/>), el Detalle de Cita
+/// (<see cref="DetalleDeCitaHandler"/>) y el historial del Paciente (<see cref="HistorialDelPacienteHandler"/>) lo
+/// muestran igual, con su origen. Atendida no se guarda: es
 /// una Cita Agendada cuyo inicio ya llegó (RN-19, RN-31).
 /// </summary>
 internal static class EstadoMostrado
@@ -28,5 +30,12 @@ internal static class EstadoMostrado
         MotivoDeCancelacion.Tarde => CancelacionEnLaAgenda.Tardia,
         MotivoDeCancelacion.Consultorio => CancelacionEnLaAgenda.PorElConsultorio,
         _ => throw new InvalidOperationException($"Motivo de cancelación desconocido: {motivo}."),
+    };
+
+    public static OrigenEnLaAgenda Origen(OrigenDeCita origen) => origen switch
+    {
+        OrigenDeCita.EnLinea => OrigenEnLaAgenda.EnLinea,
+        OrigenDeCita.Consultorio => OrigenEnLaAgenda.DelConsultorio,
+        _ => throw new InvalidOperationException($"Origen de Cita desconocido: {origen}."),
     };
 }
