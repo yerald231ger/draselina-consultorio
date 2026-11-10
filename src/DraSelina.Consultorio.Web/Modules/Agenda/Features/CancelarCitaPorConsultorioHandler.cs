@@ -98,6 +98,8 @@ public sealed class CancelarCitaPorConsultorioHandler(
                 AccionDeBitacora.Cancelada,
                 new
                 {
+                    inicio = cita.Rango.Inicio,
+                    fin = cita.Rango.Fin,
                     estadoAnterior = anterior.ToString(),
                     estadoNuevo = cita.Estado.ToString(),
                     motivo = CitaCancelada.MotivoConsultorio,

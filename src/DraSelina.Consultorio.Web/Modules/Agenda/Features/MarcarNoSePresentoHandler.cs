@@ -77,6 +77,8 @@ public sealed class MarcarNoSePresentoHandler(
                 AccionDeBitacora.NoSePresento,
                 new
                 {
+                    inicio = cita.Rango.Inicio,
+                    fin = cita.Rango.Fin,
                     estadoAnterior = anterior.ToString(),
                     estadoNuevo = cita.Estado.ToString(),
                 }),

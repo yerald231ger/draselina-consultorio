@@ -60,6 +60,8 @@ public sealed class NoSePresentoYCancelarPorConsultorioTests(Arnes arnes)
         {
             Assert.Equal("Agendada", detalle.RootElement.GetProperty("estadoAnterior").GetString());
             Assert.Equal("NoSePresento", detalle.RootElement.GetProperty("estadoNuevo").GetString());
+            Assert.Equal(Inicio, detalle.RootElement.GetProperty("inicio").GetDateTimeOffset());
+            Assert.Equal(Inicio.AddMinutes(30), detalle.RootElement.GetProperty("fin").GetDateTimeOffset());
             Assert.False(detalle.RootElement.TryGetProperty("motivo", out _));
         }
 
@@ -167,6 +169,8 @@ public sealed class NoSePresentoYCancelarPorConsultorioTests(Arnes arnes)
         {
             Assert.Equal("Agendada", detalle.RootElement.GetProperty("estadoAnterior").GetString());
             Assert.Equal("Cancelada", detalle.RootElement.GetProperty("estadoNuevo").GetString());
+            Assert.Equal(Inicio, detalle.RootElement.GetProperty("inicio").GetDateTimeOffset());
+            Assert.Equal(Inicio.AddMinutes(30), detalle.RootElement.GetProperty("fin").GetDateTimeOffset());
             Assert.Equal("consultorio", detalle.RootElement.GetProperty("motivo").GetString());
         }
 
