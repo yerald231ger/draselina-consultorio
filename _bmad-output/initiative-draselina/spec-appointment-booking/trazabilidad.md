@@ -16,7 +16,7 @@ Para escribir una historia: toma la capacidad, lee sus `FR-n` en el PRD (consecu
 | CAP-10 Agenda base | FR-12 | — | AD-5, AD-6, AD-17 | `AgendaAtencion.CambiarBase`, INV-B1 a B5, RN-5 a RN-8 | Configuración |
 | CAP-11 Agenda custom | FR-13 | UJ-3, UJ-6, UJ-7 | AD-5, AD-6, AD-26 | `RegistrarCustom`, `CambiarCustom`, `BorrarCustom`, INV-A1 a A6, RN-8 a RN-12, P-1, T-5, T-29 a T-31 | Calendario de atención |
 | CAP-12 Ver la agenda | FR-14 | UJ-4 | AD-10, AD-11 | RN-19, T-17 | Agenda; Detalle de Cita |
-| CAP-13 Cita manual | FR-15 | UJ-4, UJ-6 | AD-7, AD-8, AD-24 | `Cita.AgendarPorConsultorio`, INV-C6, RN-13, RN-14 | Agendar cita (administración) |
+| CAP-13 Cita manual | FR-15 | UJ-4, UJ-6 | AD-7, AD-8, AD-24, AD-26 | `Cita.AgendarPorConsultorio`, INV-C6, RN-13, RN-14 | Agendar cita (administración) |
 | CAP-14 No se presentó y cancelar por el Consultorio | FR-16, FR-17 | — | AD-9 | `MarcarNoSePresento`, `CancelarPorConsultorio`, INV-C7, INV-C8, RN-31 | Detalle de Cita |
 | CAP-15 Pacientes e historial | FR-18 | — | AD-10, AD-18 | RN-29, E-12 | Pacientes |
 | CAP-16 Configurar reglas | FR-19 | — | AD-14 | `ReglasDeReserva`, `TipoDeVisita`, RN-17, INV-C3 | Configuración |

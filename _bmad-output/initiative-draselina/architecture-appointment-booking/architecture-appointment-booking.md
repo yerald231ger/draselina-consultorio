@@ -267,7 +267,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** FR-4, FR-13
 - **Prevents:** una Cita agendada en una fecha que se cerró en el mismo instante.
-- **Rule:** todo comando que crea o mueve una Cita en línea, o que guarda o borra una custom, toma un candado consultivo de transacción de PostgreSQL (advisory lock) por fecha local y lee los tramos vigentes después de tomarlo.
+- **Rule:** todo comando que crea o mueve una Cita en línea, que crea una Cita del consultorio (Gerardo, 2026-11-10), o que guarda o borra una custom, toma un candado consultivo de transacción de PostgreSQL (advisory lock) por fecha local y lee los tramos vigentes después de tomarlo.
 
 ### AD-27 — Confirmar dos veces no crea dos citas
 

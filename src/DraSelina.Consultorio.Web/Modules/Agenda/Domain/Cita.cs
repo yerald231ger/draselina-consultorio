@@ -176,6 +176,123 @@ public sealed class Cita
     }
 
     /// <summary>
+    /// Agenda una Cita del consultorio: la registra el Administrador, por teléfono o WhatsApp, o porque Selina la aceptó
+    /// fuera de horario (CAP-13, FR-15). No aplica Agenda base ni custom, rejilla, ventana ni tope semanal, ni en un día
+    /// que no se atiende (RN-13, AD-7): cualquier tipo de visita activo, a cualquier hora. Cumple INV-C1 a C4, C6 y C9.
+    /// Lo único que la impide, además del pasado, es traslapar otra Cita, y eso lo decide la base (AD-8). Si no cabe
+    /// completa en ningún Tramo vigente de su fecha, la nota es obligatoria (INV-C6); los Tramos los pasa el llamador
+    /// (T-1). Sin solicitud (AD-27 es solo en línea); con Enlace de gestión, como la en línea (AD-19).
+    /// </summary>
+    /// <param name="paciente">El Paciente, ya reconocido o registrado por Pacientes.</param>
+    /// <param name="tipo">El tipo de visita: fija la duración, y por lo tanto el fin (INV-C3). Reservable en línea o no.</param>
+    /// <param name="inicio">El instante de inicio; cualquier hora, fuera de la rejilla incluso.</param>
+    /// <param name="nota">La nota del Administrador. Obligatoria fuera de horario (INV-C6); vacía cuenta como no escrita.</param>
+    /// <param name="motivoDeConsulta">Opcional; vacío cuenta como no escrito.</param>
+    /// <param name="consentimiento">El Consentimiento obtenido por fuera del sitio (AD-24, INV-C9).</param>
+    /// <param name="tramosVigentes">Los Tramos vigentes de la fecha local de <paramref name="inicio"/> (T-1).</param>
+    /// <param name="now">El instante actual, del reloj del llamador (T-1, T-20).</param>
+    /// <param name="clave">La clave del host con la que se deriva su Enlace de gestión (AD-19).</param>
+    /// <param name="cita">La Cita, si no hubo rechazo.</param>
+    /// <returns>Nulo si se agendó; si no, por qué no.</returns>
+    /// <exception cref="ArgumentException">Si falta un dato que el llamador debía haber validado antes, si el
+    /// Consentimiento no es externo o si los Tramos vigentes no son de la fecha local de la Cita.</exception>
+    public static RechazoAlAgendar? AgendarPorConsultorio(
+        PatientId paciente,
+        TipoDeVisita tipo,
+        DateTimeOffset inicio,
+        string? nota,
+        string? motivoDeConsulta,
+        Consentimiento consentimiento,
+        TramosVigentes tramosVigentes,
+        DateTimeOffset now,
+        ClaveDeGestion clave,
+        out Cita? cita)
+    {
+        // INV-C1, C9: datos que la validación de forma ya exigió. Faltar uno aquí es un error de programación.
+        ArgumentNullException.ThrowIfNull(tipo);
+        ArgumentNullException.ThrowIfNull(consentimiento);
+        ArgumentNullException.ThrowIfNull(tramosVigentes);
+        ArgumentNullException.ThrowIfNull(clave);
+        if (paciente == default || paciente.Valor == Guid.Empty)
+        {
+            throw new ArgumentException("La Cita lleva un Paciente.", nameof(paciente));
+        }
+
+        if (consentimiento.Canal != CanalDeConsentimiento.Externo)
+        {
+            throw new ArgumentException("Una Cita del consultorio lleva un Consentimiento externo.", nameof(consentimiento));
+        }
+
+        // Los tramos vigentes son los de la fecha local de la Cita (AD-17); otros serían un error del llamador.
+        var fecha = HoraLocal.DesdeUtc(inicio).Fecha;
+        if (tramosVigentes.Fecha != fecha)
+        {
+            throw new ArgumentException(
+                $"Los tramos vigentes son del {tramosVigentes.Fecha:yyyy-MM-dd} y la Cita es del {fecha:yyyy-MM-dd}.",
+                nameof(tramosVigentes));
+        }
+
+        cita = null;
+
+        // Reservable en línea o no: el consultorio agenda cualquier tipo activo (FR-15).
+        if (!tipo.Activo)
+        {
+            return RechazoAlAgendar.TipoNoReservable;
+        }
+
+        // INV-C4: nunca en un momento pasado. "Ya pasó" se mide desde el inicio (RN-31). Hoy más tarde sí.
+        if (inicio <= now)
+        {
+            return RechazoAlAgendar.EnElPasado;
+        }
+
+        var rango = RangoDeTiempo.Crear(inicio, inicio + tipo.Duracion);
+        var notaEscrita = string.IsNullOrWhiteSpace(nota) ? null : nota.Trim();
+
+        // INV-C6: fuera de los Tramos vigentes de su fecha, solo con nota.
+        if (notaEscrita is null && QuedaFueraDe(rango, tramosVigentes))
+        {
+            return RechazoAlAgendar.NotaObligatoria;
+        }
+
+        var id = CitaId.Nuevo();
+        cita = new Cita
+        {
+            Id = id,
+            PacienteId = paciente,
+            TipoDeVisitaId = tipo.Id,
+            Rango = rango,
+            Estado = EstadoCita.Agendada,
+            Origen = OrigenDeCita.Consultorio,
+            Nota = notaEscrita,
+            MotivoDeConsulta = string.IsNullOrWhiteSpace(motivoDeConsulta) ? null : motivoDeConsulta.Trim(),
+            Consentimiento = consentimiento,
+            CreadaEn = now.ToUniversalTime(),
+            SolicitudId = null,
+            TokenHash = EnlaceDeGestion.Derivar(clave, id).Hash,
+        };
+
+        return null;
+    }
+
+    /// <summary>
+    /// Si la Cita no cabe completa en ningún Tramo de <paramref name="tramosVigentes"/>, los de la fecha local de su
+    /// inicio (INV-C6). Una que cruza la medianoche local nunca cabe.
+    /// </summary>
+    public bool QuedaFueraDeHorario(TramosVigentes tramosVigentes)
+    {
+        ArgumentNullException.ThrowIfNull(tramosVigentes);
+        return QuedaFueraDe(Rango, tramosVigentes);
+    }
+
+    private static bool QuedaFueraDe(RangoDeTiempo rango, TramosVigentes tramosVigentes)
+    {
+        var (fechaInicio, horaInicio) = HoraLocal.DesdeUtc(rango.Inicio);
+        var (fechaFin, horaFin) = HoraLocal.DesdeUtc(rango.Fin);
+        return fechaInicio != fechaFin || !tramosVigentes.Tramos.Any(t => t.Contiene(horaInicio, horaFin));
+    }
+
+    /// <summary>
     /// Mueve la Cita a <paramref name="nuevoRango"/>: es la misma Cita, con su id, su Enlace de gestión, su origen, su
     /// solicitud, su Consentimiento y su motivo (RN-15, AD-7). Solo si está Agendada y faltan al menos
     /// <see cref="ReglasDeAgenda.UmbralCancelacionTardiaMin"/> minutos para su inicio actual (RN-17). Sobre el rango
@@ -301,10 +418,10 @@ public enum RechazoAlReprogramar
     FueraDeVentana = 5,
 }
 
-/// <summary>Por qué <see cref="Cita.Agendar"/> no agendó.</summary>
+/// <summary>Por qué <see cref="Cita.Agendar"/> o <see cref="Cita.AgendarPorConsultorio"/> no agendó.</summary>
 public enum RechazoAlAgendar
 {
-    /// <summary>El tipo de visita no está activo o no se agenda en línea.</summary>
+    /// <summary>El tipo de visita no está activo o, en línea, no se agenda en línea.</summary>
     TipoNoReservable = 1,
 
     /// <summary>El inicio ya pasó (INV-C4).</summary>
@@ -318,4 +435,7 @@ public enum RechazoAlAgendar
 
     /// <summary>Las Citas de la semana con ese teléfono ya alcanzaron el tope semanal (RN-18).</summary>
     TopeSemanal = 5,
+
+    /// <summary>Una Cita del consultorio fuera de los Tramos vigentes de su fecha va con nota (INV-C6).</summary>
+    NotaObligatoria = 6,
 }

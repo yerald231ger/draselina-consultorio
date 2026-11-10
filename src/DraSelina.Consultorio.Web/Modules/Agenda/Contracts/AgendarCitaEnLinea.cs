@@ -119,6 +119,9 @@ public static class CodigosDeAgenda
     /// <summary>Ese teléfono ya tiene el máximo de Citas de la semana de la Cita (RN-18, AD-13).</summary>
     public const string TopeSemanal = "agenda.tope_semanal";
 
+    /// <summary>Una Cita del consultorio fuera de los Tramos vigentes de su fecha necesita nota (INV-C6).</summary>
+    public const string NotaObligatoria = "agenda.nota_obligatoria";
+
     /// <summary>
     /// No hay Cita para ese Enlace de gestión, o (para el archivo de calendario) no está Agendada, o su inicio ya pasó;
     /// no se dice cuál (RN-22). Reprogramar una Cita que no está Agendada, o cancelar una que No se presentó, es
