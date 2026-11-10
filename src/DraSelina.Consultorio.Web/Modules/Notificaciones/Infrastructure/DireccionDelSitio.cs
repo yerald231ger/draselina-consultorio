@@ -8,6 +8,9 @@ public sealed class DireccionDelSitio(IOptions<OpcionesDeNotificaciones> opcione
 {
     public string Reservar() => $"{Base()}/reservar";
 
+    public string Agenda(DateOnly fecha) =>
+        $"{Base()}/admin?fecha={fecha.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}";
+
     private string Base() =>
         Uri.TryCreate(opciones.Value.UrlDelSitio, UriKind.Absolute, out var url) && url.Scheme is "https" or "http"
             ? url.ToString().TrimEnd('/')

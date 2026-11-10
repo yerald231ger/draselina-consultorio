@@ -1,0 +1,131 @@
+@using System.Globalization
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.UI.Pages.Reserva
+
+@*
+    Un día de la Agenda (entrada 5.2), en la vista de día o como columna de la semana: la marca del día (sin Tramos o
+    con Agenda custom, siempre con su motivo), sus Tramos vigentes y sus Citas. Las marcas las decidió la consulta; aquí
+    solo se pintan. Las canceladas se ocultan si así lo pide la página, con un aviso de cuántas.
+*@
+
+<section class="@ClaseDelDia" data-fecha="@Iso(Dia.Fecha)">
+    @if (EnSemana)
+    {
+        <h2 class="dsm-agenda__dia-titulo">
+            <a class="dsm-agenda__dia-enlace" href="@Agenda.Direccion(Dia.Fecha, semana: false)">
+                @FormatoDeCita.DiaCorto(Dia.Fecha) @Dia.Fecha.Day
+            </a>
+            @if (EsHoy)
+            {
+                <span class="dsm-agenda__hoy">Hoy</span>
+            }
+        </h2>
+    }
+
+    @if (Agenda.Marca(Dia) is { } marca)
+    {
+        <p class="@ClaseDeMarca">@marca</p>
+    }
+
+    @if (Dia.Tramos.Count > 0)
+    {
+        <p class="dsm-agenda__tramos">@string.Join(", ", Dia.Tramos.Select(t => $"{FormatoDeCita.Hora(t.Inicio)} a {FormatoDeCita.Hora(t.Fin)}"))</p>
+    }
+
+    @if (Dia.Citas.Count == 0)
+    {
+        <p class="dsm-agenda__vacia">@Agenda.DiaVacio</p>
+    }
+    else
+    {
+        @if (Visibles.Count > 0)
+        {
+            <ol class="dsm-agenda__lista">
+                @foreach (var cita in Visibles)
+                {
+                    <li class="@Clase(cita)" data-cita="@cita.CitaId">
+                        <div class="dsm-agenda__hora">
+                            <span class="dsm-agenda__inicio">@FormatoDeCita.Hora(cita.Inicio)</span>
+                            <span class="dsm-agenda__fin">a @FormatoDeCita.Hora(cita.Fin)</span>
+                        </div>
+                        <div class="dsm-agenda__datos">
+                            <div class="dsm-agenda__paciente">@(cita.Paciente ?? Agenda.PacienteNoEncontrado)</div>
+                            @if (cita.MotivoDeConsulta is { Length: > 0 } motivo)
+                            {
+                                <div class="dsm-agenda__motivo">@motivo</div>
+                            }
+                            @if (cita.SinCorreo || cita.FueraDeHorario)
+                            {
+                                <div class="dsm-agenda__marcas">
+                                    @if (cita.FueraDeHorario)
+                                    {
+                                        <span class="dsm-chip-de-estado dsm-chip-de-estado--fuera">@Agenda.FueraDeHorario</span>
+                                    }
+                                    @if (cita.SinCorreo)
+                                    {
+                                        <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-agenda__sin-correo">@Agenda.SinCorreo</span>
+                                    }
+                                </div>
+                            }
+                            @if (cita.Nota is { Length: > 0 } nota)
+                            {
+                                <div class="dsm-agenda__nota">@nota</div>
+                            }
+                        </div>
+                        <span class="@Agenda.ClaseDeEtiqueta(cita) dsm-agenda__estado">@Agenda.Etiqueta(cita)</span>
+                    </li>
+                }
+            </ol>
+        }
+
+        @if (Ocultas > 0)
+        {
+            <p class="dsm-agenda__ocultas">@Agenda.CanceladasOcultas(Ocultas)</p>
+        }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public DiaDeLaAgenda Dia { get; set; } = default!;
+
+    /// <summary>Si es la fecha local de hoy.</summary>
+    [Parameter]
+    public bool EsHoy { get; set; }
+
+    /// <summary>Si va como columna de la semana: lleva su propio encabezado, que lleva a la vista de ese día.</summary>
+    [Parameter]
+    public bool EnSemana { get; set; }
+
+    [Parameter]
+    public bool MostrarCanceladas { get; set; }
+
+    private IReadOnlyList<CitaDeLaAgenda> Visibles =>
+        MostrarCanceladas ? Dia.Citas : [.. Dia.Citas.Where(c => c.Estado != EstadoEnLaAgenda.Cancelada)];
+
+    private int Ocultas => Dia.Citas.Count - Visibles.Count;
+
+    private bool Cerrado => Dia.Tipo is TipoDeDia.SinAtencion or TipoDeDia.CustomSinAtencion;
+
+    private string ClaseDelDia =>
+        "dsm-agenda__dia"
+        + (Cerrado ? " dsm-agenda__dia--cerrado" : "")
+        + (Dia.Tipo is TipoDeDia.CustomSinAtencion or TipoDeDia.DiaAbierto or TipoDeDia.HorarioEspecial ? " dsm-agenda__dia--custom" : "")
+        + (EsHoy ? " dsm-agenda__dia--hoy" : "");
+
+    private string ClaseDeMarca => Dia.Tipo switch
+    {
+        TipoDeDia.SinAtencion => "dsm-agenda__marca",
+        _ when Cerrado => "dsm-agenda__marca dsm-agenda__marca--custom dsm-agenda__marca--cerrado",
+        _ => "dsm-agenda__marca dsm-agenda__marca--custom",
+    };
+
+    private static string Iso(DateOnly fecha) => fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static string Clase(CitaDeLaAgenda cita) => cita.Estado switch
+    {
+        EstadoEnLaAgenda.Atendida => "dsm-agenda__cita dsm-agenda__cita--atendida",
+        EstadoEnLaAgenda.Cancelada => "dsm-agenda__cita dsm-agenda__cita--cancelada",
+        _ => "dsm-agenda__cita",
+    };
+}

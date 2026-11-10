@@ -68,6 +68,9 @@ builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// La Agenda vuelve a consultar cada 30 segundos mientras su circuito está abierto (entrada 5.2).
+builder.Services.AddSingleton(DraSelina.Consultorio.UI.Pages.Administracion.RefrescoDeLaAgenda.PorOmision);
+
 // Protección de las páginas de reserva (FR-7, CAP-5), sin scripts ni servicios de terceros: el límite de frecuencia
 // por IP (LimiteDeFrecuencia.cs, valores en configuración) y la verificación anti-bots de Tus datos.
 builder.Services

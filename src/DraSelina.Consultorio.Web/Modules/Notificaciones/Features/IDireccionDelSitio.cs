@@ -11,4 +11,10 @@ public interface IDireccionDelSitio
     /// outbox reintenta.
     /// </summary>
     string Reservar();
+
+    /// <summary>
+    /// La dirección absoluta de la Agenda del Administrador en una fecha local del consultorio:
+    /// <c>/admin?fecha=2026-11-12</c>. Lanza como <see cref="Reservar"/> si falta la configuración.
+    /// </summary>
+    string Agenda(DateOnly fecha);
 }

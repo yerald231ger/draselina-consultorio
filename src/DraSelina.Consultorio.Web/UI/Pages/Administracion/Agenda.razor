@@ -2,22 +2,32 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 @layout LayoutAdministracion
+@implements IDisposable
+@using System.Globalization
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
 @using DraSelina.Consultorio.Agenda.Contracts
 @using DraSelina.Consultorio.BuildingBlocks.Contracts
 @using DraSelina.Consultorio.Kernel
 @using DraSelina.Consultorio.UI.Pages.Reserva
-@inject IQueryHandler<CitasDeLaFecha, IReadOnlyList<CitaDeLaFecha>> Consulta
+@inject IQueryHandler<DiasDeLaAgenda, IReadOnlyList<DiaDeLaAgenda>> Consulta
 @inject IClock Reloj
+@inject RefrescoDeLaAgenda Refresco
+@inject ILogger<Agenda> Registro
 
 @*
-    Agenda (CAP-12, FR-14; entrada 5.1): las Citas de hoy, en la fecha local del consultorio, en todos sus estados y en
-    orden de inicio, con el nombre del Paciente y el motivo. Sin mockup: los tratamientos son los de EXPERIENCE.md
-    (State Patterns, Administrador). Atendida va atenuada; No se presentó y las tres cancelaciones llevan su etiqueta. La
-    navegación entre días y la semana son de la entrada 2; el Detalle, de la 6.
+    Agenda (CAP-12, FR-14; entradas 5.1 y 5.2): un día o una semana (de lunes a domingo, siempre los siete días), en
+    fechas locales del consultorio, con las Citas en todos sus estados y en orden de inicio. La fecha y la vista viajan en
+    la dirección (/admin?fecha=2026-11-10&vista=semana); sin parámetros, o con una fecha que no se entiende, hoy en vista
+    de día. Nada de datos personales en la dirección (AD-11, AD-23). Las canceladas se ocultan por omisión; un control
+    las muestra. Sin mockup: los tratamientos son los de EXPERIENCE.md (State Patterns, Administrador). El Detalle de
+    Cita es de la entrada 6 y "Agendar cita" de la 4.
 
-    Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar. La consulta lleva
-    IRequiereAdministrador (AD-22): no se confía en esta protección. Los nombres los reúne el handler (AD-10).
+    Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar y el regreso conserva fecha y
+    vista. La consulta lleva IRequiereAdministrador (AD-22): no se confía en esta protección. Las marcas y los nombres
+    los reúne el handler (AD-10). Sin canal en tiempo real: mientras el circuito está abierto se vuelve a consultar cada
+    RefrescoDeLaAgenda.Intervalo (30 s); si una vuelta falla, se conserva lo último mostrado. El temporizador se libera
+    al salir de la página.
 *@
 
 <PageTitle>Agenda · Administración</PageTitle>
@@ -25,41 +35,49 @@
 <section class="dsm-contenedor dsm-agenda" aria-labelledby="agenda">
     <div class="dsm-agenda__cabeza">
         <h1 id="agenda" class="dsm-titulo-de-estado">Agenda</h1>
-        <p class="dsm-agenda__fecha">Hoy, @FormatoDeCita.Largo(_hoy)</p>
+        <p class="dsm-agenda__fecha">@Encabezado</p>
     </div>
 
-    @if (_citas is null)
+    <div class="dsm-agenda__controles">
+        <nav class="dsm-agenda__navegacion" aria-label="Fechas">
+            <a class="dsm-agenda__control" href="@Direccion(Anterior, _semana)">Anterior</a>
+            <a class="dsm-agenda__control" href="@Direccion(_hoy, _semana)">Hoy</a>
+            <a class="dsm-agenda__control" href="@Direccion(Siguiente, _semana)">Siguiente</a>
+        </nav>
+        <nav class="dsm-agenda__vistas" aria-label="Vista">
+            <a class="@ClaseDeVista(!_semana)" href="@Direccion(_fecha, semana: false)" aria-current="@(_semana ? null : "page")">Día</a>
+            <a class="@ClaseDeVista(_semana)" href="@Direccion(_fecha, semana: true)" aria-current="@(_semana ? "page" : null)">Semana</a>
+        </nav>
+        <label class="dsm-agenda__filtro">
+            <input type="checkbox" class="form-check-input" @bind="_mostrarCanceladas" />
+            Mostrar canceladas
+        </label>
+    </div>
+
+    @if (_dias is null)
     {
         @if (_fallo)
         {
             <p class="dsm-agenda__vacia">@NoSeCargo</p>
         }
     }
-    else if (_citas.Count == 0)
+    else if (_semana)
     {
-        <p class="dsm-agenda__vacia">@DiaVacio</p>
-    }
-    else
-    {
-        <ol class="dsm-agenda__lista">
-            @foreach (var cita in _citas)
+        <ol class="dsm-agenda__semana">
+            @foreach (var dia in _dias)
             {
-                <li class="@Clase(cita)" data-cita="@cita.CitaId">
-                    <div class="dsm-agenda__hora">
-                        <span class="dsm-agenda__inicio">@FormatoDeCita.Hora(cita.Inicio)</span>
-                        <span class="dsm-agenda__fin">a @FormatoDeCita.Hora(cita.Fin)</span>
-                    </div>
-                    <div class="dsm-agenda__datos">
-                        <div class="dsm-agenda__paciente">@(cita.Paciente ?? PacienteNoEncontrado)</div>
-                        @if (cita.MotivoDeConsulta is { Length: > 0 } motivo)
-                        {
-                            <div class="dsm-agenda__motivo">@motivo</div>
-                        }
-                    </div>
-                    <span class="@ClaseDeEtiqueta(cita)">@Etiqueta(cita)</span>
+                <li class="dsm-agenda__columna" @key="dia.Fecha">
+                    <DiaEnLaAgenda Dia="dia" EsHoy="@(dia.Fecha == _hoy)" EnSemana="true" MostrarCanceladas="_mostrarCanceladas" />
                 </li>
             }
         </ol>
+    }
+    else
+    {
+        @foreach (var dia in _dias)
+        {
+            <DiaEnLaAgenda @key="dia.Fecha" Dia="dia" EsHoy="@(dia.Fecha == _hoy)" MostrarCanceladas="_mostrarCanceladas" />
+        }
     }
 </section>
 
@@ -73,22 +91,100 @@
     /// <summary>Si la consulta no vuelve con éxito (sin sesión no se llega aquí).</summary>
     public const string NoSeCargo = "No se pudo cargar la agenda. Vuelve a entrar.";
 
+    /// <summary>El Paciente no tiene correo guardado: hay que avisarle a mano (RN-30, EXPERIENCE.md).</summary>
+    public const string SinCorreo = "sin correo";
+
+    /// <summary>Una Cita del Consultorio fuera de los Tramos vigentes (INV-C6).</summary>
+    public const string FueraDeHorario = "Fuera de horario";
+
+    /// <summary>Un día sin Tramos.</summary>
+    public const string NoSeAtiende = "No se atiende";
+
     /// <summary>
     /// Lo cargado en el prerenderizado, que pasa al circuito (.NET 10, <c>[PersistentState]</c>): la consulta no se repite
-    /// y la lista no desaparece mientras el circuito arranca.
+    /// y la lista no desaparece mientras el circuito arranca. Lleva la fecha y la vista: si la dirección pide otras, se
+    /// consulta de nuevo.
     /// </summary>
     [PersistentState]
     public AgendaCargada? Cargada { get; set; }
 
-    private DateOnly _hoy => Cargada?.Hoy ?? default;
-    private IReadOnlyList<CitaDeLaFecha>? _citas => Cargada?.Citas;
-    private bool _fallo => Cargada?.Fallo ?? false;
+    /// <summary>La fecha pedida en la dirección, <c>yyyy-MM-dd</c>; si falta o no se entiende, hoy.</summary>
+    [SupplyParameterFromQuery(Name = "fecha")]
+    public string? FechaPedida { get; set; }
 
-    /// <summary>La fecha mostrada y sus Citas; nulas si la consulta no volvió con éxito.</summary>
-    public sealed record AgendaCargada(DateOnly Hoy, IReadOnlyList<CitaDeLaFecha>? Citas, bool Fallo);
+    /// <summary><c>semana</c>; cualquier otra cosa, el día.</summary>
+    [SupplyParameterFromQuery(Name = "vista")]
+    public string? VistaPedida { get; set; }
+
+    /// <summary>
+    /// La fecha pedida, la vista y sus días; <see cref="Dias"/> nulo si la consulta no volvió con éxito.
+    /// </summary>
+    public sealed record AgendaCargada(DateOnly Fecha, bool Semana, IReadOnlyList<DiaDeLaAgenda>? Dias, bool Fallo)
+    {
+        /// <summary>Si es lo que pide la dirección; si no, se consulta de nuevo.</summary>
+        public bool EsDe(DateOnly fecha, bool semana) => Fecha == fecha && Semana == semana;
+    }
+
+    private readonly CancellationTokenSource _cierre = new();
+    private readonly SemaphoreSlim _consultando = new(1, 1);
+    private DateOnly _hoy;
+    private DateOnly _fecha;
+    private bool _semana;
+    private bool _mostrarCanceladas;
+
+    // Solo lo cargado para la fecha y la vista que pide la dirección: al navegar, los días anteriores no se pintan bajo
+    // el encabezado nuevo mientras llega la consulta.
+    private AgendaCargada? Vigente => Cargada?.EsDe(_fecha, _semana) == true ? Cargada : null;
+    private IReadOnlyList<DiaDeLaAgenda>? _dias => Vigente?.Dias;
+    private bool _fallo => Vigente?.Fallo ?? false;
+
+    private DateOnly Anterior => _fecha.AddDays(_semana ? -7 : -1);
+
+    private DateOnly Siguiente => _fecha.AddDays(_semana ? 7 : 1);
+
+    private string Encabezado
+    {
+        get
+        {
+            if (!_semana)
+            {
+                return _fecha == _hoy ? $"Hoy, {FormatoDeCita.Largo(_fecha)}" : FormatoDeCita.Largo(_fecha);
+            }
+
+            var (lunes, domingo) = Semana(_fecha);
+            return lunes.Month == domingo.Month
+                ? $"Semana del {lunes.Day} al {FormatoDeCita.DiaYMes(domingo)}"
+                : $"Semana del {FormatoDeCita.DiaYMes(lunes)} al {FormatoDeCita.DiaYMes(domingo)}";
+        }
+    }
+
+    /// <summary>La dirección de la Agenda en una fecha y vista: <c>/admin?fecha=2026-11-10&amp;vista=dia</c>.</summary>
+    public static string Direccion(DateOnly fecha, bool semana) =>
+        $"/admin?fecha={fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}&vista={(semana ? "semana" : "dia")}";
+
+    /// <summary>De lunes a domingo, la semana de calendario de <paramref name="fecha"/> (RN-18).</summary>
+    public static (DateOnly Lunes, DateOnly Domingo) Semana(DateOnly fecha)
+    {
+        var lunes = fecha.AddDays(-(((int)fecha.DayOfWeek + 6) % 7));
+        return (lunes, lunes.AddDays(6));
+    }
+
+    /// <summary>La marca de un día sin Tramos o con Agenda custom, siempre con su motivo; nula en un día normal.</summary>
+    public static string? Marca(DiaDeLaAgenda dia) => dia.Tipo switch
+    {
+        TipoDeDia.SinAtencion => NoSeAtiende,
+        TipoDeDia.CustomSinAtencion => $"{NoSeAtiende} · {dia.MotivoDeCustom}",
+        TipoDeDia.DiaAbierto => $"Día abierto · {dia.MotivoDeCustom}",
+        TipoDeDia.HorarioEspecial => $"Horario especial · {dia.MotivoDeCustom}",
+        _ => null,
+    };
+
+    /// <summary>"1 cancelada oculta", "2 canceladas ocultas".</summary>
+    public static string CanceladasOcultas(int cuantas) =>
+        cuantas == 1 ? "1 cancelada oculta" : $"{cuantas} canceladas ocultas";
 
     /// <summary>La etiqueta del estado de una Cita en la Agenda.</summary>
-    public static string Etiqueta(CitaDeLaFecha cita) => (cita.Estado, cita.Cancelacion) switch
+    public static string Etiqueta(CitaDeLaAgenda cita) => (cita.Estado, cita.Cancelacion) switch
     {
         (EstadoEnLaAgenda.Agendada, _) => "Agendada",
         (EstadoEnLaAgenda.Atendida, _) => "Atendida",
@@ -99,36 +195,136 @@
         _ => cita.Estado.ToString(),
     };
 
-    private static string Clase(CitaDeLaFecha cita) => cita.Estado switch
-    {
-        EstadoEnLaAgenda.Atendida => "dsm-agenda__cita dsm-agenda__cita--atendida",
-        EstadoEnLaAgenda.Cancelada => "dsm-agenda__cita dsm-agenda__cita--cancelada",
-        _ => "dsm-agenda__cita",
-    };
-
     // DESIGN.md: el ámbar (warning) es solo de la cancelación tardía y el rojo (danger) solo de la acción de cancelar;
     // las demás cancelaciones y No se presentó van en un chip neutro.
-    private static string ClaseDeEtiqueta(CitaDeLaFecha cita) => (cita.Estado, cita.Cancelacion) switch
+    internal static string ClaseDeEtiqueta(CitaDeLaAgenda cita) => (cita.Estado, cita.Cancelacion) switch
     {
         (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "dsm-chip-de-estado dsm-chip-de-estado--tardia",
         (EstadoEnLaAgenda.Cancelada or EstadoEnLaAgenda.NoSePresento, _) => "dsm-chip-de-estado dsm-chip-de-estado--neutro",
         _ => "dsm-chip-de-estado",
     };
 
-    protected override async Task OnInitializedAsync()
+    private static string ClaseDeVista(bool activa) =>
+        activa ? "dsm-agenda__control dsm-agenda__control--activo" : "dsm-agenda__control";
+
+    protected override async Task OnParametersSetAsync()
     {
-        // Ya cargada en el prerenderizado: el circuito la recibe y no consulta otra vez.
-        if (Cargada is not null)
+        LeerFecha();
+        _semana = string.Equals(VistaPedida, "semana", StringComparison.Ordinal);
+
+        // Ya cargada para esta fecha y vista en el prerenderizado: el circuito la recibe y no consulta otra vez.
+        if (Cargada?.EsDe(_fecha, _semana) == true)
         {
             return;
         }
 
-        // La fecha local del consultorio (AD-17), del reloj de la aplicación.
-        var hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
+        var (consulta, fechaPedida, semana) = (Pedida(), _fecha, _semana);
+        await _consultando.WaitAsync(_cierre.Token);
+        try
+        {
+            var resultado = await Consulta.HandleAsync(consulta, _cierre.Token);
+            Cargada = resultado.EsExito
+                ? new AgendaCargada(fechaPedida, semana, resultado.Valor, Fallo: false)
+                : new AgendaCargada(fechaPedida, semana, null, Fallo: true);
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            // Una consulta que lanza no tumba el circuito: se dice que no se cargó, sin datos personales (AD-23).
+            Registro.LogWarning(error, "La Agenda no se pudo cargar");
+            Cargada = new AgendaCargada(fechaPedida, semana, null, Fallo: true);
+        }
+        finally
+        {
+            _consultando.Release();
+        }
+    }
 
-        var resultado = await Consulta.HandleAsync(new CitasDeLaFecha(hoy), CancellationToken.None);
-        Cargada = resultado.EsExito
-            ? new AgendaCargada(hoy, resultado.Valor, Fallo: false)
-            : new AgendaCargada(hoy, null, Fallo: true);
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // Solo en el circuito: el prerenderizado no deja temporizadores vivos.
+        if (firstRender && RendererInfo.IsInteractive)
+        {
+            _ = RefrescarAsync(_cierre.Token);
+        }
+    }
+
+    // Hoy, la fecha local del consultorio (AD-17) del reloj de la aplicación, y la fecha que pide la dirección: si falta o
+    // no se entiende, hoy. Cada vuelta del refresco la vuelve a leer: pasada la medianoche, /admin sin fecha es el día nuevo.
+    private void LeerFecha()
+    {
+        _hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
+        _fecha = DateOnly.TryParseExact(FechaPedida, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha)
+            ? fecha
+            : _hoy;
+    }
+
+    private DiasDeLaAgenda Pedida()
+    {
+        if (!_semana)
+        {
+            return DiasDeLaAgenda.DelDia(_fecha);
+        }
+
+        var (lunes, domingo) = Semana(_fecha);
+        return new DiasDeLaAgenda(lunes, domingo);
+    }
+
+    // Cada vuelta vuelve a pedir la fecha y la vista que se muestran. Una vuelta que no vuelve con éxito, o que lanza,
+    // deja lo último mostrado; se registra sin datos personales (AD-23).
+    private async Task RefrescarAsync(CancellationToken cancelacion)
+    {
+        try
+        {
+            using var temporizador = new PeriodicTimer(Refresco.Intervalo);
+            while (await temporizador.WaitForNextTickAsync(cancelacion))
+            {
+                await InvokeAsync(() => UnaVueltaAsync(cancelacion));
+            }
+        }
+        catch (OperationCanceledException) when (cancelacion.IsCancellationRequested)
+        {
+            // Se salió de la página.
+        }
+    }
+
+    private async Task UnaVueltaAsync(CancellationToken cancelacion)
+    {
+        await _consultando.WaitAsync(cancelacion);
+        try
+        {
+            LeerFecha();
+
+            var (consulta, fecha, semana) = (Pedida(), _fecha, _semana);
+            var resultado = await Consulta.HandleAsync(consulta, cancelacion);
+            if (!resultado.EsExito)
+            {
+                Registro.LogWarning("La Agenda no se pudo refrescar ({Forma}); se conserva lo mostrado", resultado.Forma);
+                return;
+            }
+
+            // Si mientras tanto se navegó a otra fecha o vista, esta vuelta ya no es la que se muestra.
+            if (fecha != _fecha || semana != _semana)
+            {
+                return;
+            }
+
+            Cargada = new AgendaCargada(fecha, semana, resultado.Valor, Fallo: false);
+            StateHasChanged();
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && cancelacion.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "La Agenda no se pudo refrescar; se conserva lo mostrado");
+        }
+        finally
+        {
+            _consultando.Release();
+        }
+    }
+
+    // El semáforo no se libera aquí: una vuelta en curso todavía lo suelta al terminar.
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
     }
 }

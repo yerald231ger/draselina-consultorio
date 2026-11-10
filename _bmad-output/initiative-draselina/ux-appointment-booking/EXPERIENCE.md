@@ -143,7 +143,7 @@ Reglas:
 | Día sin Citas | Agenda | "No hay citas este día." |
 | Cita nueva en línea | Agenda | Aparece sin recargar. |
 | Agenda custom que deja Citas fuera | Calendario de atención | Antes de guardar: lista de las Citas que quedan fuera, con las que no tienen correo señaladas. Por cada una, el Administrador elige cancelar o conservar; hay un atajo "cancelar todas". Nada se cancela sin esa elección. Al guardar, las elegidas pasan a canceladas en unos instantes. |
-| Fecha con Agenda custom | Calendario de atención, Agenda | Se distingue de un día normal y muestra su motivo; "no se atiende" se lee distinto de "horario recortado" y de "día abierto". |
+| Fecha con Agenda custom | Calendario de atención, Agenda | Se distingue de un día normal y muestra su motivo; "no se atiende" se lee distinto de "horario especial" (recorta o alarga el día) y de "día abierto" (Gerardo, 2026-11-09). |
 | Fecha sin Agenda custom | Calendario de atención | Muestra los Tramos de la Agenda base de ese día de la semana. |
 | Quitar Agenda custom | Calendario de atención | El día vuelve a la Agenda base; se dice cuál es. Si eso deja Citas fuera, aparece antes la misma lista de "Agenda custom que deja Citas fuera", con la elección de cancelar o conservar por Cita. |
 | Cambio de Agenda base con Citas fuera | Configuración | Antes de guardar: lista de Citas que quedan fuera; no se cancelan solas. |

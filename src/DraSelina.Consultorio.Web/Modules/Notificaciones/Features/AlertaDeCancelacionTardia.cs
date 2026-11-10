@@ -16,7 +16,8 @@ namespace DraSelina.Consultorio.Notificaciones.Features;
 public sealed class AlertaDeCancelacionTardia(
     EnvioUnico envio,
     IPacientesApi pacientes,
-    IConfiguracionDeEnvio configuracion) : IEventHandler<CitaCancelada>
+    IConfiguracionDeEnvio configuracion,
+    IDireccionDelSitio sitio) : IEventHandler<CitaCancelada>
 {
     public Task HandleAsync(CitaCancelada evento, CancellationToken cancellationToken) =>
         evento.Motivo != CitaCancelada.MotivoTarde
@@ -30,10 +31,12 @@ public sealed class AlertaDeCancelacionTardia(
                         ?? throw new InvalidOperationException("La Cita cancelada apunta a un Paciente que Pacientes no conoce.");
 
         var inicio = TimeZoneInfo.ConvertTime(evento.Inicio, ZonaDelConsultorio.Zona);
+        var fecha = DateOnly.FromDateTime(inicio.DateTime);
         return PlantillaDeAlertaTardia.Armar(new PlantillaDeAlertaTardia.Datos(
             Destinatario: await configuracion.CorreoDelAdministradorAsync(cancellationToken),
             Paciente: contactos.Nombre,
-            Fecha: DateOnly.FromDateTime(inicio.DateTime),
-            Hora: TimeOnly.FromDateTime(inicio.DateTime)));
+            Fecha: fecha,
+            Hora: TimeOnly.FromDateTime(inicio.DateTime),
+            UrlDeLaAgenda: sitio.Agenda(fecha)));
     }
 }

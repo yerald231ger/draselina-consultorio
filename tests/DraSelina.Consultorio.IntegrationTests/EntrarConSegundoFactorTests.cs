@@ -275,9 +275,38 @@ public sealed partial class EntrarConSegundoFactorTests(Arnes arnes)
         NpgsqlConnection.ClearPool(new NpgsqlConnection(cadena));
     }
 
+    [Fact]
+    public async Task Sin_sesion_la_semana_pedida_se_conserva_al_entrar_con_contrasena_y_codigo()
+    {
+        await using var escenario = await BaseYWebAsync();
+        var clave = await ActivarAsync(escenario.Web);
+        using var cliente = Cliente(escenario.Web);
+        const string Semana = "/admin?fecha=2026-11-10&vista=semana";
+
+        using var sinSesion = await cliente.GetAsync(Semana, Cancelacion);
+        Assert.Equal(HttpStatusCode.Redirect, sinSesion.StatusCode);
+        var entrar = Ruta(sinSesion.Headers.Location)!;
+        Assert.Equal($"{Registro.RutaDeEntrar}?ReturnUrl={Uri.EscapeDataString(Semana)}", entrar);
+
+        var pagina = await LeerAsync(cliente, entrar);
+        var conContrasena = await EnviarAsync(
+            cliente, entrar, pagina, "entrar",
+            ("Datos.Correo", Arnes.CorreoDelAdministrador), ("Datos.Contrasena", Arnes.ContrasenaDelAdministrador));
+        Assert.Equal(HttpStatusCode.Redirect, conContrasena.Estado);
+        var segundoFactor = conContrasena.Destino!;
+        Assert.StartsWith(Registro.RutaDelSegundoFactor, segundoFactor, StringComparison.Ordinal);
+
+        var conCodigo = await EnviarAsync(
+            cliente, segundoFactor, await LeerAsync(cliente, segundoFactor), "segundo-factor", ("Datos.Codigo", Totp(clave, pasos: 1)));
+
+        Assert.Equal(HttpStatusCode.Redirect, conCodigo.Estado);
+        Assert.Equal(Semana, conCodigo.Destino);
+    }
+
     [Theory]
     [InlineData("/admin", "/admin")]
     [InlineData("/admin?fecha=2026-11-10", "/admin?fecha=2026-11-10")]
+    [InlineData("/admin?fecha=2026-11-10&vista=semana", "/admin?fecha=2026-11-10&vista=semana")]
     [InlineData("/admin/pacientes", "/admin/pacientes")]
     [InlineData("/admin/entrar", "/admin")]
     [InlineData("/administrador", "/admin")]

@@ -19,6 +19,9 @@ public sealed class AlertaDeCancelacionTardiaTests(Arnes arnes)
 
     private static readonly DateTimeOffset Inicio = Agenda.Domain.HoraLocal.AUtc(new DateOnly(2026, 11, 3), new TimeOnly(16, 0));
 
+    /// <summary>La Agenda del Administrador en la fecha local de la Cita.</summary>
+    private const string UrlDeLaAgenda = $"{Arnes.UrlDelSitio}/admin?fecha=2026-11-03";
+
     private static CancellationToken Cancelacion => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -40,8 +43,12 @@ public sealed class AlertaDeCancelacionTardiaTests(Arnes arnes)
             Assert.Contains("Ana Sofía López canceló su cita tarde.", version, StringComparison.Ordinal);
             Assert.Contains("Martes 3 de noviembre", version, StringComparison.Ordinal);
             Assert.Contains("4:00 pm", version, StringComparison.Ordinal);
-            Assert.DoesNotContain("Abrir la Agenda", version, StringComparison.Ordinal);
         }
+
+        // El botón lleva a la Agenda en la fecha local de la Cita, sin datos personales en la dirección (AD-11, AD-23).
+        Assert.Contains($"{PlantillaDeAlertaTardia.AbrirLaAgenda}: {UrlDeLaAgenda}", alerta.Texto, StringComparison.Ordinal);
+        Assert.Contains($"href=\"{UrlDeLaAgenda}\"", alerta.Html, StringComparison.Ordinal);
+        Assert.Contains($">{PlantillaDeAlertaTardia.AbrirLaAgenda}</a>", alerta.Html, StringComparison.Ordinal);
 
         Assert.Contains(Arnes.Canal(escenario.Web).Enviados, c => c.Destinatario == "ana@correo.com" && c.Asunto == PlantillaDeCancelacion.Titulo);
         Assert.Equal(1, await AlertasRegistradasAsync(escenario));
@@ -132,7 +139,8 @@ public sealed class AlertaDeCancelacionTardiaTests(Arnes arnes)
     [Fact]
     public void Los_datos_de_la_alerta_no_muestran_el_nombre_ni_la_direccion()
     {
-        var datos = new PlantillaDeAlertaTardia.Datos(Administrador, "Ana Sofía López", new DateOnly(2026, 11, 3), new TimeOnly(16, 0));
+        var datos = new PlantillaDeAlertaTardia.Datos(
+            Administrador, "Ana Sofía López", new DateOnly(2026, 11, 3), new TimeOnly(16, 0), UrlDeLaAgenda);
 
         Assert.DoesNotContain("Ana", datos.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain(Administrador, datos.ToString(), StringComparison.Ordinal);
