@@ -109,7 +109,9 @@
             @onclose="AlCerrarElDialogo">
     @if (_seleccionada is { } seleccionada)
     {
-        <button type="button" class="btn dsm-boton-neutro dsm-atencion__cerrar" @onclick="Cerrar">Cerrar</button>
+        <div class="dsm-atencion__cabeza-del-dialogo">
+            <button type="button" class="btn dsm-boton-neutro dsm-atencion__cerrar" @onclick="Cerrar">Cerrar</button>
+        </div>
         @if (_quitando)
         {
             <section class="dsm-atencion__editor dsm-atencion__quitar-panel" aria-labelledby="quitar-del-dia">

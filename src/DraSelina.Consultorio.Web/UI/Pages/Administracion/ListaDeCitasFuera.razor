@@ -11,7 +11,7 @@
 
 <fieldset class="dsm-citas-fuera" aria-describedby="citas-fuera-ayuda">
     <legend class="dsm-seccion dsm-citas-fuera__titulo" tabindex="-1">@Titulo(Citas.Count)</legend>
-    <p id="citas-fuera-ayuda" class="dsm-cuerpo dsm-citas-fuera__ayuda">@(Citas.Count == 1 ? AyudaDeUna : Ayuda)</p>
+    <p id="citas-fuera-ayuda" class="dsm-cuerpo dsm-citas-fuera__ayuda">@(Citas.Count == 1 ? (Citas[0].SinCorreo ? AyudaDeUnaSinCorreo : AyudaDeUna) : Ayuda)</p>
 
     @if (Citas.Count > 1)
     {
@@ -58,6 +58,7 @@
 @code {
     public const string Ayuda = "Elige qué hacer con cada una. Las que canceles reciben la disculpa con el enlace para elegir otro horario; las que conserves no cambian y su paciente no recibe nada.";
     public const string AyudaDeUna = "Elige qué hacer con ella. Si la cancelas, su paciente recibe la disculpa con el enlace para elegir otro horario; si la conservas, no cambia y su paciente no recibe nada.";
+    public const string AyudaDeUnaSinCorreo = "Elige qué hacer con ella. Su paciente no tiene correo: si la cancelas, avísale a mano; si la conservas, no cambia.";
     public const string FaltaElegirTexto = "Elige cancelar o conservar en cada cita.";
 
     /// <summary>Las Citas que quedan fuera, en orden de hora.</summary>

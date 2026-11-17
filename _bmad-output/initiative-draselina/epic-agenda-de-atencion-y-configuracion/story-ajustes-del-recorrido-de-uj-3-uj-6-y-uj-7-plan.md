@@ -100,6 +100,7 @@ context:
 - "Fuera de horario": `cita.Estado != EstadoCita.Cancelada && QuedaFueraDe(...)`; `NoSePresento` fuera la conserva.
 - `ReglasDeReserva.VentanaMaximaMeses = 12` y `RechazoDeReglasDeReserva.VentanaMayorAlMaximo`; el modelo de datos lo anota.
 - Pruebas: bUnit del modal (abrir con foco, Cerrar, Esc, guardar, lista y quitar con su foco), singular y aviso sin correo, `novalidate` y "celular"; dominio e integración de la ventana; integración de la marca (en línea fuera sí, cancelada no). Textos actualizados en las pruebas existentes. Suite completa: 1,125 pasan.
+- Revisión en navegador (sesión tester, 2026-11-17): el comportamiento del modal pasa (foco, Tab, Esc, Cerrar, lista, quitar, guardar) y los demás puntos también. Falló lo visual: "Cerrar" con `float` dejaba al formulario (flex) sin ancho; ahora va en su propia fila (`dsm-atencion__cabeza-del-dialogo`). Y la ayuda en singular prometía la disculpa a una Cita sin correo: `AyudaDeUnaSinCorreo`.
 
 ## Plan Change Log
 

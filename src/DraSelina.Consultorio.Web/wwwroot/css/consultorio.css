@@ -2885,9 +2885,16 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   outline-offset: 2px;
 }
 
+/* "Cerrar" en su propia fila arriba a la derecha: un float dejaba sin ancho al formulario (flex) de al lado. */
+.dsm-atencion__cabeza-del-dialogo {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--dsm-spacing-3);
+}
+
 .dsm-atencion__cerrar {
-  float: right;
-  margin: 0 0 var(--dsm-spacing-3) var(--dsm-spacing-3);
+  width: auto;
+  flex: none;
 }
 
 @media (max-width: 640px) {

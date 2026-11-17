@@ -416,7 +416,7 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         calendario.Find("#motivo").Change("asunto personal");
         calendario.Find("form").Submit();
 
-        Assert.Equal(ListaDeCitasFuera.AyudaDeUna, calendario.Find(".dsm-citas-fuera__ayuda").TextContent);
+        Assert.Equal(ListaDeCitasFuera.AyudaDeUnaSinCorreo, calendario.Find(".dsm-citas-fuera__ayuda").TextContent);
         // Al aparecer la lista, el foco va a su título.
         Assert.Equal(
             ["#editor-del-dia", ".dsm-citas-fuera__titulo"],
