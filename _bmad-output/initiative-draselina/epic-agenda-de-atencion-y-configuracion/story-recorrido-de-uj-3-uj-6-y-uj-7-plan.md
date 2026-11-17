@@ -3,7 +3,7 @@ title: 'Recorrido de UJ-3, UJ-6 y UJ-7'
 type: 'chore'
 ticket: '8'
 created: '2026-11-17'
-status: 'in-progress'
+status: done
 baseline_revision: '37c2f889f1d86db3e5207b9c4a6f5a69a0bdeba0'
 route: 'oneshot'
 route_source: 'auto'
@@ -122,8 +122,15 @@ pasa.
 - Avisos por correo: validación del correo con mensaje de la app (`novalidate`), no el globo del navegador; hoy acepta
   `a@b`.
 - El texto de `/reservar` para un día que no se atiende (ya estaba en la entrada).
+- La ventana de reserva con máximo de 12 meses (hoy se guardan 13), con su mensaje bajo el campo.
+- "Tope semanal por celular (citas)" y "Escribe el tope semanal por celular.": la etiqueta y el error decían
+  "teléfono"; la ayuda y el resto de la app dicen "celular".
 
-**Queda:** repetir el paso 8 (Reglas y sus textos) con el arreglo de la carga.
+**Paso 8 repetido** con el turno por ámbito: Configuración carga sus cuatro secciones en 12 de 12 cargas; la ventana a
+3 meses llega a `/reservar` sin reiniciar; los cuatro valores inválidos y el vacío dan su mensaje bajo el campo y no
+guardan; reglas regresadas a 1 / 2 / 120 / 3. Textos de Reglas claros, salvo "teléfono" (arriba).
+
+**Recorrido terminado** (Gerardo, 2026-11-17): lo que pide cambiar está en la entrada 9.
 
 ## Verification
 
