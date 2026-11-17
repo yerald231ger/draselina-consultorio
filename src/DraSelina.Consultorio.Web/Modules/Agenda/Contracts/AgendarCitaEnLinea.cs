@@ -149,9 +149,6 @@ public static class CodigosDeAgenda
     /// <summary>Con el horario propio nuevo, alguna Cita Agendada que todavía no empieza queda fuera (AD-6, RN-9).</summary>
     public const string CitasFuera = "agenda.citas_fuera";
 
-    /// <summary>Dos Tramos del mismo día se enciman (INV-B2, INV-A2).</summary>
-    public const string TramosEncimados = "agenda.tramos_encimados";
-
     /// <summary>En algún Tramo no cabe una Cita del Tipo de visita activo más corto (INV-B5, INV-A6).</summary>
     public const string TramoCorto = "agenda.tramo_corto";
 

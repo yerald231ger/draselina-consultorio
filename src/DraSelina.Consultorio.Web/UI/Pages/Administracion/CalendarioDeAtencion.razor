@@ -203,7 +203,6 @@
     public const string NoSeCargo = "No se pudo cargar el calendario. Recarga la página.";
     public const string SinTramos = "Sin tramos, ese día no se atiende.";
     public const string CitasFuera = "La lista de citas cambió mientras la revisabas: revísala de nuevo. No se guardó nada.";
-    public const string TramosEncimados = "Dos tramos se enciman. Revisa las horas.";
     public const string TramoCorto = "En cada tramo debe caber al menos una cita del tipo de consulta más corto.";
     public const string FechaPasada = "Esa fecha ya pasó.";
     public const string SinSesion = "Tu sesión terminó. Vuelve a entrar.";
@@ -597,7 +596,6 @@
             _ => _resultado.Codigo switch
             {
                 CodigosDeAgenda.CitasFuera => CitasFuera,
-                CodigosDeAgenda.TramosEncimados => TramosEncimados,
                 CodigosDeAgenda.TramoCorto => TramoCorto,
                 CodigosDeAgenda.FechaPasada => FechaPasada,
                 _ => NoSeGuardo,

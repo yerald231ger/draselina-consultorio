@@ -172,7 +172,23 @@ public sealed class GuardarAgendaCustomTests(Arnes arnes)
 
         var resultado = await GuardarAsync(escenario, Comando(Sabado, "sábado abierto", (10, 0, 12, 0), (11, 0, 13, 0)));
 
-        Assert.Equal(CodigosDeAgenda.TramosEncimados, resultado.Codigo);
+        // Bajo cada Tramo del par, el otro (entrada 6.10).
+        Assert.Equal([GuardarAgendaCustom.MensajeDeEncimado(2)], resultado.Errores[GuardarAgendaCustom.PropiedadDelTramo(0)]);
+        Assert.Equal([GuardarAgendaCustom.MensajeDeEncimado(1)], resultado.Errores[GuardarAgendaCustom.PropiedadDelTramo(1)]);
+        await SinCambiosAsync(escenario);
+    }
+
+    [Fact]
+    public async Task De_tres_Tramos_solo_los_dos_encimados_llevan_el_error()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        var resultado = await GuardarAsync(escenario, Comando(Sabado, "sábado abierto", (10, 0, 11, 0), (12, 0, 14, 0), (13, 0, 15, 0)));
+
+        Assert.Equal(
+            [GuardarAgendaCustom.PropiedadDelTramo(1), GuardarAgendaCustom.PropiedadDelTramo(2)],
+            resultado.Errores.Keys.Order());
+        Assert.Equal([GuardarAgendaCustom.MensajeDeEncimado(3)], resultado.Errores[GuardarAgendaCustom.PropiedadDelTramo(1)]);
         await SinCambiosAsync(escenario);
     }
 

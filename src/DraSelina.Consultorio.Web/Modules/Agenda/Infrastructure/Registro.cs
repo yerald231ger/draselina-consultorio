@@ -30,6 +30,7 @@ public static class Registro
             .AddScoped<IOutboxDeAgenda, OutboxDeAgenda>()
             .AddScoped<IBitacoraDeAgenda, BitacoraDeAgenda>()
             .AddScoped<ICandadoDeFecha, CandadoDeFecha>()
+            .AddScoped<ICandadoDeLaAgendaDeAtencion, CandadoDeLaAgendaDeAtencion>()
             .AddScoped<ICitas, Citas>()
             .AddScoped<ITiposDeVisita, TiposDeVisita>()
             .AddScoped<IAgendaAtencion, AgendaAtencionPersistida>()

@@ -17,6 +17,7 @@ namespace DraSelina.Consultorio.Agenda.Features;
 public sealed class BorrarAgendaCustomHandler(
     ITransaccionDeAgenda transaccion,
     ICandadoDeFecha candado,
+    ICandadoDeLaAgendaDeAtencion candadoDeLaAgenda,
     IAgendaAtencion agendaAtencion,
     CitasQueQuedanFuera citasQueQuedanFuera,
     IBitacoraDeAgenda bitacora,
@@ -46,6 +47,9 @@ public sealed class BorrarAgendaCustomHandler(
 
         // AD-26: la fila sobre la fecha va antes de leer.
         await candado.TomarAsync(fecha, cancellationToken);
+
+        // Después, el de toda la agenda de atención (entrada 6.10).
+        await candadoDeLaAgenda.TomarAsync(cancellationToken);
 
         var agenda = await agendaAtencion.ObtenerAsync(hoy, cancellationToken);
         var antes = agenda.Customs.FirstOrDefault(c => c.Fecha == fecha);

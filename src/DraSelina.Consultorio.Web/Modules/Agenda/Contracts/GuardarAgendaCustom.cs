@@ -19,6 +19,9 @@ public sealed class GuardarAgendaCustom : ICommand<AgendaCustomGuardada>, IRequi
     public const string MensajeDeTramoIncompleto = "Escribe la hora de inicio y la de fin.";
     public const string MensajeDeTramoAlReves = "La hora de inicio debe ser antes que la de fin.";
 
+    /// <summary>"Se encima con el tramo 2.": bajo cada Tramo de un par que se encima, el número (desde 1) del otro.</summary>
+    public static string MensajeDeEncimado(int otro) => $"Se encima con el tramo {otro}.";
+
     /// <summary>Fecha local del consultorio (AD-17).</summary>
     [Required(ErrorMessage = "Falta la fecha.")]
     public DateOnly? Fecha { get; set; }

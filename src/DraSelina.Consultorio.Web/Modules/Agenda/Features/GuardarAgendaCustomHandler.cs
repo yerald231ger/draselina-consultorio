@@ -21,6 +21,7 @@ public sealed class GuardarAgendaCustomHandler(
     DuracionMinima minima,
     ITransaccionDeAgenda transaccion,
     ICandadoDeFecha candado,
+    ICandadoDeLaAgendaDeAtencion candadoDeLaAgenda,
     IAgendaAtencion agendaAtencion,
     CitasQueQuedanFuera citasQueQuedanFuera,
     IBitacoraDeAgenda bitacora,
@@ -55,6 +56,9 @@ public sealed class GuardarAgendaCustomHandler(
         // AD-26: la fila sobre la fecha va antes de leer; una Cita que se reserva en el mismo instante espera aquí.
         await candado.TomarAsync(fecha, cancellationToken);
 
+        // Después, el de toda la agenda de atención (entrada 6.10): otro guardado de la base o de otra custom espera.
+        await candadoDeLaAgenda.TomarAsync(cancellationToken);
+
         var agenda = await agendaAtencion.ObtenerAsync(hoy, cancellationToken);
         var antes = agenda.Customs.FirstOrDefault(c => c.Fecha == fecha);
 
@@ -66,6 +70,17 @@ public sealed class GuardarAgendaCustomHandler(
             var rechazo = antes is null
                 ? agenda.RegistrarCustom(fecha, tramos, motivo, duracionMinima)
                 : agenda.CambiarCustom(fecha, tramos, motivo, duracionMinima);
+            if (rechazo is RechazoDeAgendaAtencion.TramosEncimados)
+            {
+                // Bajo cada Tramo del par, el otro con el que se encima (entrada 6.10).
+                await tx.DeshacerAsync(cancellationToken);
+                return Resultado.Invalido(AgendaAtencion.Encimados(tramos).SelectMany(p => new[]
+                {
+                    (GuardarAgendaCustom.PropiedadDelTramo(p.Uno), GuardarAgendaCustom.MensajeDeEncimado(p.Otro + 1)),
+                    (GuardarAgendaCustom.PropiedadDelTramo(p.Otro), GuardarAgendaCustom.MensajeDeEncimado(p.Uno + 1)),
+                })).Como<AgendaCustomGuardada>();
+            }
+
             if (rechazo is not null)
             {
                 await tx.DeshacerAsync(cancellationToken);
@@ -149,7 +164,6 @@ public sealed class GuardarAgendaCustomHandler(
 
     private static string Codigo(RechazoDeAgendaAtencion rechazo) => rechazo switch
     {
-        RechazoDeAgendaAtencion.TramosEncimados => CodigosDeAgenda.TramosEncimados,
         RechazoDeAgendaAtencion.TramoMasCortoQueLaDuracionMinima => CodigosDeAgenda.TramoCorto,
         _ => throw new ArgumentOutOfRangeException(nameof(rechazo), rechazo, "Rechazo sin código al guardar una Agenda custom."),
     };

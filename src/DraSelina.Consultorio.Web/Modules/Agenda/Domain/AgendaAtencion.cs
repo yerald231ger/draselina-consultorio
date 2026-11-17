@@ -138,6 +138,29 @@ public sealed class AgendaAtencion
         return null;
     }
 
+    /// <summary>
+    /// Los pares de Tramos de un día que se enciman (INV-B2, INV-A2), por su posición en <paramref name="tramos"/>, con
+    /// <c>Uno</c> antes que <c>Otro</c>. Vacía si ninguno se encima. Es la regla con la que se rechazan; dice cuáles para
+    /// que el error vaya bajo esos Tramos (entrada 6.10).
+    /// </summary>
+    public static IReadOnlyList<(int Uno, int Otro)> Encimados(IReadOnlyList<Tramo> tramos)
+    {
+        ArgumentNullException.ThrowIfNull(tramos);
+        var pares = new List<(int, int)>();
+        for (var i = 0; i < tramos.Count; i++)
+        {
+            for (var j = i + 1; j < tramos.Count; j++)
+            {
+                if (tramos[i].SeEncimaCon(tramos[j]))
+                {
+                    pares.Add((i, j));
+                }
+            }
+        }
+
+        return pares;
+    }
+
     // INV-B2 e INV-A2: los tramos de un día no se enciman. INV-B5 e INV-A6: en cada uno cabe una cita del tipo más corto.
     private static IReadOnlyList<Tramo> Validar(IEnumerable<Tramo> tramos, TimeSpan duracionMinima, out RechazoDeAgendaAtencion? rechazo)
     {
@@ -150,13 +173,10 @@ public sealed class AgendaAtencion
         var lista = Ordenados(tramos);
         rechazo = null;
 
-        for (var i = 1; i < lista.Count; i++)
+        if (Encimados(lista).Count > 0)
         {
-            if (lista[i - 1].SeEncimaCon(lista[i]))
-            {
-                rechazo = RechazoDeAgendaAtencion.TramosEncimados;
-                return lista;
-            }
+            rechazo = RechazoDeAgendaAtencion.TramosEncimados;
+            return lista;
         }
 
         if (lista.Any(t => t.Duracion < duracionMinima))

@@ -165,7 +165,6 @@ public sealed class CalendarioDeAtencionTests : BunitContext
 
     [Theory]
     [InlineData(CodigosDeAgenda.CitasFuera, CalendarioDeAtencion.CitasFuera)]
-    [InlineData(CodigosDeAgenda.TramosEncimados, CalendarioDeAtencion.TramosEncimados)]
     [InlineData(CodigosDeAgenda.TramoCorto, CalendarioDeAtencion.TramoCorto)]
     [InlineData(CodigosDeAgenda.FechaPasada, CalendarioDeAtencion.FechaPasada)]
     public void Un_rechazo_deja_el_formulario_abierto_con_su_mensaje(string codigo, string mensaje)
@@ -431,6 +430,28 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         Assert.Equal(
             "Se guardó el horario propio del sábado 14 de noviembre. La cita elegida se cancela en unos instantes; su paciente no tiene correo: avísale a mano.",
             calendario.Find(".dsm-atencion__guardado").TextContent);
+    }
+
+    [Fact]
+    public void Tramos_encimados_marcan_cada_fila_con_el_otro_tramo()
+    {
+        _comando.Responder = _ => Resultado.Invalido(
+            [
+                (GuardarAgendaCustom.PropiedadDelTramo(0), GuardarAgendaCustom.MensajeDeEncimado(2)),
+                (GuardarAgendaCustom.PropiedadDelTramo(1), GuardarAgendaCustom.MensajeDeEncimado(1)),
+            ]).Como<AgendaCustomGuardada>();
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find(".dsm-atencion__agregar").Click();
+        calendario.Find(".dsm-atencion__agregar").Click();
+        calendario.Find("#motivo").Change("sábado abierto");
+
+        calendario.Find("form").Submit();
+
+        Assert.Equal("Se encima con el tramo 2.", calendario.Find("[data-tramo='0'] .dsm-campo__error").TextContent);
+        Assert.Equal("Se encima con el tramo 1.", calendario.Find("[data-tramo='1'] .dsm-campo__error").TextContent);
+        Assert.Equal("true", calendario.Find("#inicio-1").GetAttribute("aria-invalid"));
+        Assert.Empty(calendario.FindAll(".dsm-atencion__error"));
     }
 
     private static readonly CitaId[] Citas = [.. Enumerable.Range(0, 4).Select(_ => new CitaId(Guid.CreateVersion7()))];

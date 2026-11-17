@@ -12,7 +12,7 @@ Deuda técnica que Gerardo decidió dejar para el final de todas las épicas.
   summary: En el teléfono, la hora de la tarjeta de la cita se parte en dos renglones y "pm" queda sola abajo.
   evidence: Visto por Gerardo en su recorrido de UJ-1 (2026-11-06) en vista de teléfono; detalle de CSS (la hora debería no partirse, por ejemplo con white-space: nowrap).
 - source_plan: `_bmad-output/initiative-draselina/epic-notificaciones/story-refactor-sweep-plan.md`
-  summary: `HorariosLibresHandler` lee la Agenda de atención por `IAgendaAtencion`, documentado como puerto de escritura.
+  summary: `HorariosLibresHandler` lee la Agenda de atención por `IAgendaAtencion`, documentado como puerto de escritura. **Resuelto (2026-11-17, entrada 6.10):** lee por el puerto de lectura `IAgendaDelRango`, solo las fechas de la ventana de reserva.
   evidence: Visto en la revisión de la entrada 4.8 (2026-11-09). Es de la épica 2; la calculadora necesita la `AgendaAtencion` entera, así que el puerto `ITramosDeLaFecha` de la 4.8 no le sirve. Al retomarlo: un puerto de lectura de la agenda completa, o documentar que `IAgendaAtencion` también sirve lecturas sin rastrear.
 - source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
   summary: En Tus datos el Motivo de consulta es obligatorio (INV-C11) pero la etiqueta no lo indica.
@@ -21,7 +21,7 @@ Deuda técnica que Gerardo decidió dejar para el final de todas las épicas.
   summary: El calendario de Día y hora en /reservar se encima a unos 800 px de ancho ("LUMAMIJUVISADOM").
   evidence: Visto en la segunda revisión del recorrido de la entrada 5.8 (2026-11-16). Es de la épica 2; las columnas del calendario no se ajustan en ese ancho.
 - source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
-  summary: Un sábado sin Tramos en /reservar dice que no tiene horarios para ese tipo de consulta, cuando el día no se atiende.
+  summary: Un sábado sin Tramos en /reservar dice que no tiene horarios para ese tipo de consulta, cuando el día no se atiende. **Resuelto (2026-11-17, entrada 6.9, commit 12faa19):** el texto sirve para los dos casos: "Este día no tiene horarios disponibles. Elige otro día en el calendario."
   evidence: Visto en la segunda revisión del recorrido de la entrada 5.8 (2026-11-16). Es de la épica 2; texto de EXPERIENCE.md por decidir.
 - source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
   summary: Los días del calendario de /reservar no tienen etiqueta accesible, o la tienen cortada.

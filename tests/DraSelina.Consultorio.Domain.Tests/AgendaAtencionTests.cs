@@ -97,6 +97,15 @@ public class AgendaAtencionTests
     }
 
     [Fact]
+    public void Encimados_dice_cada_par_por_su_posicion_en_el_orden_recibido()
+    {
+        Assert.Empty(AgendaAtencion.Encimados([T(10, 0, 11, 0), T(11, 0, 12, 0)]));
+        Assert.Equal([(0, 1)], AgendaAtencion.Encimados([T(16, 30, 18, 0), T(15, 30, 17, 0)]));
+        Assert.Equal([(1, 2)], AgendaAtencion.Encimados([T(10, 0, 11, 0), T(12, 0, 14, 0), T(13, 0, 15, 0)]));
+        Assert.Equal([(0, 1), (0, 2)], AgendaAtencion.Encimados([T(10, 0, 16, 0), T(11, 0, 12, 0), T(13, 0, 14, 0)]));
+    }
+
+    [Fact]
     public void Tramos_encimados_en_una_custom_se_rechazan_y_no_se_registra()
     {
         var agenda = Sembrada();

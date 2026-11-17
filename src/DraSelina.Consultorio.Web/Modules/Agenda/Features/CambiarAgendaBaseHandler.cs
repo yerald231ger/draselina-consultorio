@@ -12,11 +12,13 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// más corto (INV-B5); si uno no vale, no guarda ninguno. Ya guardada, y en la misma transacción, deja una bitácora
 /// <c>AgendaBase/Cambiada</c> por día cambiado, a nombre del Administrador con su id (RN-24, AD-16), con el día ISO y los
 /// Tramos antes y después. No cancela ni mueve Citas (RN-6, RN-8), no toca las custom (RN-7) y no publica eventos (nadie
-/// los escucha, T-23; Gerardo, 2026-11-17). No toma candado de fecha [ASSUMPTION: AD-26 solo lo pide para la custom].
+/// los escucha, T-23; Gerardo, 2026-11-17). No toma candado de fecha [ASSUMPTION: AD-26 solo lo pide para la custom]; sí el de toda la agenda de atención
+/// (entrada 6.10), el mismo que guardar o borrar una custom.
 /// </summary>
 public sealed class CambiarAgendaBaseHandler(
     DuracionMinima minima,
     ITransaccionDeAgenda transaccion,
+    ICandadoDeLaAgendaDeAtencion candadoDeLaAgenda,
     IAgendaAtencion agendaAtencion,
     IBitacoraDeAgenda bitacora,
     IActorActual actorActual,
@@ -36,6 +38,9 @@ public sealed class CambiarAgendaBaseHandler(
         var actorId = await actorActual.IdDelAdministradorAsync();
 
         await using var tx = await transaccion.AbrirAsync(cancellationToken);
+
+        // Un guardado de la agenda de atención a la vez, y se lee después: guardar sincroniza la base y las custom.
+        await candadoDeLaAgenda.TomarAsync(cancellationToken);
 
         var agenda = await agendaAtencion.ObtenerAsync(hoy, cancellationToken);
         var cambiados = new List<(DayOfWeek Dia, IReadOnlyList<Tramo> Antes)>();
