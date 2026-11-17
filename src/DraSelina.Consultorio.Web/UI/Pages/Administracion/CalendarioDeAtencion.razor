@@ -1,0 +1,384 @@
+@page "/admin/calendario"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@layout LayoutAdministracion
+@implements IDisposable
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@inject IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>> Consulta
+@inject ICommandHandler<GuardarAgendaCustom, AgendaCustomGuardada> Guardar
+@inject IClock Reloj
+@inject ILogger<CalendarioDeAtencion> Registro
+
+@*
+    Calendario de atención (CAP-11, FR-13, UJ-3, UJ-6; entrada 6.1): el mes, con cada día como lo distingue la Agenda
+    (no se atiende, horario especial o día abierto, con su motivo) y sus Tramos vigentes. Al tocar un día de hoy en
+    adelante se abre el formulario de su horario propio, lleno con los Tramos que valen ese día y el motivo de su custom
+    si tiene: Tramos que se agregan y se quitan (ninguno: ese día no se atiende) y motivo. Guardar manda
+    GuardarAgendaCustom; si quedan Citas fuera, no se guarda nada y se dice (la lista para elegir cancelar o conservar es
+    de la entrada 6.3). Los días pasados se ven pero no se editan [ASSUMPTION].
+
+    El mes va en la dirección (/admin/calendario?mes=2026-11); sin mes, o con uno que no se entiende, el mes de hoy (fecha
+    local del consultorio, AD-17). Interactive Server (AD-11), con [Authorize]; la consulta y el comando llevan
+    IRequiereAdministrador (AD-22). Una llamada a la vez (_ocupado). El motivo no va a registros. Textos `[ASSUMPTION: texto]`.
+*@
+
+<PageTitle>Calendario de atención · Administración</PageTitle>
+
+<section class="dsm-contenedor dsm-calendario" aria-labelledby="calendario-de-atencion">
+    <h1 id="calendario-de-atencion" class="dsm-titulo-de-estado">Calendario de atención</h1>
+    <p class="dsm-cuerpo dsm-calendario__ayuda">@Ayuda</p>
+
+    <div class="dsm-calendario__meses">
+        <a class="dsm-agenda__control" href="@Direccion(_mes.AddMonths(-1))" aria-label="Mes anterior">‹</a>
+        <h2 class="dsm-seccion dsm-calendario__mes-titulo">@FormatoDeCita.MesYAnio(_mes)</h2>
+        <a class="dsm-agenda__control" href="@Direccion(_mes.AddMonths(1))" aria-label="Mes siguiente">›</a>
+    </div>
+
+    @if (_guardado is { } guardado)
+    {
+        <p class="dsm-aviso dsm-calendario__guardado" role="status">@guardado</p>
+    }
+
+    @if (_fallo)
+    {
+        <div class="dsm-aviso" role="alert">
+            <p class="dsm-aviso__mensaje">@NoSeCargo</p>
+        </div>
+    }
+    else if (_dias is { } dias)
+    {
+        <table class="dsm-calendario__tabla">
+            <caption class="visually-hidden">@FormatoDeCita.MesYAnio(_mes)</caption>
+            <thead>
+                <tr>
+                    @foreach (var nombre in DiasDeLaSemana)
+                    {
+                        <th scope="col">@nombre</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var semana in Semanas(dias))
+                {
+                    <tr>
+                        @foreach (var dia in semana)
+                        {
+                            @if (dia is null)
+                            {
+                                <td class="dsm-calendario__dia dsm-calendario__dia--fuera"></td>
+                            }
+                            else
+                            {
+                                <td class="@ClaseDelDia(dia)" data-fecha="@Iso(dia.Fecha)">
+                                    @if (dia.Fecha >= _hoy)
+                                    {
+                                        <button type="button" class="dsm-calendario__abrir" @onclick="() => Abrir(dia)"
+                                                aria-label="@Etiqueta(dia)" aria-pressed="@(_seleccionada?.Fecha == dia.Fecha ? "true" : "false")">
+                                            @ContenidoDelDia(dia)
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <div class="dsm-calendario__pasado">@ContenidoDelDia(dia)</div>
+                                    }
+                                </td>
+                            }
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (_seleccionada is { } seleccionada)
+    {
+        <form class="dsm-formulario dsm-calendario__editor" @onsubmit="GuardarAsync" aria-labelledby="editor-del-dia">
+            <h2 id="editor-del-dia" class="dsm-seccion">Horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
+            <p class="dsm-cuerpo">Hoy vale: @Descripcion(seleccionada)</p>
+
+            <fieldset class="dsm-calendario__tramos">
+                <legend class="dsm-campo__etiqueta">Tramos</legend>
+                @for (var i = 0; i < _comando.Tramos.Count; i++)
+                {
+                    var indice = i;
+                    var tramo = _comando.Tramos[indice];
+                    var propiedad = GuardarAgendaCustom.PropiedadDelTramo(indice);
+                    <div class="dsm-calendario__tramo" data-tramo="@indice">
+                        <div class="dsm-campo">
+                            <label for="inicio-@indice" class="dsm-campo__etiqueta">Inicio</label>
+                            <input id="inicio-@indice" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm"
+                                   aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
+                        </div>
+                        <div class="dsm-campo">
+                            <label for="fin-@indice" class="dsm-campo__etiqueta">Fin</label>
+                            <input id="fin-@indice" type="time" class="dsm-campo__control" @bind="tramo.Fin" @bind:format="HH:mm"
+                                   aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
+                        </div>
+                        <button type="button" class="btn dsm-boton-neutro dsm-calendario__quitar" @onclick="() => Quitar(indice)">
+                            Quitar<span class="visually-hidden"> el tramo @(indice + 1)</span>
+                        </button>
+                        @ErroresDe(propiedad)
+                    </div>
+                }
+                @if (_comando.Tramos.Count == 0)
+                {
+                    <p class="dsm-cuerpo dsm-calendario__sin-tramos">@SinTramos</p>
+                }
+                <button type="button" class="btn dsm-boton-neutro dsm-calendario__agregar" @onclick="Agregar">Agregar tramo</button>
+            </fieldset>
+
+            <div class="dsm-campo">
+                <label for="motivo" class="dsm-campo__etiqueta">Motivo</label>
+                <input id="motivo" class="dsm-campo__control" @bind="_comando.Motivo" autocomplete="off" placeholder="cirugía, vacaciones, sábado abierto"
+                       aria-invalid="@Invalido(nameof(GuardarAgendaCustom.Motivo))" aria-describedby="@DescritoPor(nameof(GuardarAgendaCustom.Motivo))" />
+                @ErroresDe(nameof(GuardarAgendaCustom.Motivo))
+            </div>
+
+            @if (MensajeGeneral() is { } mensaje)
+            {
+                <div class="dsm-aviso dsm-calendario__error" role="alert">
+                    <p class="dsm-aviso__mensaje">@mensaje</p>
+                </div>
+            }
+
+            <div class="dsm-calendario__acciones">
+                <button type="submit" class="btn btn-primary dsm-accion-principal" disabled="@_ocupado">Guardar</button>
+                <button type="button" class="btn dsm-boton-neutro" @onclick="Cerrar">Cancelar</button>
+            </div>
+        </form>
+    }
+</section>
+
+@code {
+    public const string Ayuda = "Toca una fecha para darle su horario propio: recortarla, cerrarla o abrirla. Las demás siguen la semana tipo.";
+    public const string NoSeCargo = "No se pudo cargar el calendario. Recarga la página.";
+    public const string SinTramos = "Sin tramos, ese día no se atiende.";
+    public const string CitasFuera = "Esta fecha tiene citas que quedarían fuera de este horario. No se guardó nada.";
+    public const string TramosEncimados = "Dos tramos se enciman. Revisa las horas.";
+    public const string TramoCorto = "En cada tramo debe caber al menos una cita del tipo de consulta más corto.";
+    public const string FechaPasada = "Esa fecha ya pasó.";
+    public const string SinSesion = "Tu sesión terminó. Vuelve a entrar.";
+    public const string NoSeGuardo = "No se pudo guardar. Intenta de nuevo.";
+    public const string Normal = "Horario de la semana tipo";
+
+    private static readonly string[] DiasDeLaSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+    /// <summary>El mes pedido en la dirección, <c>yyyy-MM</c>; si falta o no se entiende, el de hoy.</summary>
+    [SupplyParameterFromQuery(Name = "mes")]
+    public string? MesPedido { get; set; }
+
+    private readonly CancellationTokenSource _cierre = new();
+    private DateOnly _hoy;
+    private DateOnly _mes;
+    private IReadOnlyList<DiaDeAtencion>? _dias;
+    private bool _fallo;
+    private DiaDeAtencion? _seleccionada;
+    private GuardarAgendaCustom _comando = new();
+    private Resultado? _resultado;
+    private string? _guardado;
+    private bool _ocupado;
+
+    /// <summary>La dirección del Calendario en un mes: <c>/admin/calendario?mes=2026-11</c>.</summary>
+    public static string Direccion(DateOnly mes) =>
+        $"/admin/calendario?mes={mes.ToString("yyyy-MM", CultureInfo.InvariantCulture)}";
+
+    /// <summary>La marca de un día sin Tramos o con Agenda custom, con su motivo; nula en un día normal. La de la Agenda.</summary>
+    public static string? Marca(DiaDeAtencion dia) => Agenda.Marca(dia.Tipo, dia.MotivoDeCustom);
+
+    private static string Tramos(IEnumerable<TramoDeLaAgenda> tramos) =>
+        string.Join(", ", tramos.Select(t => $"{FormatoDeCita.Hora(t.Inicio)} a {FormatoDeCita.Hora(t.Fin)}"));
+
+    private static string Descripcion(DiaDeAtencion dia) =>
+        string.Join(" · ", new[] { Marca(dia) ?? Normal, dia.Tramos.Count > 0 ? Tramos(dia.Tramos) : null }.OfType<string>());
+
+    private static string Etiqueta(DiaDeAtencion dia) => $"{FormatoDeCita.Largo(dia.Fecha)}: {Descripcion(dia)}";
+
+    private static string Iso(DateOnly fecha) => fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private string ClaseDelDia(DiaDeAtencion dia) =>
+        "dsm-calendario__dia"
+        + (dia.Tramos.Count == 0 ? " dsm-calendario__dia--cerrado" : "")
+        + (dia.ConCustom ? " dsm-calendario__dia--custom" : "")
+        + (dia.Fecha == _hoy ? " dsm-calendario__dia--hoy" : "")
+        + (dia.Fecha < _hoy ? " dsm-calendario__dia--pasado" : "")
+        + (_seleccionada?.Fecha == dia.Fecha ? " dsm-calendario__dia--elegido" : "");
+
+    private static RenderFragment ContenidoDelDia(DiaDeAtencion dia) => __builder =>
+    {
+        <span class="dsm-calendario__numero" aria-hidden="true">@dia.Fecha.Day</span>
+        @if (Marca(dia) is { } marca)
+        {
+            <span class="dsm-calendario__marca" aria-hidden="true">@marca</span>
+        }
+        @if (dia.Tramos.Count > 0)
+        {
+            <span class="dsm-calendario__horas" aria-hidden="true">@Tramos(dia.Tramos)</span>
+        }
+    };
+
+    // De lunes a domingo; null antes del primer día y después del último.
+    private static IEnumerable<DiaDeAtencion?[]> Semanas(IReadOnlyList<DiaDeAtencion> dias)
+    {
+        var celdas = new List<DiaDeAtencion?>();
+        celdas.AddRange(Enumerable.Repeat<DiaDeAtencion?>(null, ((int)dias[0].Fecha.DayOfWeek + 6) % 7));
+        celdas.AddRange(dias);
+        while (celdas.Count % 7 != 0)
+        {
+            celdas.Add(null);
+        }
+
+        return celdas.Chunk(7);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
+        var mes = DateOnly.TryParseExact(MesPedido, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var pedido)
+            ? pedido
+            : new DateOnly(_hoy.Year, _hoy.Month, 1);
+
+        if (mes != _mes || _dias is null)
+        {
+            _mes = mes;
+            Cerrar();
+            _guardado = null;
+            await CargarAsync();
+        }
+    }
+
+    private async Task CargarAsync()
+    {
+        try
+        {
+            var resultado = await Consulta.HandleAsync(new MesDeAtencion(_mes.Year, _mes.Month), _cierre.Token);
+            _fallo = !resultado.EsExito;
+            _dias = resultado.EsExito ? resultado.Valor : null;
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            // Una consulta que lanza no tumba el circuito; sin el motivo de ninguna custom (no va a registros).
+            Registro.LogWarning(error, "El Calendario de atención no se pudo cargar");
+            _fallo = true;
+            _dias = null;
+        }
+    }
+
+    private void Abrir(DiaDeAtencion dia)
+    {
+        _seleccionada = dia;
+        _resultado = null;
+        _guardado = null;
+        _comando = new GuardarAgendaCustom
+        {
+            Fecha = dia.Fecha,
+            Motivo = dia.MotivoDeCustom,
+            Tramos = [.. dia.Tramos.Select(t => new TramoAGuardar { Inicio = t.Inicio, Fin = t.Fin })],
+        };
+    }
+
+    private void Cerrar()
+    {
+        _seleccionada = null;
+        _resultado = null;
+    }
+
+    private void Agregar() => _comando.Tramos.Add(new TramoAGuardar());
+
+    private void Quitar(int indice)
+    {
+        _comando.Tramos.RemoveAt(indice);
+        // Los errores de los Tramos van por posición: al quitar uno ya no corresponden.
+        _resultado = null;
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (_ocupado || _seleccionada is null)
+        {
+            return;
+        }
+
+        _ocupado = true;
+        try
+        {
+            var resultado = await Guardar.HandleAsync(_comando, _cierre.Token);
+            if (resultado.EsExito)
+            {
+                _guardado = resultado.Valor.SinCambios
+                    ? $"El {FormatoDeCita.Largo(resultado.Valor.Fecha)} ya tenía ese horario."
+                    : $"Se guardó el horario propio del {FormatoDeCita.Largo(resultado.Valor.Fecha)}.";
+                Cerrar();
+                await CargarAsync();
+                return;
+            }
+
+            _resultado = resultado;
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "El horario propio no se pudo guardar");
+            _resultado = Resultado.Fallo("calendario.error");
+        }
+        finally
+        {
+            _ocupado = false;
+        }
+    }
+
+    private string? MensajeGeneral()
+    {
+        if (_resultado is null || _resultado.EsExito)
+        {
+            return null;
+        }
+
+        return _resultado.Forma switch
+        {
+            FormaDeResultado.NoAutorizado => SinSesion,
+            FormaDeResultado.Invalido => _resultado.Errores.TryGetValue(nameof(GuardarAgendaCustom.Fecha), out var fecha) ? fecha[0] : null,
+            _ => _resultado.Codigo switch
+            {
+                CodigosDeAgenda.CitasFuera => CitasFuera,
+                CodigosDeAgenda.TramosEncimados => TramosEncimados,
+                CodigosDeAgenda.TramoCorto => TramoCorto,
+                CodigosDeAgenda.FechaPasada => FechaPasada,
+                _ => NoSeGuardo,
+            },
+        };
+    }
+
+    private IReadOnlyList<string> Errores(string propiedad) =>
+        _resultado?.Errores.TryGetValue(propiedad, out var errores) == true ? errores : [];
+
+    private string? Invalido(string propiedad) => Errores(propiedad).Count > 0 ? "true" : null;
+
+    private string? DescritoPor(string propiedad) => Errores(propiedad).Count > 0 ? $"error-{Id(propiedad)}" : null;
+
+    private static string Id(string propiedad) => propiedad.Replace("[", "-").Replace("]", "");
+
+    private RenderFragment? ErroresDe(string propiedad)
+    {
+        var errores = Errores(propiedad);
+        if (errores.Count == 0)
+        {
+            return null;
+        }
+
+        return __builder =>
+        {
+            <p id="error-@Id(propiedad)" class="dsm-campo__error">@string.Join(" ", errores)</p>
+        };
+    }
+
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

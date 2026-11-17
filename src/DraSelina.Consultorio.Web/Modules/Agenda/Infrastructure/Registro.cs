@@ -46,6 +46,7 @@ public static class Registro
             .AddScoped<IAgendaDelRango, AgendaDelRango>()
             .AddScoped<ICitaDelDetalle, CitaDelDetalle>()
             .AddScoped<IBitacoraDeLaCita, BitacoraDeLaCita>()
+            .AddScoped<CitasQueQuedanFuera>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
@@ -54,6 +55,7 @@ public static class Registro
             .AddScoped<ICommandHandler<CancelarCitaPorEnlace, CitaCanceladaPorEnlace>, CancelarCitaPorEnlaceHandler>()
             .AddScoped<ICommandHandler<MarcarNoSePresento, CitaMarcadaNoSePresento>, MarcarNoSePresentoHandler>()
             .AddScoped<ICommandHandler<CancelarCitaPorConsultorio, CitaCanceladaPorConsultorio>, CancelarCitaPorConsultorioHandler>()
+            .AddScoped<ICommandHandler<GuardarAgendaCustom, AgendaCustomGuardada>, GuardarAgendaCustomHandler>()
             .AddScoped<IQueryHandler<HorariosLibres, IReadOnlyList<DiaConHorarios>>, HorariosLibresHandler>()
             .AddScoped<IQueryHandler<VentanaDeReservaPublica, VentanaDeReservaVigente>, VentanaDeReservaPublicaHandler>()
             .AddScoped<IQueryHandler<ArchivoDeCalendarioPorEnlace, ArchivoDeCalendario>, ArchivoDeCalendarioPorEnlaceHandler>()
@@ -64,7 +66,8 @@ public static class Registro
             .AddScoped<IQueryHandler<HorarioDeLaCitaDelConsultorio, HorarioDeLaCita>, HorarioDeLaCitaDelConsultorioHandler>()
             .AddScoped<IQueryHandler<PacienteReconocido, PacienteDeLaCita>, PacienteReconocidoHandler>()
             .AddScoped<IQueryHandler<DetalleDeCita, CitaEnDetalle>, DetalleDeCitaHandler>()
-            .AddScoped<IQueryHandler<HistorialDelPaciente, PacienteConHistorial>, HistorialDelPacienteHandler>();
+            .AddScoped<IQueryHandler<HistorialDelPaciente, PacienteConHistorial>, HistorialDelPacienteHandler>()
+            .AddScoped<IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>>, MesDeAtencionHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

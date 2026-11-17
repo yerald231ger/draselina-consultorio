@@ -250,7 +250,7 @@ public sealed class PacientesBusquedaEHistorialTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task La_navegacion_dice_Agenda_Pacientes_Salir_con_Pacientes_activo_en_sus_paginas()
+    public async Task La_navegacion_dice_Agenda_Pacientes_Calendario_Salir_con_el_activo_en_sus_paginas()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
         var (mariana, _, _) = await TresPacientesAsync(escenario);
@@ -261,12 +261,13 @@ public sealed class PacientesBusquedaEHistorialTests(Arnes arnes)
                      ("/admin", "Agenda"),
                      ("/admin/pacientes", "Pacientes"),
                      ($"/admin/pacientes/{mariana.Valor}", "Pacientes"),
+                     ("/admin/calendario", "Calendario de atención"),
                  })
         {
             var navegacion = Navegacion(await LeerAsync(cliente, ruta));
 
-            Assert.Equal(["Agenda", "Pacientes"], navegacion.Select(e => e.Texto));
-            Assert.Equal(["/admin", "/admin/pacientes"], navegacion.Select(e => e.Href));
+            Assert.Equal(["Agenda", "Pacientes", "Calendario de atención"], navegacion.Select(e => e.Texto));
+            Assert.Equal(["/admin", "/admin/pacientes", "/admin/calendario"], navegacion.Select(e => e.Href));
             Assert.Equal([activo], navegacion.Where(e => e.Activo).Select(e => e.Texto));
         }
     }

@@ -56,7 +56,7 @@ public sealed class DiasDeLaAgendaHandler(
 
                 return new DiaDeLaAgenda(
                     fecha,
-                    Tipo(vigentes, atencion.TramosBase(fecha.DayOfWeek).Count > 0),
+                    ClasificacionDelDia.De(vigentes, atencion.TramosBase(fecha.DayOfWeek).Count > 0),
                     custom?.Motivo,
                     [.. vigentes.Tramos.Select(t => new TramoDeLaAgenda(t.Inicio, t.Fin))],
                     [.. porFecha[fecha].Select(c => Cita(c, vigentes, contactos, ahora))]);
@@ -65,18 +65,6 @@ public sealed class DiasDeLaAgendaHandler(
 
         return Resultado.Exito(lista);
     }
-
-    // Design Notes de la 5.2: custom sin Tramos, no se atiende; custom en un día cuya base no tiene Tramos, día abierto;
-    // cualquier otra custom, horario especial (recorta o alarga).
-    private static TipoDeDia Tipo(TramosVigentes vigentes, bool baseConTramos) => (vigentes.Origen, vigentes.SinTramos, baseConTramos) switch
-    {
-        (OrigenDeTramos.Base, false, _) => TipoDeDia.Normal,
-        (OrigenDeTramos.Base, true, _) => TipoDeDia.SinAtencion,
-        (OrigenDeTramos.Custom, true, _) => TipoDeDia.CustomSinAtencion,
-        (OrigenDeTramos.Custom, false, false) => TipoDeDia.DiaAbierto,
-        (OrigenDeTramos.Custom, false, true) => TipoDeDia.HorarioEspecial,
-        _ => throw new InvalidOperationException($"Origen de Tramos desconocido: {vigentes.Origen}."),
-    };
 
     private static CitaDeLaAgenda Cita(
         CitaLeidaDeLaAgenda cita, TramosVigentes vigentes, IReadOnlyDictionary<PatientId, Contactos> contactos, DateTimeOffset ahora)

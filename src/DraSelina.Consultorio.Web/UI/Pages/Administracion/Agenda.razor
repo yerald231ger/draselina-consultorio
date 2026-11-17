@@ -173,12 +173,15 @@
     }
 
     /// <summary>La marca de un día sin Tramos o con Agenda custom, siempre con su motivo; nula en un día normal.</summary>
-    public static string? Marca(DiaDeLaAgenda dia) => dia.Tipo switch
+    public static string? Marca(DiaDeLaAgenda dia) => Marca(dia.Tipo, dia.MotivoDeCustom);
+
+    /// <summary>La misma marca para cualquier pantalla que distinga días: la Agenda y el Calendario de atención.</summary>
+    public static string? Marca(TipoDeDia tipo, string? motivoDeCustom) => tipo switch
     {
         TipoDeDia.SinAtencion => NoSeAtiende,
-        TipoDeDia.CustomSinAtencion => $"{NoSeAtiende} · {dia.MotivoDeCustom}",
-        TipoDeDia.DiaAbierto => $"Día abierto · {dia.MotivoDeCustom}",
-        TipoDeDia.HorarioEspecial => $"Horario especial · {dia.MotivoDeCustom}",
+        TipoDeDia.CustomSinAtencion => $"{NoSeAtiende} · {motivoDeCustom}",
+        TipoDeDia.DiaAbierto => $"Día abierto · {motivoDeCustom}",
+        TipoDeDia.HorarioEspecial => $"Horario especial · {motivoDeCustom}",
         _ => null,
     };
 
