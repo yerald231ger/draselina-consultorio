@@ -90,7 +90,40 @@ Ruta oneshot sin cambios de código; no hace falta el reloj desplazado. Fechas d
 
 ## Resultado del recorrido
 
-Pendiente: Gerardo anota aquí lo que aprueba y lo que pide cambiar.
+Recorrido el 2026-11-17 por la sesión tester con Gerardo en su navegador (AppHost local). Reporte completo en la sesión
+tester; aquí lo que decide.
+
+**Arreglado durante el recorrido** (fixes fuera de entrada, con Gerardo):
+- `26c70e7`: el Calendario de atención y el calendario de `/reservar` compartían el bloque CSS `dsm-calendario`; el de
+  administración pasa a `dsm-atencion`. Visto bien en las dos pantallas.
+- `ab3fee4`: los campos de hora se vaciaban al escribir. `blazor.web.js` manda `type=time` como `HH:mm:ss` y el
+  `@bind:format="HH:mm"` no lo convertía; se quita el formato en los seis campos (Calendario, Semana tipo, Avisos).
+  bUnit no lo vio porque no corre ese JS; sus pruebas mandan ahora lo que manda el navegador.
+- `4928ac4`: `/reservar` de 992 a 1279 px dejaba cada día de ~11 px; ahí las horas van debajo del calendario. Visto a
+  1024 y 1440 px. Existía desde antes de la épica.
+- Configuración cargaba una sola sección (las reglas nunca): las secciones consultan a la vez con el mismo `DbContext`
+  del circuito. Decorador `TurnoDelAmbito` (un handler a la vez por ámbito), opción A de Gerardo; prueba de integración
+  con tres consultas a la vez en un ámbito.
+
+**Pasos:** 1 a 7 y 9 pasan. El 7 mostró 3 Citas fuera y no 1: correcto, porque el 25 volvió a la semana tipo en el
+paso 6; la guía esperaba una. El 8 falló en Reglas por la carga de Configuración (arriba) y queda por repetir; Avisos
+pasa.
+
+**Va a la entrada 9** (Gerardo, 2026-11-17):
+- El editor del día del Calendario de atención como modal (`<dialog>` en escritorio, hoja desde abajo en teléfono, con
+  scroll adentro); foco al título al abrir y de vuelta al día al cerrar. Cierra el foco pendiente de la revisión de la
+  6.3 (hoy queda en `body` al aparecer la lista).
+- "Fuera de horario" en la Agenda para toda Cita que no cabe en los Tramos vigentes, no solo las del Consultorio: con
+  esta épica una Cita en línea conservada puede quedar fuera.
+- Textos: días de la semana con minúscula a media frase ("del sábado 21"); "Hoy vale:" → "Horario actual:"; con una
+  sola Cita fuera, ayuda en singular y sin "Cancelar todas"; el éxito al cancelar no promete disculpa a quien no tiene
+  correo; "El día vuelve a la semana tipo: ese día no se atiende." sin repetir "día"; unificar "(por el Consultorio)"
+  con la épica 5 "(por el consultorio)"; separador antes de "sin correo" en la lista de la semana tipo.
+- Avisos por correo: validación del correo con mensaje de la app (`novalidate`), no el globo del navegador; hoy acepta
+  `a@b`.
+- El texto de `/reservar` para un día que no se atiende (ya estaba en la entrada).
+
+**Queda:** repetir el paso 8 (Reglas y sus textos) con el arreglo de la carga.
 
 ## Verification
 
