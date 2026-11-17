@@ -57,8 +57,9 @@ builder.Services
 
 // Quién actúa (AD-22): un servicio por ámbito, el mismo como sí mismo (para que quien crea el ámbito, desde el host,
 // declare Sistema) y como IActorActual (lo que piden los handlers). Lee el AuthenticationStateProvider que registra
-// AddRazorComponents.
+// AddRazorComponents. Con la petición en curso distingue el área: una petición fuera de /admin es del Paciente.
 builder.Services
+    .AddHttpContextAccessor()
     .AddScoped<ActorDelHost>()
     .AddScoped<IActorActual>(servicios => servicios.GetRequiredService<ActorDelHost>());
 

@@ -52,9 +52,11 @@
             <a class="@ClaseDeVista(!_semana)" href="@Direccion(_fecha, semana: false)" aria-current="@(_semana ? null : "page")">Día</a>
             <a class="@ClaseDeVista(_semana)" href="@Direccion(_fecha, semana: true)" aria-current="@(_semana ? "page" : null)">Semana</a>
         </nav>
-        <label class="dsm-agenda__filtro">
-            <input type="checkbox" class="form-check-input" @bind="_mostrarCanceladas" />
-            Mostrar canceladas
+        @* La casilla se anuncia por su etiqueta, asociada por id, y por su estado (entrada 5.10). *@
+        <label class="dsm-agenda__filtro" for="mostrar-canceladas">
+            <input id="mostrar-canceladas" type="checkbox" class="form-check-input" @bind="_mostrarCanceladas"
+                   aria-labelledby="mostrar-canceladas-texto" />
+            <span id="mostrar-canceladas-texto">Mostrar canceladas</span>
         </label>
     </div>
 
@@ -197,8 +199,8 @@
         (EstadoEnLaAgenda.Atendida, _) => "Atendida",
         (EstadoEnLaAgenda.NoSePresento, _) => "No se presentó",
         (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "Cancelada (tardía)",
-        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio) => "Cancelada (por el consultorio)",
-        (EstadoEnLaAgenda.Cancelada, _) => "Cancelada (por el paciente)",
+        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio) => "Cancelada (por el Consultorio)",
+        (EstadoEnLaAgenda.Cancelada, _) => "Cancelada (por el Paciente)",
         _ => estado.ToString(),
     };
 

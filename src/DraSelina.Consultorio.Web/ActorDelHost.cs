@@ -1,19 +1,26 @@
 using System.Security.Claims;
 using DraSelina.Consultorio.Kernel;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Http;
 
 namespace DraSelina.Consultorio.Web;
 
 /// <summary>
 /// El único servicio que dice quién actúa (AD-22). Uno por ámbito: el de la petición en SSR estático o el del
 /// circuito en Interactive Server. Lee el usuario del <see cref="AuthenticationStateProvider"/> de ese mismo
-/// ámbito: autenticado es <see cref="Actor.Administrador"/> (no hay registro público); sin autenticar,
-/// <see cref="Actor.Paciente"/>. Autenticado quiere decir con la cookie de sesión de Identity, que solo se emite tras el
+/// ámbito: autenticado y en el área de administración es <see cref="Actor.Administrador"/> (no hay registro público);
+/// si no, <see cref="Actor.Paciente"/>. El área de administración es una petición HTTP bajo <c>/admin</c> o el circuito de
+/// Interactive Server (solo la administración abre circuito, AD-11). Una petición HTTP fuera de <c>/admin</c> (la reserva,
+/// <c>/c/...</c>, el archivo de calendario) es <see cref="Actor.Paciente"/> aunque traiga la cookie de sesión: la reserva
+/// del mismo navegador que tiene la administración abierta es del Paciente (entrada 5.10). Autenticado quiere decir con la cookie de sesión de Identity, que solo se emite tras el
 /// segundo factor: la cookie parcial del segundo factor no es la del esquema por omisión y no cuenta (Identidad/).
 /// <see cref="Actor.Sistema"/> no se deduce: lo declara quien crea el ámbito, desde el
 /// host, con <see cref="DeclararSistema"/>.
 /// </summary>
-public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IActorActual
+public sealed class ActorDelHost(
+    AuthenticationStateProvider autenticacion,
+    IHttpContextAccessor peticiones,
+    IServiceProvider ambito) : IActorActual
 {
     private bool _esSistema;
 
@@ -35,7 +42,7 @@ public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IA
     {
         if (_esSistema) return Actor.Sistema;
 
-        return EsAdministrador(await UsuarioAsync()) ? Actor.Administrador : Actor.Paciente;
+        return await EsAdministradorAsync() is not null ? Actor.Administrador : Actor.Paciente;
     }
 
     /// <summary>
@@ -46,11 +53,23 @@ public sealed class ActorDelHost(AuthenticationStateProvider autenticacion) : IA
     {
         if (_esSistema) return null;
 
-        var usuario = await UsuarioAsync();
-        return EsAdministrador(usuario) ? usuario.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+        return (await EsAdministradorAsync())?.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
-    private static bool EsAdministrador(ClaimsPrincipal usuario) => usuario.Identity?.IsAuthenticated == true;
+    // El usuario si actúa como Administrador: autenticado y en el área de administración; nulo si no.
+    private async Task<ClaimsPrincipal?> EsAdministradorAsync()
+    {
+        var usuario = await UsuarioAsync();
+        return usuario.Identity?.IsAuthenticated == true && EnElAreaDeAdministracion() ? usuario : null;
+    }
+
+    // Este ámbito es el de una petición HTTP si la petición en curso lo tiene como sus servicios: así se distingue del
+    // circuito, que es otro ámbito aunque el acceso a la petición devuelva la de su conexión (/_blazor). En una petición,
+    // solo bajo /admin; fuera de una petición (el circuito, o un ámbito que crea el host), como siempre.
+    private bool EnElAreaDeAdministracion() =>
+        peticiones.HttpContext is not { } peticion
+        || !ReferenceEquals(peticion.RequestServices, ambito)
+        || peticion.Request.Path.StartsWithSegments("/admin", StringComparison.OrdinalIgnoreCase);
 
     private async Task<ClaimsPrincipal> UsuarioAsync()
     {

@@ -60,6 +60,7 @@
             <h1 id="detalle-de-cita" class="dsm-titulo-de-estado dsm-detalle__paciente">@(cita.Paciente?.Nombre ?? Agenda.PacienteNoEncontrado)</h1>
             <span class="@Agenda.ClaseDeEtiqueta(cita.Estado, cita.Cancelacion) dsm-detalle__estado">@Agenda.Etiqueta(cita.Estado, cita.Cancelacion)</span>
         </div>
+        @* La fecha y la hora van solo aquí, no otra vez entre los datos (entrada 5.10). *@
         <p class="dsm-detalle__cuando">@Fecha(cita.Fecha), @Horario(cita)</p>
 
         @if (_aviso is not null)
@@ -120,14 +121,6 @@
             <div class="dsm-detalle__dato" data-dato="tipo">
                 <dt>Tipo de consulta</dt>
                 <dd>@(cita.TipoDeVisita ?? TipoNoEncontrado)</dd>
-            </div>
-            <div class="dsm-detalle__dato" data-dato="fecha">
-                <dt>Fecha</dt>
-                <dd>@Fecha(cita.Fecha)</dd>
-            </div>
-            <div class="dsm-detalle__dato" data-dato="hora">
-                <dt>Hora</dt>
-                <dd>@Horario(cita)</dd>
             </div>
             <div class="dsm-detalle__dato" data-dato="origen">
                 <dt>Origen</dt>

@@ -229,10 +229,24 @@ public sealed class AgendaTests : BunitContext
         Assert.Single(_consulta.Pedidas);
     }
 
+    [Fact]
+    public void Mostrar_canceladas_se_anuncia_por_su_etiqueta_asociada()
+    {
+        _consulta.Dias = d => Dia(d);
+
+        var agenda = Render<PaginaAgenda>();
+
+        var casilla = agenda.Find(".dsm-agenda__filtro input");
+        Assert.Equal("checkbox", casilla.GetAttribute("type"));
+        Assert.Equal(casilla.Id, agenda.Find("label.dsm-agenda__filtro").GetAttribute("for"));
+        Assert.Equal("Mostrar canceladas", agenda.Find($"#{casilla.GetAttribute("aria-labelledby")}").TextContent);
+        Assert.False(casilla.HasAttribute("value"));
+    }
+
     [Theory]
-    [InlineData(CancelacionEnLaAgenda.PorElPaciente, "Cancelada (por el paciente)", "dsm-chip-de-estado--neutro")]
+    [InlineData(CancelacionEnLaAgenda.PorElPaciente, "Cancelada (por el Paciente)", "dsm-chip-de-estado--neutro")]
     [InlineData(CancelacionEnLaAgenda.Tardia, "Cancelada (tardía)", "dsm-chip-de-estado--tardia")]
-    [InlineData(CancelacionEnLaAgenda.PorElConsultorio, "Cancelada (por el consultorio)", "dsm-chip-de-estado--neutro")]
+    [InlineData(CancelacionEnLaAgenda.PorElConsultorio, "Cancelada (por el Consultorio)", "dsm-chip-de-estado--neutro")]
     public void Las_tres_cancelaciones_se_distinguen(CancelacionEnLaAgenda cancelacion, string etiqueta, string clase)
     {
         _consulta.Dias = d => Dia(d, Cita(17, 0, "Ana Sofía López", "Dolor", EstadoEnLaAgenda.Cancelada, cancelacion));

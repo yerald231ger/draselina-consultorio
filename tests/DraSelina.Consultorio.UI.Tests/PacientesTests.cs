@@ -75,6 +75,19 @@ public sealed class PacientesTests : BunitContext
     }
 
     [Fact]
+    public void En_el_prerenderizado_no_pide_ni_pinta_la_lista_solo_Cargando()
+    {
+        _busqueda.Responde = _ => Dos();
+        SetRendererInfo(new RendererInfo("Static", isInteractive: false));
+
+        var pagina = Render<PaginaDePacientes>();
+
+        Assert.Empty(_busqueda.Pedidas);
+        Assert.Empty(pagina.FindAll(".dsm-pacientes__paciente"));
+        Assert.Equal(PaginaDePacientes.Cargando, pagina.Find(".dsm-pacientes__cargando").TextContent);
+    }
+
+    [Fact]
     public void Buscar_pide_esa_busqueda_sin_navegar_y_el_circuito_la_recuerda()
     {
         _busqueda.Responde = _ => Dos();
@@ -108,6 +121,8 @@ public sealed class PacientesTests : BunitContext
 
         Assert.Equal("mariana", deVuelta.Find("#q").GetAttribute("value"));
         Assert.Equal(new BuscarPacientes("mariana"), _busqueda.Pedidas[^1]);
+        // Al volver, la única lista que se pidió es la filtrada: nunca la completa (entrada 5.10).
+        Assert.DoesNotContain(new BuscarPacientes(""), _busqueda.Pedidas.Skip(1));
         Assert.Equal(
             ["Mariana López", "MARIANA Pérez"],
             deVuelta.FindAll(".dsm-pacientes__abrir").Select(a => a.TextContent));
@@ -226,8 +241,8 @@ public sealed class PacientesTests : BunitContext
     [Theory]
     [InlineData(EstadoEnLaAgenda.Atendida, null, "Atendida", "dsm-chip-de-estado")]
     [InlineData(EstadoEnLaAgenda.NoSePresento, null, "No se presentó", "dsm-chip-de-estado dsm-chip-de-estado--neutro")]
-    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElPaciente, "Cancelada (por el paciente)", "dsm-chip-de-estado dsm-chip-de-estado--neutro")]
-    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio, "Cancelada (por el consultorio)", "dsm-chip-de-estado dsm-chip-de-estado--neutro")]
+    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElPaciente, "Cancelada (por el Paciente)", "dsm-chip-de-estado dsm-chip-de-estado--neutro")]
+    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio, "Cancelada (por el Consultorio)", "dsm-chip-de-estado dsm-chip-de-estado--neutro")]
     public void Cada_estado_lleva_el_chip_de_la_Agenda_y_el_ambar_solo_la_tardia(
         EstadoEnLaAgenda estado, CancelacionEnLaAgenda? cancelacion, string etiqueta, string clase)
     {

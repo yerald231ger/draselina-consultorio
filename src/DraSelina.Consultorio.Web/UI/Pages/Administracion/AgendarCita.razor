@@ -34,7 +34,8 @@
       la regla de la Cita (INV-C6); la página no la recalcula. Fuera de horario la nota pasa a obligatoria en pantalla;
       quien la exige al guardar es el comando (NotaObligatoria va como error del campo Nota).
     Solo dos reglas impiden guardar: otra Cita en ese horario y la hora pasada (EXPERIENCE.md). Lo capturado se conserva.
-    Al guardar se vuelve a la Agenda de la fecha de la Cita, en vista de día.
+    Al guardar se vuelve a la Agenda de la fecha de la Cita, en vista de día. El error de un campo se quita en cuanto ese
+    campo cambia; los de los demás siguen hasta el siguiente envío (entrada 5.10).
 
     Interactive Server (AD-11), con [Authorize]: sin sesión, el host lleva a /admin/entrar y el regreso conserva la
     dirección. El comando y las consultas llevan IRequiereAdministrador (AD-22). Comparten los contextos del circuito:
@@ -61,8 +62,8 @@
         </div>
     }
 
-    <EditForm Model="Comando" OnValidSubmit="GuardarAsync" class="dsm-formulario dsm-agendar__formulario">
-        <ErroresDelResultado Resultado="_resultado">
+    <EditForm EditContext="_contexto" OnValidSubmit="GuardarAsync" class="dsm-formulario dsm-agendar__formulario">
+        <ErroresDelResultado Resultado="_resultado" Corregidos="_corregidos">
             <fieldset class="dsm-agendar__grupo">
                 <legend class="dsm-seccion dsm-agendar__leyenda">Paciente</legend>
 
@@ -162,12 +163,14 @@
                 </div>
             </fieldset>
 
-            @* El Consentimiento obtenido por fuera del sitio (AD-24): canal externo. *@
+            @* El Consentimiento obtenido por fuera del sitio (AD-24): canal externo. La casilla se anuncia por su texto,
+               asociado por id, y por su estado; no por su valor (entrada 5.10). *@
             <div class="dsm-campo">
                 <label class="dsm-casilla" for="Consentimiento">
                     <InputCheckbox @ref="_consentimiento" id="Consentimiento" autofocus="@LlevaElFoco(nameof(AgendarCitaPorConsultorio.Consentimiento))" @bind-Value="Comando.Consentimiento" class="dsm-casilla__control"
+                                   aria-labelledby="Consentimiento-texto"
                                    aria-describedby="@DescritoPor(nameof(AgendarCitaPorConsultorio.Consentimiento), conAyuda: false)" />
-                    <span class="dsm-casilla__texto">
+                    <span id="Consentimiento-texto" class="dsm-casilla__texto">
                         El paciente aceptó el <a href="/aviso-de-privacidad" target="_blank" class="dsm-enlace-en-texto">Aviso de privacidad</a>
                         y dio su consentimiento expreso para el uso de sus datos de salud con el fin de agendar su cita.
                     </span>
@@ -248,6 +251,10 @@
 
     private readonly CancellationTokenSource _cierre = new();
     private readonly SemaphoreSlim _ocupado = new(1, 1);
+
+    // Los campos que cambiaron desde el último Resultado: sus errores ya no se muestran.
+    private readonly HashSet<string> _corregidos = [];
+    private EditContext _contexto = null!;
     private IReadOnlyList<TipoDeVisitaActivo> _tipos = [];
     private bool _sinTipos;
     private DateOnly _hoy;
@@ -291,6 +298,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _contexto = new EditContext(Comando);
+        _contexto.OnFieldChanged += AlCambiarUnCampo;
         _hoy = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(Reloj.UtcNow, ZonaDelConsultorio.Zona).DateTime);
         _fechaDeOrigen = DateOnly.TryParseExact(FechaPedida, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha)
             ? fecha
@@ -310,6 +319,7 @@
     private async Task ElegirTipoAsync(ChangeEventArgs evento)
     {
         Comando.TipoDeVisitaId = Guid.TryParse(evento.Value?.ToString(), out var id) ? new TipoDeVisitaId(id) : null;
+        _contexto.NotifyFieldChanged(_contexto.Field(nameof(AgendarCitaPorConsultorio.TipoDeVisitaId)));
         await RevisarHorarioAsync();
     }
 
@@ -391,6 +401,7 @@
         {
             // Sin datos personales (AD-23): ni el comando ni sus valores.
             Registro.LogWarning(error, "La Cita del consultorio no se pudo agendar");
+            _corregidos.Clear();
             _resultado = null;
             _aviso = NoSeAgendo;
         }
@@ -401,9 +412,21 @@
         }
     }
 
+    // Un campo cambió (los controles y el Campo lo avisan al EditContext; el tipo, ElegirTipoAsync): si tenía error, se
+    // quita. Los errores de los demás campos y los del objeto siguen.
+    private void AlCambiarUnCampo(object? remitente, FieldChangedEventArgs e)
+    {
+        var propiedad = e.FieldIdentifier.FieldName;
+        if (ReferenceEquals(e.FieldIdentifier.Model, Comando) && Mensajes(propiedad).Count > 0 && _corregidos.Add(propiedad))
+        {
+            StateHasChanged();
+        }
+    }
+
     // Los textos viven aquí; el comando devuelve códigos. Lo que es de un campo va bajo su campo (AD-12).
     private void Mostrar(Resultado resultado)
     {
+        _corregidos.Clear();
         _resultado = resultado.Forma switch
         {
             FormaDeResultado.Invalido => resultado,
@@ -475,7 +498,9 @@
     }
 
     private IReadOnlyList<string> Mensajes(string propiedad) =>
-        _resultado is { Forma: FormaDeResultado.Invalido } invalido && invalido.Errores.TryGetValue(propiedad, out var mensajes)
+        _resultado is { Forma: FormaDeResultado.Invalido } invalido
+        && !(propiedad.Length > 0 && _corregidos.Contains(propiedad))
+        && invalido.Errores.TryGetValue(propiedad, out var mensajes)
             ? mensajes
             : SinMensajes;
 
@@ -541,6 +566,11 @@
     // El semáforo no se libera aquí: una llamada en curso todavía lo suelta al terminar.
     public void Dispose()
     {
+        if (_contexto is not null)
+        {
+            _contexto.OnFieldChanged -= AlCambiarUnCampo;
+        }
+
         _cierre.Cancel();
         _cierre.Dispose();
     }

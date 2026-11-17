@@ -4,6 +4,7 @@ using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Web;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -207,6 +208,107 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
         Assert.Same(
             ambito.ServiceProvider.GetRequiredService<ActorDelHost>(),
             ambito.ServiceProvider.GetRequiredService<IActorActual>());
+    }
+
+    // El área (entrada 5.10): en una petición HTTP, Administrador solo bajo /admin; en el circuito, como siempre. Las
+    // pruebas por HTTP de la reserva y del Enlace de gestión están en ActorFueraDeLaAdministracionTests.
+
+    [Theory]
+    [InlineData("/reservar/datos")]
+    [InlineData("/c/token/cancelar")]
+    [InlineData("/c/token/calendario.ics")]
+    [InlineData("/")]
+    [InlineData("/administracion")]
+    public async Task Con_usuario_una_peticion_fuera_de_admin_recibe_Paciente_sin_id(string ruta)
+    {
+        await using var web = arnes.ArrancarWeb();
+        await using var ambito = web.Services.CreateAsyncScope();
+        FijarUsuario(ambito, Autenticado);
+        using var _ = EnLaPeticion(web, ambito, ruta);
+
+        var resultado = await Handler<PreguntarActor>(ambito).HandleAsync(new PreguntarActor(), Cancelacion);
+
+        Assert.True(resultado.EsExito);
+        Assert.Equal(Actor.Paciente, resultado.Valor);
+        Assert.Null(await ambito.ServiceProvider.GetRequiredService<IActorActual>().IdDelAdministradorAsync());
+    }
+
+    [Fact]
+    public async Task Con_usuario_un_comando_marcado_en_una_peticion_fuera_de_admin_vuelve_no_autorizado()
+    {
+        await using var web = arnes.ArrancarWeb();
+        await using var ambito = web.Services.CreateAsyncScope();
+        FijarUsuario(ambito, Autenticado);
+        using var _ = EnLaPeticion(web, ambito, "/reservar");
+
+        var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
+
+        Assert.Equal(FormaDeResultado.NoAutorizado, resultado.Forma);
+        Assert.Equal(0, Llamadas(web).DelComando);
+    }
+
+    [Theory]
+    [InlineData("/admin")]
+    [InlineData("/admin/citas/0b6f7c1e")]
+    [InlineData("/ADMIN/pacientes")]
+    public async Task Con_usuario_una_peticion_bajo_admin_recibe_Administrador_con_su_id(string ruta)
+    {
+        await using var web = arnes.ArrancarWeb();
+        await using var ambito = web.Services.CreateAsyncScope();
+        FijarUsuario(ambito, Autenticado);
+        using var _ = EnLaPeticion(web, ambito, ruta);
+
+        var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
+
+        Assert.True(resultado.EsExito);
+        Assert.Equal(Actor.Administrador, resultado.Valor);
+        Assert.Equal(IdDeLaCuenta, await ambito.ServiceProvider.GetRequiredService<IActorActual>().IdDelAdministradorAsync());
+    }
+
+    [Fact]
+    public async Task Sin_usuario_un_comando_marcado_en_una_peticion_bajo_admin_vuelve_no_autorizado()
+    {
+        await using var web = arnes.ArrancarWeb();
+        await using var ambito = web.Services.CreateAsyncScope();
+        FijarUsuario(ambito, Anonimo);
+        using var _ = EnLaPeticion(web, ambito, "/admin/citas/0b6f7c1e");
+
+        var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
+
+        Assert.Equal(FormaDeResultado.NoAutorizado, resultado.Forma);
+        Assert.Equal(0, Llamadas(web).DelComando);
+    }
+
+    [Fact]
+    public async Task En_el_circuito_la_peticion_de_su_conexion_no_cuenta_y_con_usuario_es_Administrador()
+    {
+        await using var web = arnes.ArrancarWeb();
+        await using var conexion = web.Services.CreateAsyncScope();
+        await using var circuito = web.Services.CreateAsyncScope();
+        FijarUsuario(circuito, Autenticado);
+        // La petición de la conexión del circuito (/_blazor) es de otro ámbito.
+        using var _ = EnLaPeticion(web, conexion, "/_blazor");
+
+        var resultado = await Handler<Administrar>(circuito).HandleAsync(new Administrar(), Cancelacion);
+
+        Assert.True(resultado.EsExito);
+        Assert.Equal(Actor.Administrador, resultado.Valor);
+    }
+
+    // Pone una petición HTTP en curso a <paramref name="ruta"/> cuyos servicios son los de <paramref name="ambito"/>, como
+    // hace el host; al desecharlo, ya no hay petición.
+    private static PeticionEnCurso EnLaPeticion(WebApplicationFactory<Program> web, AsyncServiceScope ambito, string ruta)
+    {
+        var acceso = web.Services.GetRequiredService<IHttpContextAccessor>();
+        var peticion = new DefaultHttpContext { RequestServices = ambito.ServiceProvider };
+        peticion.Request.Path = ruta;
+        acceso.HttpContext = peticion;
+        return new PeticionEnCurso(acceso);
+    }
+
+    private sealed class PeticionEnCurso(IHttpContextAccessor acceso) : IDisposable
+    {
+        public void Dispose() => acceso.HttpContext = null;
     }
 
     private static void FijarUsuario(AsyncServiceScope ambito, ClaimsPrincipal usuario)

@@ -280,21 +280,22 @@ public sealed class PacientesBusquedaEHistorialTests(Arnes arnes)
         await TresPacientesAsync(escenario);
         using var cliente = await EntrarConSegundoFactorTests.ClienteConSesionAsync(escenario.Web);
 
-        // La búsqueda corre en el circuito (bUnit); por HTTP se pinta la lista sin texto, que lleva al historial.
+        // La búsqueda y la lista corren en el circuito (bUnit): por HTTP, el prerenderizado no conoce la búsqueda
+        // recordada y no pinta ninguna lista, solo "Cargando…" (entrada 5.10). Cada fila lleva al historial (bUnit).
         var lista = await LeerAsync(cliente, "/admin/pacientes");
-        var historialDeMariana = PaginaDelHistorial.Direccion(mariana);
-        Assert.Contains($"href=\"{historialDeMariana}\">Mariana López</a>", lista, StringComparison.Ordinal);
-        Assert.Contains("MARIANA Pérez", lista, StringComparison.Ordinal);
-        Assert.Contains("444 555 1001", lista, StringComparison.Ordinal);
+        Assert.Contains(PaginaDePacientes.Cargando, lista, StringComparison.Ordinal);
+        Assert.DoesNotContain("Mariana López", lista, StringComparison.Ordinal);
+        Assert.DoesNotContain("MARIANA Pérez", lista, StringComparison.Ordinal);
         Assert.DoesNotMatch("href=\"[^\"]*\\?q=", lista);
+        var historialDeMariana = PaginaDelHistorial.Direccion(mariana);
 
         var historial = await LeerAsync(cliente, historialDeMariana);
         Assert.Contains("Mariana López", historial, StringComparison.Ordinal);
         Assert.Contains("6 citas · 1 no se presentó · 1 cancelación tardía", historial, StringComparison.Ordinal);
         foreach (var estado in new[]
                  {
-                     "Agendada", "Atendida", "No se presentó", "Cancelada (por el paciente)", "Cancelada (tardía)",
-                     "Cancelada (por el consultorio)",
+                     "Agendada", "Atendida", "No se presentó", "Cancelada (por el Paciente)", "Cancelada (tardía)",
+                     "Cancelada (por el Consultorio)",
                  })
         {
             Assert.Contains($">{estado}</span>", historial, StringComparison.Ordinal);
@@ -313,10 +314,10 @@ public sealed class PacientesBusquedaEHistorialTests(Arnes arnes)
         var (_, perez, _) = await TresPacientesAsync(escenario);
         using var cliente = await EntrarConSegundoFactorTests.ClienteConSesionAsync(escenario.Web);
 
-        // El texto nunca viene de la dirección (AD-23): un ?q= se ignora y la lista sale completa.
+        // El texto nunca viene de la dirección (AD-23): un ?q= no busca nada; el prerenderizado no pinta la lista.
         var conQ = await LeerAsync(cliente, "/admin/pacientes?q=zzz");
         Assert.DoesNotContain(PaginaDePacientes.NoEncontramos, conQ, StringComparison.Ordinal);
-        Assert.Contains("Rosa Lopera", conQ, StringComparison.Ordinal);
+        Assert.Contains(PaginaDePacientes.Cargando, conQ, StringComparison.Ordinal);
 
         var sinCitas = await LeerAsync(cliente, PaginaDelHistorial.Direccion(perez));
         Assert.Contains(PaginaDelHistorial.SinCitas, sinCitas, StringComparison.Ordinal);

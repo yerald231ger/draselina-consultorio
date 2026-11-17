@@ -286,6 +286,63 @@ public sealed class AgendarCitaTests : BunitContext
     }
 
     [Fact]
+    public void El_error_de_un_campo_se_quita_al_cambiarlo_y_el_de_otro_campo_sigue()
+    {
+        const string FaltaElTipo = "Falta el tipo de consulta.";
+        _agendar.Responde = _ => Resultado.Invalido(
+            [
+                (nameof(AgendarCitaPorConsultorio.Telefono), AgendarCitaPorConsultorio.MensajeDeTelefono),
+                (nameof(AgendarCitaPorConsultorio.TipoDeVisitaId), FaltaElTipo),
+                (nameof(AgendarCitaPorConsultorio.Consentimiento), AgendarCitaPorConsultorio.MensajeDeConsentimiento),
+            ]).Como<CitaAgendadaPorConsultorio>();
+        var pagina = Abrir(Martes);
+        Llenar(pagina, telefono: "44412345", consentimiento: false);
+        pagina.Find("form").Submit();
+        Assert.Equal(FaltaElTipo, pagina.Find("#TipoDeVisitaId-error-1").TextContent);
+        Assert.Equal("true", pagina.Find("#TipoDeVisitaId").GetAttribute("aria-invalid"));
+
+        // El tipo: su error se va; el del celular y el de la casilla siguen.
+        pagina.Find("#TipoDeVisitaId").Change(Primera.Id.ToString());
+
+        Assert.Empty(pagina.FindAll("#TipoDeVisitaId-error-1"));
+        Assert.False(pagina.Find("#TipoDeVisitaId").HasAttribute("aria-invalid"));
+        Assert.False(pagina.Find("#TipoDeVisitaId").HasAttribute("aria-describedby"));
+        Assert.Equal(AgendarCitaPorConsultorio.MensajeDeTelefono, pagina.Find("#Telefono-error-1").TextContent);
+        Assert.Equal("true", pagina.Find("#Telefono").GetAttribute("aria-invalid"));
+        Assert.Equal(AgendarCitaPorConsultorio.MensajeDeConsentimiento, pagina.Find("#Consentimiento-error-1").TextContent);
+
+        // Un Campo (el celular) y la casilla, igual.
+        pagina.Find("#Telefono").Change("4441234567");
+
+        Assert.Empty(pagina.FindAll("#Telefono-error-1"));
+        Assert.False(pagina.Find("#Telefono").HasAttribute("aria-invalid"));
+        Assert.Equal(AgendarCitaPorConsultorio.MensajeDeConsentimiento, pagina.Find("#Consentimiento-error-1").TextContent);
+
+        pagina.Find("#Consentimiento").Change(true);
+
+        Assert.Empty(pagina.FindAll(".dsm-campo__error"));
+        Assert.Empty(pagina.FindAll("[aria-invalid=true]"));
+
+        // El siguiente envío vuelve a mostrar lo que diga su Resultado.
+        pagina.Find("form").Submit();
+
+        Assert.Equal(3, pagina.FindAll(".dsm-campo__error").Count);
+        Assert.Equal(2, _agendar.Recibidos.Count);
+    }
+
+    [Fact]
+    public void La_casilla_de_Consentimiento_se_anuncia_por_su_texto()
+    {
+        var pagina = Abrir(Martes);
+
+        var casilla = pagina.Find("#Consentimiento");
+        Assert.Equal("checkbox", casilla.GetAttribute("type"));
+        Assert.Equal("Consentimiento", pagina.Find("label.dsm-casilla").GetAttribute("for"));
+        var texto = pagina.Find($"#{casilla.GetAttribute("aria-labelledby")}");
+        Assert.StartsWith("El paciente aceptó el Aviso de privacidad", texto.TextContent.Trim(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Un_celular_de_8_digitos_lleva_el_mensaje_de_la_reserva_en_su_campo()
     {
         _agendar.Responde = _ => Resultado.Invalido(nameof(AgendarCitaPorConsultorio.Telefono), AgendarCitaPorConsultorio.MensajeDeTelefono)

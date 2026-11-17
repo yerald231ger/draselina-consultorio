@@ -65,13 +65,13 @@ public sealed class DetalleDeCitaTests : BunitContext
                 ("Teléfono", "444 123 4567"),
                 ("Correo", "ana@correo.com"),
                 ("Tipo de consulta", "Primera consulta"),
-                ("Fecha", "Martes 10 de noviembre"),
-                ("Hora", "4:00 pm a 4:30 pm"),
                 ("Origen", "En línea"),
                 ("Motivo de la consulta", "Dolor de rodilla"),
                 ("Consentimiento", "En línea · 2 de noviembre de 2026, 12:00 pm · aviso 2026-11"),
             ],
             pagina.FindAll(".dsm-detalle__dato").Select(d => (d.QuerySelector("dt")!.TextContent, d.QuerySelector("dd")!.TextContent)));
+        // La fecha y la hora van solo en el encabezado (entrada 5.10).
+        Assert.Empty(pagina.FindAll("[data-dato=fecha], [data-dato=hora]"));
         Assert.Equal("tel:+524441234567", pagina.Find("[data-dato=telefono] a").GetAttribute("href"));
         Assert.Equal([PaginaDelDetalle.CancelarCitaTexto], pagina.FindAll(".dsm-detalle__acciones button").Select(b => b.TextContent));
         Assert.Equal(
@@ -96,9 +96,9 @@ public sealed class DetalleDeCitaTests : BunitContext
 
     [Theory]
     [InlineData(EstadoEnLaAgenda.NoSePresento, null, "No se presentó", "dsm-chip-de-estado--neutro")]
-    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElPaciente, "Cancelada (por el paciente)", "dsm-chip-de-estado--neutro")]
+    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElPaciente, "Cancelada (por el Paciente)", "dsm-chip-de-estado--neutro")]
     [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia, "Cancelada (tardía)", "dsm-chip-de-estado--tardia")]
-    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio, "Cancelada (por el consultorio)", "dsm-chip-de-estado--neutro")]
+    [InlineData(EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio, "Cancelada (por el Consultorio)", "dsm-chip-de-estado--neutro")]
     public void En_otro_estado_no_hay_acciones_y_el_chip_lleva_los_colores_de_la_Agenda(
         EstadoEnLaAgenda estado, CancelacionEnLaAgenda? cancelacion, string etiqueta, string clase)
     {
@@ -209,7 +209,7 @@ public sealed class DetalleDeCitaTests : BunitContext
         Assert.Equal(Id, Assert.Single(_cancelar.Recibidos).CitaId);
         Assert.Empty(_marcar.Recibidos);
         Assert.Equal(2, _consulta.Pedidas.Count);
-        Assert.Equal("Cancelada (por el consultorio)", pagina.Find(".dsm-detalle__estado").TextContent);
+        Assert.Equal("Cancelada (por el Consultorio)", pagina.Find(".dsm-detalle__estado").TextContent);
         Assert.Empty(pagina.FindAll(".dsm-detalle__acciones"));
         Assert.Empty(pagina.FindAll(".dsm-aviso"));
         Assert.Equal(
@@ -372,6 +372,22 @@ public sealed class DetalleDeCitaTests : BunitContext
         pagina.Render(p => p.Add(x => x.Id, Id.Valor));
 
         Assert.Equal(2, _consulta.Pedidas.Count);
+    }
+
+    [Theory]
+    [InlineData(CancelacionEnLaAgenda.PorElPaciente, Actor.Paciente, "Cancelada · por el Paciente · Paciente")]
+    [InlineData(CancelacionEnLaAgenda.Tardia, Actor.Paciente, "Cancelada · tardía · Paciente")]
+    [InlineData(CancelacionEnLaAgenda.PorElConsultorio, Actor.Administrador, "Cancelada · por el Consultorio · Administrador")]
+    public void La_bitacora_de_una_cancelacion_escribe_Paciente_y_Consultorio_con_mayuscula(
+        CancelacionEnLaAgenda cancelacion, Actor quien, string texto)
+    {
+        var cancelada = new EntradaDeLaBitacora(
+            new DateOnly(2026, 11, 9), new TimeOnly(16, 10), quien, AccionEnLaBitacora.Cancelada, null, cancelacion, null, null);
+        _consulta.Responde = _ => Cita() with { Bitacora = [Agendada, cancelada] };
+
+        var pagina = Abrir();
+
+        Assert.Equal(texto, pagina.FindAll(".dsm-detalle__entrada-que")[^1].TextContent);
     }
 
     [Fact]

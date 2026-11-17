@@ -11,6 +11,9 @@
     aria-invalid por su cuenta (InputBase quita un aria-invalid que le llegue de fuera si su EditContext no tiene
     mensajes para él). Se borran al pedir validación, que es lo primero que hace el EditForm al enviarse: sin
     validador en el formulario, OnValidSubmit se dispara siempre y los errores vienen solo del Resultado (AD-12).
+
+    Con Corregidos, quien lo usa dice qué campos cambiaron desde ese Resultado: sus errores ya no se pintan ni marcan el
+    control, y los demás siguen hasta el siguiente envío (entrada 5.10). Sin Corregidos, todos se pintan.
 *@
 
 <CascadingValue Value="this" IsFixed="true">
@@ -45,6 +48,13 @@
     /// <summary>El Resultado del último envío; nulo si todavía no se envía.</summary>
     [Parameter]
     public Resultado? Resultado { get; set; }
+
+    /// <summary>
+    /// Las propiedades que cambiaron desde <see cref="Resultado"/>: sus errores ya no se muestran. Nulo, ninguna. Los
+    /// errores del objeto (propiedad "") no se corrigen así.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyCollection<string>? Corregidos { get; set; }
 
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
@@ -93,7 +103,7 @@
         {
             foreach (var (propiedad, mensajes) in invalido.Errores)
             {
-                if (propiedad.Length > 0)
+                if (propiedad.Length > 0 && !Corregido(propiedad))
                 {
                     _mensajesDelContexto.Add(_contexto!.Field(propiedad), mensajes);
                 }
@@ -135,9 +145,12 @@
     /// <summary>Los mensajes de una propiedad, en orden; vacío si no tiene o si el Resultado no es inválido.</summary>
     internal IReadOnlyList<string> MensajesDe(string propiedad) =>
         Resultado is { Forma: FormaDeResultado.Invalido } invalido
+        && !Corregido(propiedad)
         && invalido.Errores.TryGetValue(propiedad, out var mensajes)
             ? mensajes
             : SinMensajes;
+
+    private bool Corregido(string propiedad) => propiedad.Length > 0 && Corregidos?.Contains(propiedad) == true;
 
     /// <summary>
     /// Lo pide un Campo con error al pintarse. Devuelve verdadero si el foco es suyo: nadie lo había reclamado en
