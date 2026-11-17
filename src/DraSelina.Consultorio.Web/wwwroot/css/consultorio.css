@@ -2897,6 +2897,27 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   flex: none;
 }
 
+/*
+ * Botones del diálogo a su ancho (los neutros van a todo el ancho fuera de él): "Agregar tramo", "Quitar" junto a
+ * Inicio y Fin, y las acciones en una fila que baja de renglón en vez de partir el texto de un botón.
+ */
+.dsm-atencion__dialogo .btn {
+  width: auto;
+  white-space: nowrap;
+}
+
+.dsm-atencion__dialogo .dsm-atencion__agregar {
+  align-self: flex-start;
+}
+
+.dsm-atencion__dialogo .dsm-atencion__tramo .dsm-campo {
+  margin-bottom: 0;
+}
+
+.dsm-atencion__dialogo .dsm-atencion__acciones {
+  flex-wrap: wrap;
+}
+
 @media (max-width: 640px) {
   .dsm-atencion__dialogo {
     width: 100%;
