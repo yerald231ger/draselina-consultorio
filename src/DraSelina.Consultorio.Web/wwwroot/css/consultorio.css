@@ -1269,6 +1269,30 @@ button.dsm-hora {
   }
 }
 
+/*
+ * Día y hora en una pantalla mediana (992 a 1279 px): al lado de los tipos y de "Tu cita", la columna de en medio no
+ * alcanza para el calendario y las horas lado a lado (cada día quedaba de ~11 px); las horas van debajo del calendario,
+ * en dos columnas como en el teléfono. Recorrido 6.8.
+ */
+@media (min-width: 992px) and (max-width: 1279.98px) {
+  .dsm-reserva__columnas--horario > .dsm-reserva__principal {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "cabeza"
+      "calendario"
+      "horas";
+  }
+
+  .dsm-reserva__columnas--horario .dsm-horas__cabeza {
+    flex-direction: row;
+    gap: var(--dsm-spacing-3);
+  }
+
+  .dsm-reserva__columnas--horario .dsm-horas__rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .dsm-tu-cita__cabeza {
   display: flex;
   justify-content: space-between;
