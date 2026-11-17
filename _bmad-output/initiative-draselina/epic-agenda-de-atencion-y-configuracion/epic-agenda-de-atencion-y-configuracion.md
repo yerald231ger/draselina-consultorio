@@ -64,3 +64,4 @@ El Calendario de atención y Configuración: los métodos de escritura de `Agend
 - Decision: "Fuera de horario" se marca en la Agenda para toda Cita que no cabe en los Tramos vigentes, sin importar su origen; con esta épica una Cita en línea conservada puede quedar fuera. Cambia lo de la épica 5 ("una en línea nunca"); entra a la entrada 9 (Gerardo, 2026-11-17).
 - Decision: la entrada 9 lleva el editor del día como modal, Fuera de horario para todas, los textos del recorrido y la validación del correo de Avisos por la app (Gerardo, 2026-11-17).
 - Decision: la ventana de reserva tiene máximo de 12 meses y el tope semanal se nombra "por celular"; los dos entran a la entrada 9 (Gerardo, 2026-11-17, recomendación aceptada).
+- Decision: el error de Tramos encimados del Calendario de atención dirá cuáles se enciman y marcará sus filas; entra al Refactor sweep, entrada 10 (Gerardo, 2026-11-17, recorrido de la 6.9).
