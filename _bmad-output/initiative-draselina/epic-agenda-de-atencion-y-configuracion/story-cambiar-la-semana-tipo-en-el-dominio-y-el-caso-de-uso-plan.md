@@ -3,7 +3,7 @@ title: 'Cambiar la semana tipo, en el dominio y el caso de uso'
 type: 'feature'
 ticket: '4'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '900d7d598f092f826c3912cb0886965a85832ca8'
 route: 'full'
 route_source: 'auto'

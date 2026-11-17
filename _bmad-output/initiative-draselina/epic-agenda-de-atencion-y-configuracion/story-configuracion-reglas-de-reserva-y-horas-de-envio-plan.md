@@ -3,7 +3,7 @@ title: 'Configuración: reglas de reserva y horas de envío'
 type: 'feature'
 ticket: '6'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: 'c02e5d77616e5a9becf8e7e0d9300a2a4b6dc774'
 route: 'full'
 route_source: 'auto'

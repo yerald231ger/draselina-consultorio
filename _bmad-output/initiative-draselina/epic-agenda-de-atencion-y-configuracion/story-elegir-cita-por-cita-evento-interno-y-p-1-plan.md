@@ -3,7 +3,7 @@ title: 'Elegir cita por cita: evento interno y P-1'
 type: 'feature'
 ticket: '2'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: 'e51234bb7d6ffd61cd783288832fe12518c61741'
 route: 'full'
 route_source: 'auto'

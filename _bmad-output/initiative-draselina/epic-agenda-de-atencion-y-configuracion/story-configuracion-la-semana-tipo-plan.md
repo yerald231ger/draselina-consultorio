@@ -3,7 +3,7 @@ title: 'Configuración: la semana tipo'
 type: 'feature'
 ticket: '5'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '3d169d537c23f1fc635c77b5bda64fe1bb967fb2'
 route: 'full'
 route_source: 'auto'

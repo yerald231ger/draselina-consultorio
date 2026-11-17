@@ -3,7 +3,7 @@ title: 'Dar horario propio a una fecha'
 type: 'feature'
 ticket: '1'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '494eb1f2fb1d9c936e8ad2b893d109bc58f1daf1'
 route: 'full'
 route_source: 'auto'

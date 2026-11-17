@@ -3,7 +3,7 @@ title: 'Pantalla: Citas que quedan fuera y quitar el horario propio'
 type: 'feature'
 ticket: '3'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '7c7b5ab3c4a25e50c1b6a8e4138ca57efd64ccae'
 route: 'full'
 route_source: 'auto'

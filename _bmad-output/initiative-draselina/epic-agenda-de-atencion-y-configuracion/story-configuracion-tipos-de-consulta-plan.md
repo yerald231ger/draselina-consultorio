@@ -3,7 +3,7 @@ title: 'Configuración: Tipos de consulta'
 type: 'feature'
 ticket: '7'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '14baa89b78c595db21afb2a70a7821798feab4b5'
 route: 'full'
 route_source: 'auto'
