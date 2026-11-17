@@ -2955,3 +2955,67 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   margin: 0;
   font-weight: 600;
 }
+
+/* Configuración y su sección de la semana tipo (entrada 6.5). */
+.dsm-configuracion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-7);
+  padding-block: var(--dsm-spacing-6);
+}
+
+.dsm-semana-tipo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  max-width: 44rem;
+}
+
+.dsm-semana-tipo__ayuda {
+  margin: 0;
+  color: var(--dsm-muted);
+}
+
+.dsm-semana-tipo__formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+}
+
+.dsm-semana-tipo__dia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-3);
+  margin: 0;
+  padding: var(--dsm-spacing-5) var(--dsm-spacing-6);
+  border: 1px solid var(--dsm-border);
+  border-radius: var(--dsm-rounded-md);
+  background: var(--dsm-surface);
+}
+
+.dsm-semana-tipo__nombre {
+  font-weight: 700;
+}
+
+.dsm-semana-tipo__sin-tramos {
+  margin: 0;
+  color: var(--dsm-muted);
+}
+
+.dsm-semana-tipo__acciones-del-dia,
+.dsm-semana-tipo__copia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dsm-spacing-4);
+}
+
+.dsm-semana-tipo__destino {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dsm-spacing-2);
+}
+
+.dsm-semana-tipo__fechas {
+  margin: var(--dsm-spacing-3) 0 0;
+}

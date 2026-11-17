@@ -1,0 +1,20 @@
+@page "/admin/configuracion"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@layout LayoutAdministracion
+@using Microsoft.AspNetCore.Authorization
+
+@*
+    Configuración (CAP-10, CAP-16, FR-12, FR-19; entradas 6.5 a 6.7): las reglas que el Administrador cambia sin
+    desplegar. Cada sección es su propio componente, con sus consultas y comandos: la semana tipo (6.5); las reglas de
+    reserva y las horas de envío (6.6) y los Tipos de consulta (6.7) se agregan aquí. Interactive Server (AD-11), con
+    [Authorize]; las consultas y comandos llevan IRequiereAdministrador (AD-22).
+*@
+
+<PageTitle>Configuración · Administración</PageTitle>
+
+<section class="dsm-contenedor dsm-configuracion" aria-labelledby="configuracion">
+    <h1 id="configuracion" class="dsm-titulo-de-estado">Configuración</h1>
+
+    <SeccionSemanaTipo />
+</section>

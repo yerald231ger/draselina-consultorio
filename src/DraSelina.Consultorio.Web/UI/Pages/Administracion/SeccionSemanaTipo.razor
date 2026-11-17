@@ -1,0 +1,339 @@
+@implements IDisposable
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+@inject IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>> Consulta
+@inject IQueryHandler<CambioDeAgendaBase, CambioDeBaseRevisado> VistaPrevia
+@inject ICommandHandler<CambiarAgendaBase, AgendaBaseCambiada> Cambiar
+@inject ILogger<SeccionSemanaTipo> Registro
+
+@*
+    La semana tipo en Configuración (CAP-10, FR-12; entrada 6.5): de lunes a domingo, cada día con sus Tramos (agregar y
+    quitar; ninguno: no se atiende) y "Copiar a otros días", que reemplaza los Tramos de los días que se elijan por una
+    copia de los de ese día [ASSUMPTION: diseño]. Guardar manda la semana completa (Gerardo, 2026-11-17). Antes, la vista
+    previa CambioDeAgendaBase: si quedan Citas fuera, se listan diciendo que no se cancelan (RN-6) y se pide confirmar;
+    si los Tramos cambian después, se vuelve a pedir. Al guardar se dicen las fechas con horario propio que no cambian
+    (RN-7). Los errores de un día van en ese día (Dias[i]). Una llamada a la vez (_ocupado). Textos `[ASSUMPTION: texto]`.
+*@
+
+<section class="dsm-semana-tipo" aria-labelledby="semana-tipo">
+    <h2 id="semana-tipo" class="dsm-seccion">Semana tipo</h2>
+    <p class="dsm-cuerpo dsm-semana-tipo__ayuda">@Ayuda</p>
+
+    @if (_fallo)
+    {
+        <div class="dsm-aviso" role="alert"><p class="dsm-aviso__mensaje">@NoSeCargo</p></div>
+    }
+    else if (_dias.Count > 0)
+    {
+        <form class="dsm-formulario dsm-semana-tipo__formulario" @onsubmit="GuardarAsync">
+            @foreach (var dia in _dias)
+            {
+                var indice = _dias.IndexOf(dia);
+                var propiedad = CambiarAgendaBase.PropiedadDelDia(indice);
+                var id = Id(dia.Dia);
+                <fieldset class="dsm-semana-tipo__dia" data-dia="@id" aria-describedby="@(Errores(propiedad).Count > 0 ? $"error-{id}" : null)">
+                    <legend class="dsm-campo__etiqueta dsm-semana-tipo__nombre">@Nombre(dia.Dia)</legend>
+
+                    @for (var i = 0; i < dia.Tramos.Count; i++)
+                    {
+                        var t = i;
+                        var tramo = dia.Tramos[t];
+                        <div class="dsm-calendario__tramo" data-tramo="@t">
+                            <div class="dsm-campo">
+                                <label for="@($"{id}-inicio-{t}")" class="dsm-campo__etiqueta">Inicio</label>
+                                <input id="@($"{id}-inicio-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm" />
+                            </div>
+                            <div class="dsm-campo">
+                                <label for="@($"{id}-fin-{t}")" class="dsm-campo__etiqueta">Fin</label>
+                                <input id="@($"{id}-fin-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Fin" @bind:format="HH:mm" />
+                            </div>
+                            <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__quitar" @onclick="() => Quitar(dia, t)">
+                                Quitar<span class="visually-hidden"> el tramo @(t + 1) del @Nombre(dia.Dia)</span>
+                            </button>
+                        </div>
+                    }
+                    @if (dia.Tramos.Count == 0)
+                    {
+                        <p class="dsm-cuerpo dsm-semana-tipo__sin-tramos">@Agenda.NoSeAtiende</p>
+                    }
+
+                    @if (Errores(propiedad) is { Count: > 0 } errores)
+                    {
+                        <p id="error-@id" class="dsm-campo__error">@string.Join(" ", errores)</p>
+                    }
+
+                    <div class="dsm-semana-tipo__acciones-del-dia">
+                        <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__agregar" @onclick="() => Agregar(dia)">
+                            Agregar tramo<span class="visually-hidden"> al @Nombre(dia.Dia)</span>
+                        </button>
+                        <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__copiar" aria-expanded="@(dia.Copiando ? "true" : "false")"
+                                @onclick="() => AlternarCopia(dia)">
+                            Copiar a otros días<span class="visually-hidden"> desde el @Nombre(dia.Dia)</span>
+                        </button>
+                    </div>
+
+                    @if (dia.Copiando)
+                    {
+                        <div class="dsm-semana-tipo__copia" role="group" aria-label="@($"Copiar los tramos del {Nombre(dia.Dia)} a")">
+                            @foreach (var otro in _dias.Where(o => o.Dia != dia.Dia))
+                            {
+                                var destino = otro.Dia;
+                                <label class="dsm-semana-tipo__destino">
+                                    <input type="checkbox" class="dsm-semana-tipo__destino-casilla" value="@Id(destino)"
+                                           checked="@dia.Destinos.Contains(destino)" @onchange="e => Elegir(dia, destino, e)" />
+                                    @Nombre(destino)
+                                </label>
+                            }
+                            <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__aplicar" disabled="@(dia.Destinos.Count == 0)"
+                                    @onclick="() => Copiar(dia)">Copiar</button>
+                        </div>
+                    }
+                </fieldset>
+            }
+
+            @if (_revision is { Citas.Count: > 0 } revision)
+            {
+                <div class="dsm-citas-fuera dsm-semana-tipo__fuera" role="status">
+                    <p class="dsm-seccion dsm-citas-fuera__titulo">@ListaDeCitasFuera.Titulo(revision.Citas.Count)</p>
+                    <p class="dsm-cuerpo dsm-citas-fuera__ayuda">@NoSeCancelan</p>
+                    <ol class="dsm-citas-fuera__lista">
+                        @foreach (var cita in revision.Citas)
+                        {
+                            <li class="dsm-citas-fuera__cita" data-cita="@cita.CitaId">
+                                <span class="dsm-citas-fuera__hora">@FormatoDeCita.Largo(cita.Fecha), @FormatoDeCita.Hora(cita.Inicio)</span>
+                                <span class="dsm-citas-fuera__paciente">@(cita.Paciente ?? Agenda.PacienteNoEncontrado)</span>
+                                @if (cita.SinCorreo)
+                                {
+                                    <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-citas-fuera__sin-correo">@PresentacionDeCita.SinCorreo</span>
+                                }
+                            </li>
+                        }
+                    </ol>
+                </div>
+            }
+
+            @if (MensajeGeneral() is { } mensaje)
+            {
+                <div class="dsm-aviso dsm-semana-tipo__error" role="alert"><p class="dsm-aviso__mensaje">@mensaje</p></div>
+            }
+
+            <div class="dsm-calendario__acciones">
+                <button type="submit" class="btn btn-primary dsm-accion-principal dsm-semana-tipo__guardar" disabled="@_ocupado">
+                    @(_revision is { Citas.Count: > 0 } ? GuardarDeTodosModos : "Guardar semana tipo")
+                </button>
+            </div>
+        </form>
+    }
+
+    @if (_guardado is { } guardado)
+    {
+        <div class="dsm-aviso dsm-semana-tipo__guardado" role="status">
+            <p class="dsm-aviso__mensaje">@guardado.Mensaje</p>
+            @if (guardado.FechasConCustom.Count > 0)
+            {
+                <ul class="dsm-semana-tipo__fechas">
+                    @foreach (var fecha in guardado.FechasConCustom)
+                    {
+                        <li>@FormatoDeCita.Largo(fecha)</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    public const string Ayuda = "El horario que se repite cada semana. Las fechas con horario propio del Calendario de atención no cambian.";
+    public const string NoSeCargo = "No se pudo cargar la semana tipo. Recarga la página.";
+    public const string NoSeCancelan = "Ninguna se cancela: siguen agendadas. Si alguna ya no puede atenderse, cancélala desde su detalle.";
+    public const string GuardarDeTodosModos = "Guardar de todos modos";
+    public const string Guardada = "Se guardó la semana tipo.";
+    public const string SinCambios = "La semana tipo ya tenía ese horario.";
+    public const string ConCustom = "Estas fechas tienen horario propio y no cambiaron:";
+    public const string SinSesion = "Tu sesión terminó. Vuelve a entrar.";
+    public const string NoSeGuardo = "No se pudo guardar. Intenta de nuevo.";
+
+    private static readonly string[] Nombres = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+    private readonly CancellationTokenSource _cierre = new();
+    private List<DiaEditable> _dias = [];
+    private bool _fallo;
+    private bool _ocupado;
+    private Resultado? _resultado;
+    private CambioDeBaseRevisado? _revision;
+    private string? _semanaRevisada;
+    private (string Mensaje, IReadOnlyList<DateOnly> FechasConCustom)? _guardado;
+
+    /// <summary>"Lunes", "Martes"…</summary>
+    public static string Nombre(DayOfWeek dia) => Nombres[(int)dia];
+
+    private static string Id(DayOfWeek dia) => dia.ToString().ToLowerInvariant();
+
+    /// <summary>Un día de la semana mientras se edita, con su copia a otros días.</summary>
+    private sealed class DiaEditable(DayOfWeek dia, List<TramoAGuardar> tramos)
+    {
+        public DayOfWeek Dia { get; } = dia;
+
+        public List<TramoAGuardar> Tramos { get; set; } = tramos;
+
+        public bool Copiando { get; set; }
+
+        public HashSet<DayOfWeek> Destinos { get; } = [];
+    }
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        try
+        {
+            var resultado = await Consulta.HandleAsync(new SemanaTipo(), _cierre.Token);
+            _fallo = !resultado.EsExito;
+            if (resultado.EsExito)
+            {
+                _dias = [.. resultado.Valor.Select(d => new DiaEditable(d.Dia, Copia(d.Tramos)))];
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "La semana tipo no se pudo cargar");
+            _fallo = true;
+        }
+    }
+
+    private static List<TramoAGuardar> Copia(IEnumerable<TramoDeLaAgenda> tramos) =>
+        [.. tramos.Select(t => new TramoAGuardar { Inicio = t.Inicio, Fin = t.Fin })];
+
+    private static List<TramoAGuardar> Copia(IEnumerable<TramoAGuardar> tramos) =>
+        [.. tramos.Select(t => new TramoAGuardar { Inicio = t.Inicio, Fin = t.Fin })];
+
+    private void Agregar(DiaEditable dia) => dia.Tramos.Add(new TramoAGuardar());
+
+    private void Quitar(DiaEditable dia, int indice)
+    {
+        dia.Tramos.RemoveAt(indice);
+        _resultado = null;
+    }
+
+    private void AlternarCopia(DiaEditable dia)
+    {
+        dia.Copiando = !dia.Copiando;
+        dia.Destinos.Clear();
+    }
+
+    private static void Elegir(DiaEditable dia, DayOfWeek destino, ChangeEventArgs e)
+    {
+        if (e.Value is true || (e.Value is string texto && bool.TryParse(texto, out var marcado) && marcado))
+        {
+            dia.Destinos.Add(destino);
+        }
+        else
+        {
+            dia.Destinos.Remove(destino);
+        }
+    }
+
+    private void Copiar(DiaEditable origen)
+    {
+        foreach (var destino in _dias.Where(d => origen.Destinos.Contains(d.Dia)))
+        {
+            destino.Tramos = Copia(origen.Tramos);
+        }
+
+        origen.Copiando = false;
+        origen.Destinos.Clear();
+        _resultado = null;
+    }
+
+    private CambiarAgendaBase Comando() => new()
+    {
+        Dias = [.. _dias.Select(d => new DiaDeLaBaseAGuardar { Dia = d.Dia, Tramos = Copia(d.Tramos) })],
+    };
+
+    // La semana del formulario si todos sus Tramos están completos y al derecho; si no, nula.
+    private List<DiaDeLaBase>? SemanaCompleta() =>
+        _dias.All(d => d.Tramos.All(t => t.Inicio is { } inicio && t.Fin is { } fin && inicio < fin))
+            ? [.. _dias.Select(d => new DiaDeLaBase(d.Dia, [.. d.Tramos.Select(t => new TramoDeLaAgenda(t.Inicio!.Value, t.Fin!.Value))]))]
+            : null;
+
+    private static string Clave(IEnumerable<DiaDeLaBase> semana) =>
+        string.Join("|", semana.Select(d => $"{d.Dia}:{string.Join(",", d.Tramos.Select(t => $"{t.Inicio:HH:mm}-{t.Fin:HH:mm}"))}"));
+
+    private async Task GuardarAsync()
+    {
+        if (_ocupado)
+        {
+            return;
+        }
+
+        _ocupado = true;
+        try
+        {
+            _resultado = null;
+            _guardado = null;
+
+            // Con la semana completa, primero la vista previa; si hay Citas fuera que no se han visto, se muestran y se
+            // espera la confirmación (el siguiente "Guardar"). Con Tramos incompletos va directo: el comando dice qué falta.
+            if (SemanaCompleta() is { } semana && Clave(semana) != _semanaRevisada)
+            {
+                var vista = await VistaPrevia.HandleAsync(new CambioDeAgendaBase(semana), _cierre.Token);
+                if (vista.EsExito)
+                {
+                    _revision = vista.Valor;
+                    _semanaRevisada = Clave(semana);
+                    if (vista.Valor.Citas.Count > 0)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            var resultado = await Cambiar.HandleAsync(Comando(), _cierre.Token);
+            if (!resultado.EsExito)
+            {
+                _resultado = resultado;
+                return;
+            }
+
+            var mensaje = resultado.Valor.DiasCambiados.Count == 0 ? SinCambios : Guardada;
+            if (resultado.Valor.FechasConCustom.Count > 0)
+            {
+                mensaje += " " + ConCustom;
+            }
+
+            _guardado = (mensaje, resultado.Valor.FechasConCustom);
+            _revision = null;
+            _semanaRevisada = null;
+            await CargarAsync();
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "La semana tipo no se pudo guardar");
+            _resultado = Resultado.Fallo("configuracion.error");
+        }
+        finally
+        {
+            _ocupado = false;
+        }
+    }
+
+    private IReadOnlyList<string> Errores(string propiedad) =>
+        _resultado?.Errores.TryGetValue(propiedad, out var errores) == true ? errores : [];
+
+    private string? MensajeGeneral() => _resultado switch
+    {
+        null or { EsExito: true } => null,
+        { Forma: FormaDeResultado.NoAutorizado } => SinSesion,
+        { Forma: FormaDeResultado.Invalido } r => r.Errores.TryGetValue(nameof(CambiarAgendaBase.Dias), out var semana) ? semana[0] : null,
+        _ => NoSeGuardo,
+    };
+
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

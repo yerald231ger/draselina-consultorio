@@ -123,6 +123,22 @@ public sealed class CambiarAgendaBaseTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task La_semana_tipo_trae_los_siete_dias_y_tras_guardar_la_nueva()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+
+        var antes = await SemanaAsync(escenario);
+        Assert.True((await CambiarAsync(escenario, Semana(CortoLunesMiercolesViernes()))).EsExito);
+        var despues = await SemanaAsync(escenario);
+
+        Assert.Equal(DeLunesADomingo, antes.Select(d => d.Dia));
+        Assert.Equal([Tramo(15, 30, 18, 0)], antes[0].Tramos);
+        Assert.Empty(antes[5].Tramos);
+        Assert.Equal([Tramo(15, 30, 17, 0)], despues[0].Tramos);
+        Assert.Equal([Tramo(15, 30, 18, 0)], despues[1].Tramos);
+    }
+
+    [Fact]
     public async Task Sin_sesion_vuelve_no_autorizado()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
@@ -134,8 +150,12 @@ public sealed class CambiarAgendaBaseTests(Arnes arnes)
         var vista = await ambito.ServiceProvider.GetRequiredService<IQueryHandler<CambioDeAgendaBase, CambioDeBaseRevisado>>()
             .HandleAsync(new CambioDeAgendaBase(CortoLunesMiercolesViernes()), Cancelacion);
 
+        var semana = await ambito.ServiceProvider.GetRequiredService<IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>>>()
+            .HandleAsync(new SemanaTipo(), Cancelacion);
+
         Assert.Equal(FormaDeResultado.NoAutorizado, cambiar.Forma);
         Assert.Equal(FormaDeResultado.NoAutorizado, vista.Forma);
+        Assert.Equal(FormaDeResultado.NoAutorizado, semana.Forma);
     }
 
     // Una Cita del lunes 9 a las 5:30 (queda fuera), una del sábado 7 fuera de horario (día que no cambia), y el
@@ -190,6 +210,16 @@ public sealed class CambiarAgendaBaseTests(Arnes arnes)
         ComoAdministrador(ambito);
         var resultado = await ambito.ServiceProvider.GetRequiredService<IQueryHandler<CambioDeAgendaBase, CambioDeBaseRevisado>>()
             .HandleAsync(new CambioDeAgendaBase(dias), Cancelacion);
+        Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
+        return resultado.Valor;
+    }
+
+    private static async Task<IReadOnlyList<DiaDeLaBase>> SemanaAsync(Escenario escenario)
+    {
+        await using var ambito = escenario.Web.Services.CreateAsyncScope();
+        ComoAdministrador(ambito);
+        var resultado = await ambito.ServiceProvider.GetRequiredService<IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>>>()
+            .HandleAsync(new SemanaTipo(), Cancelacion);
         Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
         return resultado.Valor;
     }

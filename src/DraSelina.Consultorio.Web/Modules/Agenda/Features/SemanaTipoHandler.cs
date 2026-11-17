@@ -1,0 +1,32 @@
+using DraSelina.Consultorio.Agenda.Contracts;
+using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Kernel;
+
+namespace DraSelina.Consultorio.Agenda.Features;
+
+/// <summary>
+/// La semana tipo guardada. Una consulta: lee la base completa con <see cref="IAgendaDelRango"/> (sin custom: el rango es
+/// un solo día cualquiera) y la devuelve de lunes a domingo con <see cref="Domain.AgendaAtencion.TramosBase"/>.
+/// </summary>
+public sealed class SemanaTipoHandler(IAgendaDelRango agenda) : IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>>
+{
+    /// <summary>De lunes a domingo, como se muestra la semana.</summary>
+    public static readonly IReadOnlyList<DayOfWeek> DeLunesADomingo =
+    [
+        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday,
+        DayOfWeek.Saturday, DayOfWeek.Sunday,
+    ];
+
+    public async Task<Resultado<IReadOnlyList<DiaDeLaBase>>> HandleAsync(SemanaTipo consulta, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(consulta);
+
+        var atencion = await agenda.LeerAsync(DateOnly.MinValue, DateOnly.MinValue, cancellationToken);
+        IReadOnlyList<DiaDeLaBase> semana =
+        [
+            .. DeLunesADomingo.Select(dia => new DiaDeLaBase(
+                dia, [.. atencion.TramosBase(dia).Select(t => new TramoDeLaAgenda(t.Inicio, t.Fin))])),
+        ];
+        return Resultado.Exito(semana);
+    }
+}
