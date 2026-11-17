@@ -25,6 +25,12 @@ public static class DecoradoresDeHandlers
         // autorizado no aprende nada de la forma (AD-22).
         servicios.TryDecorate(typeof(ICommandHandler<,>), typeof(RechazoSinAdministradorDeComandos<,>));
         servicios.TryDecorate(typeof(IQueryHandler<,>), typeof(RechazoSinAdministradorDeConsultas<,>));
+
+        // Un handler a la vez por ámbito (el circuito en Interactive Server): sus DbContext no aguantan dos
+        // operaciones a la vez. Afuera de todo, para que también el rechazo espere su turno.
+        servicios.AddScoped<TurnoDelAmbito>();
+        servicios.TryDecorate(typeof(ICommandHandler<,>), typeof(TurnoDeComandos<,>));
+        servicios.TryDecorate(typeof(IQueryHandler<,>), typeof(TurnoDeConsultas<,>));
     }
 
     /// <summary>

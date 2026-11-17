@@ -105,8 +105,9 @@ public sealed class ValidacionDeFormaTests(Arnes arnes)
 
         var handler = ambito.ServiceProvider.GetRequiredService<IQueryHandler<LeerAnotacion, AnotacionLeida>>();
 
-        // Solo la envuelve el rechazo sin Administrador (AD-22); debajo está el handler real.
-        var rechazo = Assert.IsType<RechazoSinAdministradorDeConsultas<LeerAnotacion, AnotacionLeida>>(handler);
+        // La envuelven el turno del ámbito y el rechazo sin Administrador (AD-22); debajo está el handler real.
+        var turno = Assert.IsType<TurnoDeConsultas<LeerAnotacion, AnotacionLeida>>(handler);
+        var rechazo = Assert.IsType<RechazoSinAdministradorDeConsultas<LeerAnotacion, AnotacionLeida>>(turno.Siguiente);
         Assert.IsType<LeerAnotacionHandler>(rechazo.Siguiente);
     }
 
@@ -123,31 +124,33 @@ public sealed class ValidacionDeFormaTests(Arnes arnes)
         Assert.Contains(typeof(ICommandHandler<Inscribir, Guid>), deComando);
         Assert.Contains(typeof(IQueryHandler<LeerAnotacion, AnotacionLeida>), deConsulta);
 
-        // Comando: rechazo → validador → real. Consulta: rechazo → real. Cada uno una vez.
+        // Comando: turno → rechazo → validador → real. Consulta: turno → rechazo → real. Cada uno una vez.
         foreach (var interfaz in deComando)
         {
             var cadena = Cadena(Assert.Single(ambito.ServiceProvider.GetServices(interfaz))!);
             Assert.True(
-                cadena.Count == 3
-                && EsDe(cadena[0], typeof(RechazoSinAdministradorDeComandos<,>))
-                && EsDe(cadena[1], typeof(ValidacionDeComandos<,>))
-                && !EsDecorador(cadena[2]),
-                $"{interfaz} no tiene la cadena rechazo → validador → real: {Nombres(cadena)}.");
+                cadena.Count == 4
+                && EsDe(cadena[0], typeof(TurnoDeComandos<,>))
+                && EsDe(cadena[1], typeof(RechazoSinAdministradorDeComandos<,>))
+                && EsDe(cadena[2], typeof(ValidacionDeComandos<,>))
+                && !EsDecorador(cadena[3]),
+                $"{interfaz} no tiene la cadena turno → rechazo → validador → real: {Nombres(cadena)}.");
         }
 
         foreach (var interfaz in deConsulta)
         {
             var cadena = Cadena(Assert.Single(ambito.ServiceProvider.GetServices(interfaz))!);
             Assert.True(
-                cadena.Count == 2
-                && EsDe(cadena[0], typeof(RechazoSinAdministradorDeConsultas<,>))
-                && !EsDecorador(cadena[1]),
-                $"{interfaz} no tiene la cadena rechazo → real: {Nombres(cadena)}.");
+                cadena.Count == 3
+                && EsDe(cadena[0], typeof(TurnoDeConsultas<,>))
+                && EsDe(cadena[1], typeof(RechazoSinAdministradorDeConsultas<,>))
+                && !EsDecorador(cadena[2]),
+                $"{interfaz} no tiene la cadena turno → rechazo → real: {Nombres(cadena)}.");
         }
 
         // Y en un comando conocido, lo que queda al fondo es el handler real.
         var anotar = ambito.ServiceProvider.GetRequiredService<ICommandHandler<Anotar, Guid>>();
-        var rechazo = Assert.IsType<RechazoSinAdministradorDeComandos<Anotar, Guid>>(anotar);
+        var rechazo = Assert.IsType<RechazoSinAdministradorDeComandos<Anotar, Guid>>(Assert.IsType<TurnoDeComandos<Anotar, Guid>>(anotar).Siguiente);
         Assert.IsType<AnotarHandler>(Assert.IsType<ValidacionDeComandos<Anotar, Guid>>(rechazo.Siguiente).Siguiente);
     }
 
@@ -156,6 +159,8 @@ public sealed class ValidacionDeFormaTests(Arnes arnes)
         typeof(ValidacionDeComandos<,>),
         typeof(RechazoSinAdministradorDeComandos<,>),
         typeof(RechazoSinAdministradorDeConsultas<,>),
+        typeof(TurnoDeComandos<,>),
+        typeof(TurnoDeConsultas<,>),
     ];
 
     private static bool EsDe(object handler, Type decorador) =>
