@@ -2706,38 +2706,38 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
  * Calendario de atención (entrada 6.1): el mes en una tabla de lunes a domingo; cada día con su número, su marca (como la
  * de la Agenda) y sus Tramos. Con Agenda custom, el tinte vino; sin Tramos, atenuado. Debajo, el editor del día tocado.
  */
-.dsm-calendario {
+.dsm-atencion {
   display: flex;
   flex-direction: column;
   gap: var(--dsm-spacing-5);
   padding-block: var(--dsm-spacing-6);
 }
 
-.dsm-calendario__ayuda {
+.dsm-atencion__ayuda {
   margin: 0;
   color: var(--dsm-muted);
 }
 
-.dsm-calendario__meses {
+.dsm-atencion__meses {
   display: flex;
   align-items: center;
   gap: var(--dsm-spacing-4);
 }
 
-.dsm-calendario__mes-titulo {
+.dsm-atencion__mes-titulo {
   margin: 0;
   min-width: 10ch;
   text-align: center;
 }
 
-.dsm-calendario__tabla {
+.dsm-atencion__tabla {
   width: 100%;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: var(--dsm-spacing-1);
 }
 
-.dsm-calendario__tabla th {
+.dsm-atencion__tabla th {
   font-size: var(--dsm-help-font-size);
   font-weight: 600;
   color: var(--dsm-muted);
@@ -2745,7 +2745,7 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   padding-inline: var(--dsm-spacing-2);
 }
 
-.dsm-calendario__dia {
+.dsm-atencion__dia {
   vertical-align: top;
   height: 6.5rem;
   border: 1px solid var(--dsm-border);
@@ -2754,31 +2754,31 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   padding: 0;
 }
 
-.dsm-calendario__dia--fuera {
+.dsm-atencion__dia--fuera {
   border-color: transparent;
   background: transparent;
 }
 
-.dsm-calendario__dia--custom {
+.dsm-atencion__dia--custom {
   border-left: 4px solid var(--dsm-primary);
   background: var(--dsm-tint);
 }
 
-.dsm-calendario__dia--cerrado .dsm-calendario__numero,
-.dsm-calendario__dia--cerrado .dsm-calendario__marca {
+.dsm-atencion__dia--cerrado .dsm-atencion__numero,
+.dsm-atencion__dia--cerrado .dsm-atencion__marca {
   opacity: 0.7;
 }
 
-.dsm-calendario__dia--hoy {
+.dsm-atencion__dia--hoy {
   outline: 2px solid var(--dsm-primary);
 }
 
-.dsm-calendario__dia--elegido {
+.dsm-atencion__dia--elegido {
   box-shadow: 0 0 0 3px var(--dsm-primary-strong);
 }
 
-.dsm-calendario__abrir,
-.dsm-calendario__pasado {
+.dsm-atencion__abrir,
+.dsm-atencion__pasado {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2793,42 +2793,42 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   font: inherit;
 }
 
-.dsm-calendario__abrir {
+.dsm-atencion__abrir {
   cursor: pointer;
 }
 
-.dsm-calendario__abrir:hover {
+.dsm-atencion__abrir:hover {
   background: var(--dsm-field-readonly);
 }
 
-.dsm-calendario__pasado {
+.dsm-atencion__pasado {
   color: var(--dsm-past-day);
 }
 
-.dsm-calendario__numero {
+.dsm-atencion__numero {
   font-weight: 700;
 }
 
-.dsm-calendario__marca,
-.dsm-calendario__horas {
+.dsm-atencion__marca,
+.dsm-atencion__horas {
   font-size: var(--dsm-help-font-size);
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
-.dsm-calendario__marca {
+.dsm-atencion__marca {
   font-weight: 600;
   color: var(--dsm-primary-strong);
 }
 
-.dsm-calendario__editor {
+.dsm-atencion__editor {
   display: flex;
   flex-direction: column;
   gap: var(--dsm-spacing-4);
   max-width: 36rem;
 }
 
-.dsm-calendario__tramos {
+.dsm-atencion__tramos {
   display: flex;
   flex-direction: column;
   gap: var(--dsm-spacing-3);
@@ -2837,43 +2837,43 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   margin: 0;
 }
 
-.dsm-calendario__tramo {
+.dsm-atencion__tramo {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--dsm-spacing-3);
 }
 
-.dsm-calendario__tramo .dsm-campo__error {
+.dsm-atencion__tramo .dsm-campo__error {
   flex-basis: 100%;
 }
 
-.dsm-calendario__acciones {
+.dsm-atencion__acciones {
   display: flex;
   gap: var(--dsm-spacing-3);
 }
 
 @media (max-width: 640px) {
-  .dsm-calendario__dia {
+  .dsm-atencion__dia {
     height: 4.5rem;
   }
 
-  .dsm-calendario__horas {
+  .dsm-atencion__horas {
     display: none;
   }
 }
 
 /* Los tres tipos de día con Agenda custom se distinguen por estilo además de por texto (entrada 6.3). */
-.dsm-calendario__dia--no-se-atiende {
+.dsm-atencion__dia--no-se-atiende {
   border-left-color: var(--dsm-muted);
   background: var(--dsm-field-readonly);
 }
 
-.dsm-calendario__dia--especial {
+.dsm-atencion__dia--especial {
   border-left-style: dashed;
 }
 
-.dsm-calendario__dia--abierto {
+.dsm-atencion__dia--abierto {
   border-left-width: 6px;
   background: var(--dsm-surface);
   box-shadow: inset 0 0 0 1px var(--dsm-primary);

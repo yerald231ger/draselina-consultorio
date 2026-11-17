@@ -41,7 +41,7 @@
                     {
                         var t = i;
                         var tramo = dia.Tramos[t];
-                        <div class="dsm-calendario__tramo" data-tramo="@t">
+                        <div class="dsm-atencion__tramo" data-tramo="@t">
                             <div class="dsm-campo">
                                 <label for="@($"{id}-inicio-{t}")" class="dsm-campo__etiqueta">Inicio</label>
                                 <input id="@($"{id}-inicio-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm" />
@@ -120,7 +120,7 @@
                 <div class="dsm-aviso dsm-semana-tipo__error" role="alert"><p class="dsm-aviso__mensaje">@mensaje</p></div>
             }
 
-            <div class="dsm-calendario__acciones">
+            <div class="dsm-atencion__acciones">
                 <button type="submit" class="btn btn-primary dsm-accion-principal dsm-semana-tipo__guardar" disabled="@_ocupado">
                     @(_revision is { Citas.Count: > 0 } ? GuardarDeTodosModos : "Guardar semana tipo")
                 </button>

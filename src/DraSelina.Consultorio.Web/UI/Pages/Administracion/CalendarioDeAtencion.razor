@@ -35,19 +35,19 @@
 
 <PageTitle>Calendario de atención · Administración</PageTitle>
 
-<section class="dsm-contenedor dsm-calendario" aria-labelledby="calendario-de-atencion">
+<section class="dsm-contenedor dsm-atencion" aria-labelledby="calendario-de-atencion">
     <h1 id="calendario-de-atencion" class="dsm-titulo-de-estado">Calendario de atención</h1>
-    <p class="dsm-cuerpo dsm-calendario__ayuda">@Ayuda</p>
+    <p class="dsm-cuerpo dsm-atencion__ayuda">@Ayuda</p>
 
-    <div class="dsm-calendario__meses">
+    <div class="dsm-atencion__meses">
         <a class="dsm-agenda__control" href="@Direccion(_mes.AddMonths(-1))" aria-label="Mes anterior">‹</a>
-        <h2 class="dsm-seccion dsm-calendario__mes-titulo">@FormatoDeCita.MesYAnio(_mes)</h2>
+        <h2 class="dsm-seccion dsm-atencion__mes-titulo">@FormatoDeCita.MesYAnio(_mes)</h2>
         <a class="dsm-agenda__control" href="@Direccion(_mes.AddMonths(1))" aria-label="Mes siguiente">›</a>
     </div>
 
     @if (_guardado is { } guardado)
     {
-        <p class="dsm-aviso dsm-calendario__guardado" role="status">@guardado</p>
+        <p class="dsm-aviso dsm-atencion__guardado" role="status">@guardado</p>
     }
 
     @if (_fallo)
@@ -58,7 +58,7 @@
     }
     else if (_dias is { } dias)
     {
-        <table class="dsm-calendario__tabla">
+        <table class="dsm-atencion__tabla">
             <caption class="visually-hidden">@FormatoDeCita.MesYAnio(_mes)</caption>
             <thead>
                 <tr>
@@ -76,21 +76,21 @@
                         {
                             @if (dia is null)
                             {
-                                <td class="dsm-calendario__dia dsm-calendario__dia--fuera"></td>
+                                <td class="dsm-atencion__dia dsm-atencion__dia--fuera"></td>
                             }
                             else
                             {
                                 <td class="@ClaseDelDia(dia)" data-fecha="@Iso(dia.Fecha)">
                                     @if (dia.Fecha >= _hoy)
                                     {
-                                        <button type="button" class="dsm-calendario__abrir" @onclick="() => Abrir(dia)"
+                                        <button type="button" class="dsm-atencion__abrir" @onclick="() => Abrir(dia)"
                                                 aria-label="@Etiqueta(dia)" aria-pressed="@(_seleccionada?.Fecha == dia.Fecha ? "true" : "false")">
                                             @ContenidoDelDia(dia)
                                         </button>
                                     }
                                     else
                                     {
-                                        <div class="dsm-calendario__pasado">@ContenidoDelDia(dia)</div>
+                                        <div class="dsm-atencion__pasado">@ContenidoDelDia(dia)</div>
                                     }
                                 </td>
                             }
@@ -105,38 +105,38 @@
     {
         @if (_quitando)
         {
-            <section class="dsm-calendario__editor dsm-calendario__quitar-panel" aria-labelledby="quitar-del-dia">
+            <section class="dsm-atencion__editor dsm-atencion__quitar-panel" aria-labelledby="quitar-del-dia">
                 <h2 id="quitar-del-dia" class="dsm-seccion">Quitar el horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
                 @if (_fuera is { } alQuitar)
                 {
-                    <p class="dsm-cuerpo dsm-calendario__vuelve">@VuelveA(alQuitar.Tramos)</p>
+                    <p class="dsm-cuerpo dsm-atencion__vuelve">@VuelveA(alQuitar.Tramos)</p>
                     @if (alQuitar.Citas.Count > 0)
                     {
                         <ListaDeCitasFuera Citas="alQuitar.Citas" Elecciones="_elecciones" FaltaElegir="_faltaElegir" AlCambiar="AlElegir" />
                     }
                 }
                 @MensajeDeError()
-                <div class="dsm-calendario__acciones">
-                    <button type="button" class="btn btn-primary dsm-accion-principal dsm-calendario__confirmar-quitar"
+                <div class="dsm-atencion__acciones">
+                    <button type="button" class="btn btn-primary dsm-accion-principal dsm-atencion__confirmar-quitar"
                             disabled="@(_ocupado || _fuera is null)" @onclick="QuitarAsync">Quitar horario propio</button>
-                    <button type="button" class="btn dsm-boton-neutro dsm-calendario__volver" @onclick="VolverAlEditor">Volver</button>
+                    <button type="button" class="btn dsm-boton-neutro dsm-atencion__volver" @onclick="VolverAlEditor">Volver</button>
                 </div>
             </section>
         }
         else
         {
-            <form class="dsm-formulario dsm-calendario__editor" @onsubmit="GuardarAsync" aria-labelledby="editor-del-dia">
+            <form class="dsm-formulario dsm-atencion__editor" @onsubmit="GuardarAsync" aria-labelledby="editor-del-dia">
                 <h2 id="editor-del-dia" class="dsm-seccion">Horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
                 <p class="dsm-cuerpo">Hoy vale: @Descripcion(seleccionada)</p>
 
-                <fieldset class="dsm-calendario__tramos">
+                <fieldset class="dsm-atencion__tramos">
                     <legend class="dsm-campo__etiqueta">Tramos</legend>
                     @for (var i = 0; i < _comando.Tramos.Count; i++)
                     {
                         var indice = i;
                         var tramo = _comando.Tramos[indice];
                         var propiedad = GuardarAgendaCustom.PropiedadDelTramo(indice);
-                        <div class="dsm-calendario__tramo" data-tramo="@indice">
+                        <div class="dsm-atencion__tramo" data-tramo="@indice">
                             <div class="dsm-campo">
                                 <label for="inicio-@indice" class="dsm-campo__etiqueta">Inicio</label>
                                 <input id="inicio-@indice" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm"
@@ -147,7 +147,7 @@
                                 <input id="fin-@indice" type="time" class="dsm-campo__control" @bind="tramo.Fin" @bind:format="HH:mm"
                                        aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
                             </div>
-                            <button type="button" class="btn dsm-boton-neutro dsm-calendario__quitar" @onclick="() => Quitar(indice)">
+                            <button type="button" class="btn dsm-boton-neutro dsm-atencion__quitar" @onclick="() => Quitar(indice)">
                                 Quitar<span class="visually-hidden"> el tramo @(indice + 1)</span>
                             </button>
                             @ErroresDe(propiedad)
@@ -155,9 +155,9 @@
                     }
                     @if (_comando.Tramos.Count == 0)
                     {
-                        <p class="dsm-cuerpo dsm-calendario__sin-tramos">@SinTramos</p>
+                        <p class="dsm-cuerpo dsm-atencion__sin-tramos">@SinTramos</p>
                     }
-                    <button type="button" class="btn dsm-boton-neutro dsm-calendario__agregar" @onclick="Agregar">Agregar tramo</button>
+                    <button type="button" class="btn dsm-boton-neutro dsm-atencion__agregar" @onclick="Agregar">Agregar tramo</button>
                 </fieldset>
 
                 <div class="dsm-campo">
@@ -174,11 +174,11 @@
 
                 @MensajeDeError()
 
-                <div class="dsm-calendario__acciones">
+                <div class="dsm-atencion__acciones">
                     <button type="submit" class="btn btn-primary dsm-accion-principal" disabled="@_ocupado">Guardar</button>
                     @if (seleccionada.ConCustom)
                     {
-                        <button type="button" class="btn dsm-boton-neutro dsm-calendario__quitar-custom" disabled="@_ocupado"
+                        <button type="button" class="btn dsm-boton-neutro dsm-atencion__quitar-custom" disabled="@_ocupado"
                                 @onclick="EmpezarAQuitarAsync">Quitar horario propio</button>
                     }
                     <button type="button" class="btn dsm-boton-neutro" @onclick="Cerrar">Cancelar</button>
@@ -242,30 +242,30 @@
     private static string Iso(DateOnly fecha) => fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     private string ClaseDelDia(DiaDeAtencion dia) =>
-        "dsm-calendario__dia"
-        + (dia.Tramos.Count == 0 ? " dsm-calendario__dia--cerrado" : "")
-        + (dia.ConCustom ? " dsm-calendario__dia--custom" : "")
+        "dsm-atencion__dia"
+        + (dia.Tramos.Count == 0 ? " dsm-atencion__dia--cerrado" : "")
+        + (dia.ConCustom ? " dsm-atencion__dia--custom" : "")
         + dia.Tipo switch
         {
-            TipoDeDia.CustomSinAtencion => " dsm-calendario__dia--no-se-atiende",
-            TipoDeDia.HorarioEspecial => " dsm-calendario__dia--especial",
-            TipoDeDia.DiaAbierto => " dsm-calendario__dia--abierto",
+            TipoDeDia.CustomSinAtencion => " dsm-atencion__dia--no-se-atiende",
+            TipoDeDia.HorarioEspecial => " dsm-atencion__dia--especial",
+            TipoDeDia.DiaAbierto => " dsm-atencion__dia--abierto",
             _ => "",
         }
-        + (dia.Fecha == _hoy ? " dsm-calendario__dia--hoy" : "")
-        + (dia.Fecha < _hoy ? " dsm-calendario__dia--pasado" : "")
-        + (_seleccionada?.Fecha == dia.Fecha ? " dsm-calendario__dia--elegido" : "");
+        + (dia.Fecha == _hoy ? " dsm-atencion__dia--hoy" : "")
+        + (dia.Fecha < _hoy ? " dsm-atencion__dia--pasado" : "")
+        + (_seleccionada?.Fecha == dia.Fecha ? " dsm-atencion__dia--elegido" : "");
 
     private static RenderFragment ContenidoDelDia(DiaDeAtencion dia) => __builder =>
     {
-        <span class="dsm-calendario__numero" aria-hidden="true">@dia.Fecha.Day</span>
+        <span class="dsm-atencion__numero" aria-hidden="true">@dia.Fecha.Day</span>
         @if (Marca(dia) is { } marca)
         {
-            <span class="dsm-calendario__marca" aria-hidden="true">@marca</span>
+            <span class="dsm-atencion__marca" aria-hidden="true">@marca</span>
         }
         @if (dia.Tramos.Count > 0)
         {
-            <span class="dsm-calendario__horas" aria-hidden="true">@Tramos(dia.Tramos)</span>
+            <span class="dsm-atencion__horas" aria-hidden="true">@Tramos(dia.Tramos)</span>
         }
     };
 
@@ -547,7 +547,7 @@
     private RenderFragment? MensajeDeError() => MensajeGeneral() is { } mensaje
         ? __builder =>
         {
-            <div class="dsm-aviso dsm-calendario__error" role="alert">
+            <div class="dsm-aviso dsm-atencion__error" role="alert">
                 <p class="dsm-aviso__mensaje">@mensaje</p>
             </div>
         }

@@ -45,7 +45,7 @@
                     <p class="dsm-campo__error dsm-tipos__fallo" role="alert">@fallo</p>
                 }
 
-                <div class="dsm-calendario__acciones">
+                <div class="dsm-atencion__acciones">
                     <button type="submit" class="btn btn-primary dsm-accion-principal dsm-tipos__guardar" disabled="@_ocupado">Guardar</button>
                     @if (edicion.Confirmando)
                     {
@@ -67,7 +67,7 @@
             <h3 id="tipo-nuevo" class="dsm-campo__etiqueta">Agregar tipo de consulta</h3>
             @Campos(_nuevo)
             <AvisoDeSeccion Resultado="_nuevo.Resultado" Guardado="_nuevo.Guardado" />
-            <div class="dsm-calendario__acciones">
+            <div class="dsm-atencion__acciones">
                 <button type="submit" class="btn btn-primary dsm-accion-principal dsm-tipos__agregar" disabled="@_ocupado">Agregar</button>
             </div>
         </form>
