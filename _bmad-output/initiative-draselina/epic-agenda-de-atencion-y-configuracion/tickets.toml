@@ -37,10 +37,10 @@ risk = "medium"
 id = 4
 type = "story"
 title = "Cambiar la semana tipo, en el dominio y el caso de uso"
-description = "Según la Decision de semana completa: una consulta previa (IRequiereAdministrador) lista las Citas futuras Agendadas que quedan fuera en fechas sin custom, con el servicio de la entrada 1, y las fechas con custom que no cambian (RN-7); el comando CambiarAgendaBase recibe los siete días, llama a CambiarBase por cada día que cambió con la duración del Tipo de visita activo más corto (INV-B5), no cancela ninguna Cita (RN-6), no guarda nada si un día no vale, levanta AgendaBaseFueCambiada de la entrada 2 y deja una bitácora AgendaBase/Cambiada por día cambiado; [ASSUMPTION: no toma candado de fecha, AD-26 solo lo pide para la custom]."
+description = "Según la Decision de semana completa: una consulta previa (IRequiereAdministrador) lista las Citas futuras Agendadas que quedan fuera en fechas sin custom, con el servicio de la entrada 1, y las fechas con custom que no cambian (RN-7); el comando CambiarAgendaBase recibe los siete días, llama a CambiarBase por cada día que cambió con la duración del Tipo de visita activo más corto (INV-B5), no cancela ninguna Cita (RN-6), no guarda nada si un día no vale y deja una bitácora AgendaBase/Cambiada por día cambiado, sin evento (Decision de la 6.2: nadie escucha AgendaBaseFueCambiada, T-23); [ASSUMPTION: no toma candado de fecha, AD-26 solo lo pide para la custom]."
 verify = "Pruebas de dominio e integración: pasar lunes, miércoles y viernes a 15:30–17:00 lista la Cita de un lunes a las 17:30 y la fecha con custom, guarda sin cancelarla y deja tres entradas de bitácora; un Tramo encimado en un día no guarda ninguno; la siguiente consulta de HorariosLibres usa la base nueva; sin sesión vuelve No autorizado."
 covers = ["CAP-10", "CAP-17"]
-after = [1, 2]
+after = [1]
 hitl = false
 risk = "medium"
 
