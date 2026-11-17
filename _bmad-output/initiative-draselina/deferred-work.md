@@ -14,3 +14,15 @@ Deuda técnica que Gerardo decidió dejar para el final de todas las épicas.
 - source_plan: `_bmad-output/initiative-draselina/epic-notificaciones/story-refactor-sweep-plan.md`
   summary: `HorariosLibresHandler` lee la Agenda de atención por `IAgendaAtencion`, documentado como puerto de escritura.
   evidence: Visto en la revisión de la entrada 4.8 (2026-11-09). Es de la épica 2; la calculadora necesita la `AgendaAtencion` entera, así que el puerto `ITramosDeLaFecha` de la 4.8 no le sirve. Al retomarlo: un puerto de lectura de la agenda completa, o documentar que `IAgendaAtencion` también sirve lecturas sin rastrear.
+- source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
+  summary: En Tus datos el Motivo de consulta es obligatorio (INV-C11) pero la etiqueta no lo indica.
+  evidence: Visto en la segunda revisión del recorrido de la entrada 5.8 (sesión consultorio-tester, 2026-11-16). Es de la épica 2.
+- source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
+  summary: El calendario de Día y hora en /reservar se encima a unos 800 px de ancho ("LUMAMIJUVISADOM").
+  evidence: Visto en la segunda revisión del recorrido de la entrada 5.8 (2026-11-16). Es de la épica 2; las columnas del calendario no se ajustan en ese ancho.
+- source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
+  summary: Un sábado sin Tramos en /reservar dice que no tiene horarios para ese tipo de consulta, cuando el día no se atiende.
+  evidence: Visto en la segunda revisión del recorrido de la entrada 5.8 (2026-11-16). Es de la épica 2; texto de EXPERIENCE.md por decidir.
+- source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
+  summary: Los días del calendario de /reservar no tienen etiqueta accesible, o la tienen cortada.
+  evidence: Visto en la segunda revisión del recorrido de la entrada 5.8 (2026-11-16) con el árbol de accesibilidad. Es de la épica 2.

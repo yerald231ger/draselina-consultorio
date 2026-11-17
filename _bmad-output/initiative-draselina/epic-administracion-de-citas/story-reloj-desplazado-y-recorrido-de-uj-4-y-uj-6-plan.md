@@ -3,7 +3,7 @@ title: 'Reloj desplazado y recorrido de UJ-4 y UJ-6'
 type: 'chore'
 ticket: '8'
 created: '2026-11-10'
-status: 'in-progress'
+status: 'built'
 baseline_revision: 'fdb9be71dcdb9759cbcd5eb49e0190f70f70dac9'
 route: 'oneshot'
 route_source: 'auto'
@@ -72,11 +72,33 @@ Ruta oneshot sin cambios de código. Fechas de la guía con hoy martes 10 de nov
 
 ## Resultado del recorrido
 
-Lo llena Gerardo: qué aprueba y qué pide cambiar (cada cambio se vuelve ajuste o entrada nueva).
+Dos recorridos con el AppHost: Gerardo (2026-11-16, pasos 2, 3, 6 y 7) y una segunda revisión de la sesión `consultorio-tester` (2026-11-16, pasos 1 a 9, con Pacientes nuevos). Decisión de Gerardo (2026-11-16): lo de esta épica va a la entrada 10, antes del Refactor sweep; lo del sitio público, a `deferred-work.md`; dos puntos quedan como Open question en la épica.
 
-- 
+**Aprobado**
+- Paso 1, reserva en línea con su confirmación y archivo de calendario.
+- Paso 2, entrar con contraseña y app autenticadora, y la navegación.
+- Paso 3, UJ-4: "Este paciente ya existe." con su Próxima Cita; la Cita fuera de la rejilla se guarda y se vuelve a la Agenda de ese día; llega la confirmación (con el correo guardado aunque no se escriba).
+- Paso 4, UJ-6: aviso de día sin atención, error en la Nota sin ella, la Cita del sábado con "Fuera de horario", "sin correo" y su nota en la semana; `/reservar` no ofrece ese sábado.
+- Paso 5, la Cita reservada en línea aparece en la Agenda abierta en unos 11 segundos.
+- Paso 6, No se presentó: Atendida, solo "No se presentó", confirmación en la página, estado final sin botones, vista de teléfono sin desplazamiento horizontal.
+- Paso 7, Cancelar por el Consultorio: confirmación con la disculpa por correo, la disculpa en Mailpit con "Elegir otro horario"; sin correo, "avísale a mano", y "No, regresar" no cancela.
+- Paso 8, Pacientes: búsqueda sin mayúsculas ni acentos, una sola Laura, historial con resumen y enlaces, "Volver a Pacientes" conserva la búsqueda y la dirección nunca lleva `?q=`.
+
+**A la entrada 10 (ajustes del recorrido)**
+1. Falla: una reserva desde `/reservar` con la sesión de administración abierta en el mismo navegador queda en la bitácora y en `CitaAgendada` a nombre del Administrador; AD-22 pide Paciente para la reserva pública y el Enlace de gestión. `ActorDelHost` da Administrador a cualquier petición autenticada.
+2. En Pacientes, la lista completa se pinta un instante antes de la filtrada al volver.
+3. En el Detalle, la fecha y la hora salen en el encabezado y otra vez en los campos Fecha y Hora.
+4. En Agendar cita, el error de un campo se queda después de corregir el campo (Gerardo vio "Falta el tipo de consulta." con el tipo ya elegido).
+5. Mayúsculas: "por el consultorio" en el chip y "por el Consultorio" en la bitácora.
+6. Accesibilidad de administración: la casilla de Consentimiento se anuncia como "True" y "Mostrar canceladas" como "on".
+
+**A `deferred-work.md` (sitio público, épica 2)**: el Motivo obligatorio sin indicarlo en la etiqueta, el calendario de `/reservar` encimado a unos 800 px, el texto del sábado en `/reservar` y los días del calendario sin etiqueta accesible. La confirmación en `/reservar/datos` ya estaba anotada.
+
+**Open question en la épica**: "Atendida" desde el inicio mientras la Cita sigue en curso (RN-19 y RN-31 lo definen así), y "aviso 2026-11-borrador" visible en el Detalle mientras el aviso de privacidad no esté revisado.
+
+**Sin cambio**: dos Pacientes con el mismo nombre y distinto celular son dos Pacientes (RN-25); con el reloj adelantado salen de golpe los envíos programados que ya tocaban; sin mensaje de éxito al guardar en administración, porque se vuelve a la Agenda con la Cita visible.
 
 ## Verification
 
 **Manual checks:**
-- Los pasos 1 a 9 de la guía, hechos por Gerardo con el AppHost.
+- Los pasos 1 a 9 de la guía, hechos con el AppHost por Gerardo y por la sesión `consultorio-tester` (2026-11-16).

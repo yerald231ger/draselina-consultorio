@@ -89,12 +89,23 @@ hitl = true
 risk = "low"
 
 [[entry]]
+id = 10
+type = "story"
+title = "Ajustes del recorrido de UJ-4 y UJ-6"
+description = "Lo que el recorrido de la entrada 8 pidió cambiar en la administración (su plan, Resultado del recorrido): ActorDelHost da Administrador solo con sesión y en el área /admin, así la reserva pública y el Enlace de gestión quedan a nombre del Paciente en la bitácora y en los eventos (AD-22); Pacientes no pinta la lista completa antes de la filtrada al volver; el Detalle no repite fecha y hora en sus campos; en Agendar cita el error de un campo desaparece al cambiar ese campo; la misma mayúscula en \"por el Consultorio\" en chip y bitácora; la casilla de Consentimiento y \"Mostrar canceladas\" se anuncian bien a un lector de pantalla."
+verify = "Pruebas de integración: con la sesión de administración en el mismo cliente, una reserva en /reservar y una cancelación por el Enlace de gestión quedan con actor Paciente en la bitácora y en el evento; pruebas bUnit de cada ajuste de pantalla; el recorrido de la entrada 8 ya no muestra esos puntos."
+covers = ["CAP-12", "CAP-13", "CAP-15", "CAP-17"]
+after = [8]
+hitl = false
+risk = "medium"
+
+[[entry]]
 id = 9
 type = "story"
 title = "Refactor sweep"
 description = "Limpieza de lo aplazado en los planes y revisiones de la épica; su alcance se fija al empezar."
 verify = "Las pruebas de la épica siguen pasando y los pendientes de revisión anotados quedan cerrados o registrados."
 covers = []
-after = [1, 2, 3, 4, 5, 6, 7, 8]
+after = [1, 2, 3, 4, 5, 6, 7, 8, 10]
 hitl = false
 risk = "low"
