@@ -1,0 +1,34 @@
+@using DraSelina.Consultorio.Kernel
+
+@*
+    El aviso al pie de una sección de Configuración (entrada 6.6): "Se guardó." tras guardar, o el error que no es de un
+    campo (sin sesión, o no se pudo guardar). Los errores de cada campo los pinta la sección bajo su campo.
+*@
+
+@if (Guardado)
+{
+    <p class="dsm-aviso dsm-seccion-de-configuracion__guardado" role="status">@Guardada</p>
+}
+else if (Mensaje() is { } mensaje)
+{
+    <div class="dsm-aviso dsm-seccion-de-configuracion__error" role="alert"><p class="dsm-aviso__mensaje">@mensaje</p></div>
+}
+
+@code {
+    public const string Guardada = "Se guardó.";
+    public const string SinSesion = "Tu sesión terminó. Vuelve a entrar.";
+    public const string NoSeGuardo = "No se pudo guardar. Intenta de nuevo.";
+
+    [Parameter]
+    public Resultado? Resultado { get; set; }
+
+    [Parameter]
+    public bool Guardado { get; set; }
+
+    private string? Mensaje() => Resultado switch
+    {
+        null or { EsExito: true } or { Forma: FormaDeResultado.Invalido } => null,
+        { Forma: FormaDeResultado.NoAutorizado } => SinSesion,
+        _ => NoSeGuardo,
+    };
+}

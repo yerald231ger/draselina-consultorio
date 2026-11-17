@@ -1,0 +1,159 @@
+@implements IDisposable
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@inject IQueryHandler<ReglasDeReservaVigentes, ReglasDeReservaValores> Consulta
+@inject ICommandHandler<CambiarReglasDeReserva, ReglasDeReservaValores> Cambiar
+@inject ILogger<SeccionReglasDeReserva> Registro
+
+@*
+    Las reglas de reserva en Configuración (CAP-16, FR-19; entrada 6.6): anticipación mínima, ventana, umbral de
+    cancelación tardía y tope semanal, de Agenda (AD-14). Guardar manda CambiarReglasDeReserva; surten efecto en la
+    siguiente reserva. Los errores van bajo cada campo. Textos `[ASSUMPTION: texto]`.
+*@
+
+<section class="dsm-seccion-de-configuracion" aria-labelledby="reglas-de-reserva">
+    <h2 id="reglas-de-reserva" class="dsm-seccion">Reglas de reserva</h2>
+
+    @if (_fallo)
+    {
+        <div class="dsm-aviso" role="alert"><p class="dsm-aviso__mensaje">@NoSeCargo</p></div>
+    }
+    else if (_cargada)
+    {
+        <form class="dsm-formulario dsm-seccion-de-configuracion__formulario" @onsubmit="GuardarAsync">
+            <div class="dsm-campo">
+                <label for="AnticipacionMinimaDias" class="dsm-campo__etiqueta">Anticipación mínima (días)</label>
+                <input id="AnticipacionMinimaDias" type="number" inputmode="numeric" class="dsm-campo__control" @bind="_comando.AnticipacionMinimaDias"
+                       aria-invalid="@Invalido(nameof(CambiarReglasDeReserva.AnticipacionMinimaDias))"
+                       aria-describedby="@DescritoPor(nameof(CambiarReglasDeReserva.AnticipacionMinimaDias))" />
+                <div id="ayuda-AnticipacionMinimaDias" class="dsm-campo__ayuda">Desde cuántos días después de hoy se reserva en línea: 1 es desde mañana; 0, el mismo día.</div>
+                @ErroresDe(nameof(CambiarReglasDeReserva.AnticipacionMinimaDias))
+            </div>
+
+            <div class="dsm-campo">
+                <label for="VentanaMeses" class="dsm-campo__etiqueta">Ventana de reserva (meses)</label>
+                <input id="VentanaMeses" type="number" inputmode="numeric" class="dsm-campo__control" @bind="_comando.VentanaMeses"
+                       aria-invalid="@Invalido(nameof(CambiarReglasDeReserva.VentanaMeses))"
+                       aria-describedby="@DescritoPor(nameof(CambiarReglasDeReserva.VentanaMeses))" />
+                <div id="ayuda-VentanaMeses" class="dsm-campo__ayuda">Hasta cuántos meses hacia adelante se reserva en línea.</div>
+                @ErroresDe(nameof(CambiarReglasDeReserva.VentanaMeses))
+            </div>
+
+            <div class="dsm-campo">
+                <label for="UmbralCancelacionTardiaMin" class="dsm-campo__etiqueta">Cancelación tardía (minutos antes)</label>
+                <input id="UmbralCancelacionTardiaMin" type="number" inputmode="numeric" class="dsm-campo__control" @bind="_comando.UmbralCancelacionTardiaMin"
+                       aria-invalid="@Invalido(nameof(CambiarReglasDeReserva.UmbralCancelacionTardiaMin))"
+                       aria-describedby="@DescritoPor(nameof(CambiarReglasDeReserva.UmbralCancelacionTardiaMin))" />
+                <div id="ayuda-UmbralCancelacionTardiaMin" class="dsm-campo__ayuda">Con menos tiempo que esto antes de la cita, cancelar cuenta como tardío y ya no se puede reprogramar.</div>
+                @ErroresDe(nameof(CambiarReglasDeReserva.UmbralCancelacionTardiaMin))
+            </div>
+
+            <div class="dsm-campo">
+                <label for="TopeSemanalPorTelefono" class="dsm-campo__etiqueta">Tope semanal por teléfono (citas)</label>
+                <input id="TopeSemanalPorTelefono" type="number" inputmode="numeric" class="dsm-campo__control" @bind="_comando.TopeSemanalPorTelefono"
+                       aria-invalid="@Invalido(nameof(CambiarReglasDeReserva.TopeSemanalPorTelefono))"
+                       aria-describedby="@DescritoPor(nameof(CambiarReglasDeReserva.TopeSemanalPorTelefono))" />
+                <div id="ayuda-TopeSemanalPorTelefono" class="dsm-campo__ayuda">Cuántas citas en línea puede tener un mismo celular en una semana.</div>
+                @ErroresDe(nameof(CambiarReglasDeReserva.TopeSemanalPorTelefono))
+            </div>
+
+            <AvisoDeSeccion Resultado="_resultado" Guardado="_guardado" />
+
+            <div class="dsm-calendario__acciones">
+                <button type="submit" class="btn btn-primary dsm-accion-principal dsm-reglas__guardar" disabled="@_ocupado">Guardar reglas</button>
+            </div>
+        </form>
+    }
+</section>
+
+@code {
+    public const string NoSeCargo = "No se pudieron cargar las reglas de reserva. Recarga la página.";
+
+    private readonly CancellationTokenSource _cierre = new();
+    private CambiarReglasDeReserva _comando = new();
+    private bool _cargada;
+    private bool _fallo;
+    private bool _ocupado;
+    private bool _guardado;
+    private Resultado? _resultado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var resultado = await Consulta.HandleAsync(new ReglasDeReservaVigentes(), _cierre.Token);
+            _fallo = !resultado.EsExito;
+            if (resultado.EsExito)
+            {
+                Llenar(resultado.Valor);
+                _cargada = true;
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "Las reglas de reserva no se pudieron cargar");
+            _fallo = true;
+        }
+    }
+
+    private void Llenar(ReglasDeReservaValores valores) => _comando = new CambiarReglasDeReserva
+    {
+        AnticipacionMinimaDias = valores.AnticipacionMinimaDias,
+        VentanaMeses = valores.VentanaMeses,
+        UmbralCancelacionTardiaMin = valores.UmbralCancelacionTardiaMin,
+        TopeSemanalPorTelefono = valores.TopeSemanalPorTelefono,
+    };
+
+    private async Task GuardarAsync()
+    {
+        if (_ocupado)
+        {
+            return;
+        }
+
+        _ocupado = true;
+        _guardado = false;
+        try
+        {
+            var resultado = await Cambiar.HandleAsync(_comando, _cierre.Token);
+            _resultado = resultado.EsExito ? null : resultado;
+            if (resultado.EsExito)
+            {
+                Llenar(resultado.Valor);
+                _guardado = true;
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "Las reglas de reserva no se pudieron guardar");
+            _resultado = Resultado.Fallo("configuracion.error");
+        }
+        finally
+        {
+            _ocupado = false;
+        }
+    }
+
+    private IReadOnlyList<string> Errores(string propiedad) =>
+        _resultado?.Errores.TryGetValue(propiedad, out var errores) == true ? errores : [];
+
+    private string? Invalido(string propiedad) => Errores(propiedad).Count > 0 ? "true" : null;
+
+    private string DescritoPor(string propiedad) =>
+        Errores(propiedad).Count > 0 ? $"ayuda-{propiedad} error-{propiedad}" : $"ayuda-{propiedad}";
+
+    private RenderFragment? ErroresDe(string propiedad) => Errores(propiedad) is { Count: > 0 } errores
+        ? __builder =>
+        {
+            <p id="error-@propiedad" class="dsm-campo__error">@string.Join(" ", errores)</p>
+        }
+        : null;
+
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

@@ -60,6 +60,7 @@ public static class Registro
             .AddScoped<ICommandHandler<GuardarAgendaCustom, AgendaCustomGuardada>, GuardarAgendaCustomHandler>()
             .AddScoped<ICommandHandler<BorrarAgendaCustom, AgendaCustomBorrada>, BorrarAgendaCustomHandler>()
             .AddScoped<ICommandHandler<CambiarAgendaBase, AgendaBaseCambiada>, CambiarAgendaBaseHandler>()
+            .AddScoped<ICommandHandler<CambiarReglasDeReserva, ReglasDeReservaValores>, CambiarReglasDeReservaHandler>()
             .AddScoped<IEventHandler<AgendaCustomFueRegistrada>, CancelarCitasElegidas>()
             .AddScoped<IEventHandler<AgendaCustomFueCambiada>, CancelarCitasElegidas>()
             .AddScoped<IEventHandler<AgendaCustomFueBorrada>, CancelarCitasElegidas>()
@@ -77,7 +78,8 @@ public static class Registro
             .AddScoped<IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>>, MesDeAtencionHandler>()
             .AddScoped<IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>, CitasFueraDelHorarioHandler>()
             .AddScoped<IQueryHandler<CambioDeAgendaBase, CambioDeBaseRevisado>, CambioDeAgendaBaseHandler>()
-            .AddScoped<IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>>, SemanaTipoHandler>();
+            .AddScoped<IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>>, SemanaTipoHandler>()
+            .AddScoped<IQueryHandler<ReglasDeReservaVigentes, ReglasDeReservaValores>, ReglasDeReservaVigentesHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

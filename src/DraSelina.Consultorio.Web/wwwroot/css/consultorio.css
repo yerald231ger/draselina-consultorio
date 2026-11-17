@@ -3019,3 +3019,17 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
 .dsm-semana-tipo__fechas {
   margin: var(--dsm-spacing-3) 0 0;
 }
+
+/* Secciones simples de Configuración: reglas de reserva y avisos por correo (entrada 6.6). */
+.dsm-seccion-de-configuracion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  max-width: 44rem;
+}
+
+.dsm-seccion-de-configuracion__formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+}

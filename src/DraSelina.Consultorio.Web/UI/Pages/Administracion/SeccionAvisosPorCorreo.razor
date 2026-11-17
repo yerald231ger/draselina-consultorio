@@ -1,0 +1,159 @@
+@implements IDisposable
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.Notificaciones.Contracts
+@inject IQueryHandler<ConfiguracionDeEnvioVigente, ConfiguracionDeEnvioValores> Consulta
+@inject ICommandHandler<CambiarConfiguracionDeEnvio, ConfiguracionDeEnvioValores> Cambiar
+@inject ILogger<SeccionAvisosPorCorreo> Registro
+
+@*
+    Los avisos por correo en Configuración (CAP-16; entrada 6.6): la hora del Recordatorio, la de "Tus citas de hoy" y
+    a quién van "Tus citas de hoy" y la alerta de cancelación tardía, de Notificaciones (AD-14), con su comando de la
+    entrada 4.7. Los errores van bajo cada campo. Los correos no van a registros (AD-23). Textos `[ASSUMPTION: texto]`.
+*@
+
+<section class="dsm-seccion-de-configuracion" aria-labelledby="avisos-por-correo">
+    <h2 id="avisos-por-correo" class="dsm-seccion">Avisos por correo</h2>
+
+    @if (_fallo)
+    {
+        <div class="dsm-aviso" role="alert"><p class="dsm-aviso__mensaje">@NoSeCargo</p></div>
+    }
+    else if (_cargada)
+    {
+        <form class="dsm-formulario dsm-seccion-de-configuracion__formulario" @onsubmit="GuardarAsync">
+            <div class="dsm-campo">
+                <label for="HoraDelRecordatorio" class="dsm-campo__etiqueta">Hora del recordatorio</label>
+                <input id="HoraDelRecordatorio" type="time" class="dsm-campo__control" @bind="_comando.HoraDelRecordatorio" @bind:format="HH:mm"
+                       aria-invalid="@Invalido(nameof(CambiarConfiguracionDeEnvio.HoraDelRecordatorio))"
+                       aria-describedby="@DescritoPor(nameof(CambiarConfiguracionDeEnvio.HoraDelRecordatorio))" />
+                <div id="ayuda-HoraDelRecordatorio" class="dsm-campo__ayuda">Sale el día anterior a la cita, a los pacientes con correo.</div>
+                @ErroresDe(nameof(CambiarConfiguracionDeEnvio.HoraDelRecordatorio))
+            </div>
+
+            <div class="dsm-campo">
+                <label for="HoraDeLaAgendaDelDia" class="dsm-campo__etiqueta">Hora de "Tus citas de hoy"</label>
+                <input id="HoraDeLaAgendaDelDia" type="time" class="dsm-campo__control" @bind="_comando.HoraDeLaAgendaDelDia" @bind:format="HH:mm"
+                       aria-invalid="@Invalido(nameof(CambiarConfiguracionDeEnvio.HoraDeLaAgendaDelDia))"
+                       aria-describedby="@DescritoPor(nameof(CambiarConfiguracionDeEnvio.HoraDeLaAgendaDelDia))" />
+                <div id="ayuda-HoraDeLaAgendaDelDia" class="dsm-campo__ayuda">El correo con las citas del día para la doctora.</div>
+                @ErroresDe(nameof(CambiarConfiguracionDeEnvio.HoraDeLaAgendaDelDia))
+            </div>
+
+            <div class="dsm-campo">
+                <label for="CorreoDeLaDoctora" class="dsm-campo__etiqueta">Correo de la doctora</label>
+                <input id="CorreoDeLaDoctora" type="email" autocomplete="off" class="dsm-campo__control" @bind="_comando.CorreoDeLaDoctora"
+                       aria-invalid="@Invalido(nameof(CambiarConfiguracionDeEnvio.CorreoDeLaDoctora))"
+                       aria-describedby="@DescritoPor(nameof(CambiarConfiguracionDeEnvio.CorreoDeLaDoctora))" />
+                <div id="ayuda-CorreoDeLaDoctora" class="dsm-campo__ayuda">Recibe "Tus citas de hoy".</div>
+                @ErroresDe(nameof(CambiarConfiguracionDeEnvio.CorreoDeLaDoctora))
+            </div>
+
+            <div class="dsm-campo">
+                <label for="CorreoDelAdministrador" class="dsm-campo__etiqueta">Correo del administrador</label>
+                <input id="CorreoDelAdministrador" type="email" autocomplete="off" class="dsm-campo__control" @bind="_comando.CorreoDelAdministrador"
+                       aria-invalid="@Invalido(nameof(CambiarConfiguracionDeEnvio.CorreoDelAdministrador))"
+                       aria-describedby="@DescritoPor(nameof(CambiarConfiguracionDeEnvio.CorreoDelAdministrador))" />
+                <div id="ayuda-CorreoDelAdministrador" class="dsm-campo__ayuda">Recibe la alerta cuando un paciente cancela tarde.</div>
+                @ErroresDe(nameof(CambiarConfiguracionDeEnvio.CorreoDelAdministrador))
+            </div>
+
+            <AvisoDeSeccion Resultado="_resultado" Guardado="_guardado" />
+
+            <div class="dsm-calendario__acciones">
+                <button type="submit" class="btn btn-primary dsm-accion-principal dsm-avisos__guardar" disabled="@_ocupado">Guardar avisos</button>
+            </div>
+        </form>
+    }
+</section>
+
+@code {
+    public const string NoSeCargo = "No se pudieron cargar los avisos por correo. Recarga la página.";
+
+    private readonly CancellationTokenSource _cierre = new();
+    private CambiarConfiguracionDeEnvio _comando = new();
+    private bool _cargada;
+    private bool _fallo;
+    private bool _ocupado;
+    private bool _guardado;
+    private Resultado? _resultado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var resultado = await Consulta.HandleAsync(new ConfiguracionDeEnvioVigente(), _cierre.Token);
+            _fallo = !resultado.EsExito;
+            if (resultado.EsExito)
+            {
+                Llenar(resultado.Valor);
+                _cargada = true;
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "Los avisos por correo no se pudieron cargar");
+            _fallo = true;
+        }
+    }
+
+    private void Llenar(ConfiguracionDeEnvioValores valores) => _comando = new CambiarConfiguracionDeEnvio
+    {
+        HoraDelRecordatorio = valores.HoraDelRecordatorio,
+        HoraDeLaAgendaDelDia = valores.HoraDeLaAgendaDelDia,
+        CorreoDeLaDoctora = valores.CorreoDeLaDoctora,
+        CorreoDelAdministrador = valores.CorreoDelAdministrador,
+    };
+
+    private async Task GuardarAsync()
+    {
+        if (_ocupado)
+        {
+            return;
+        }
+
+        _ocupado = true;
+        _guardado = false;
+        try
+        {
+            var resultado = await Cambiar.HandleAsync(_comando, _cierre.Token);
+            _resultado = resultado.EsExito ? null : resultado;
+            if (resultado.EsExito)
+            {
+                Llenar(resultado.Valor);
+                _guardado = true;
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "Los avisos por correo no se pudieron guardar");
+            _resultado = Resultado.Fallo("configuracion.error");
+        }
+        finally
+        {
+            _ocupado = false;
+        }
+    }
+
+    private IReadOnlyList<string> Errores(string propiedad) =>
+        _resultado?.Errores.TryGetValue(propiedad, out var errores) == true ? errores : [];
+
+    private string? Invalido(string propiedad) => Errores(propiedad).Count > 0 ? "true" : null;
+
+    private string DescritoPor(string propiedad) =>
+        Errores(propiedad).Count > 0 ? $"ayuda-{propiedad} error-{propiedad}" : $"ayuda-{propiedad}";
+
+    private RenderFragment? ErroresDe(string propiedad) => Errores(propiedad) is { Count: > 0 } errores
+        ? __builder =>
+        {
+            <p id="error-@propiedad" class="dsm-campo__error">@string.Join(" ", errores)</p>
+        }
+        : null;
+
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}
