@@ -54,7 +54,8 @@ public sealed class ReglasDeReserva
 
     /// <summary>
     /// Cambia los cuatro valores. Anticipación y umbral pueden ser 0 (reservar el mismo día; ninguna cancelación es
-    /// tardía), no negativos; ventana y tope son mayores que cero. Si alguno no vale, nada cambia.
+    /// tardía), no negativos; ventana y tope son mayores que cero, y la ventana es de a lo más
+    /// <see cref="VentanaMaximaMeses"/> meses. Si alguno no vale, nada cambia.
     /// </summary>
     /// <returns>Nulo si se cambiaron; si no, por qué no.</returns>
     public RechazoDeReglasDeReserva? Cambiar(
@@ -76,6 +77,9 @@ public sealed class ReglasDeReserva
         return null;
     }
 
+    /// <summary>La ventana de reserva llega a lo más a un año (Gerardo, 2026-11-17, recorrido 6.8).</summary>
+    public const int VentanaMaximaMeses = 12;
+
     private static RechazoDeReglasDeReserva? Validar(
         int anticipacionMinimaDias,
         int ventanaMeses,
@@ -83,6 +87,7 @@ public sealed class ReglasDeReserva
         int topeSemanalPorTelefono) =>
         anticipacionMinimaDias < 0 ? RechazoDeReglasDeReserva.AnticipacionMinimaNegativa
         : ventanaMeses <= 0 ? RechazoDeReglasDeReserva.VentanaNoPositiva
+        : ventanaMeses > VentanaMaximaMeses ? RechazoDeReglasDeReserva.VentanaMayorAlMaximo
         : umbralCancelacionTardiaMin < 0 ? RechazoDeReglasDeReserva.UmbralNegativo
         : topeSemanalPorTelefono <= 0 ? RechazoDeReglasDeReserva.TopeNoPositivo
         : null;
@@ -98,4 +103,7 @@ public enum RechazoDeReglasDeReserva
     /// <summary>0 vale: ninguna cancelación es tardía.</summary>
     UmbralNegativo = 3,
     TopeNoPositivo = 4,
+
+    /// <summary>Más de <see cref="ReglasDeReserva.VentanaMaximaMeses"/> meses.</summary>
+    VentanaMayorAlMaximo = 5,
 }

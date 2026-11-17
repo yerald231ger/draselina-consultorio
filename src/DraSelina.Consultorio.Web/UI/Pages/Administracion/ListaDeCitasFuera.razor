@@ -5,15 +5,18 @@
 @*
     Las Citas que quedan fuera del horario nuevo de una fecha (RN-9, EXPERIENCE.md "Agenda custom que deja Citas fuera";
     entrada 6.3): cada una con su hora, su Paciente y "sin correo" si hay que avisarle a mano, y la elección de cancelarla
-    o conservarla. "Cancelar todas" marca todas en cancelar; cada una se puede cambiar después. Las elecciones las guarda
+    o conservarla. "Cancelar todas" (solo con más de una) marca todas en cancelar; cada una se puede cambiar después. Las elecciones las guarda
     la página (Elecciones): nulo es "sin elegir". Textos `[ASSUMPTION: texto]`.
 *@
 
 <fieldset class="dsm-citas-fuera" aria-describedby="citas-fuera-ayuda">
-    <legend class="dsm-seccion dsm-citas-fuera__titulo">@Titulo(Citas.Count)</legend>
-    <p id="citas-fuera-ayuda" class="dsm-cuerpo dsm-citas-fuera__ayuda">@Ayuda</p>
+    <legend class="dsm-seccion dsm-citas-fuera__titulo" tabindex="-1">@Titulo(Citas.Count)</legend>
+    <p id="citas-fuera-ayuda" class="dsm-cuerpo dsm-citas-fuera__ayuda">@(Citas.Count == 1 ? AyudaDeUna : Ayuda)</p>
 
-    <button type="button" class="btn dsm-boton-neutro dsm-citas-fuera__todas" @onclick="CancelarTodasAsync">Cancelar todas</button>
+    @if (Citas.Count > 1)
+    {
+        <button type="button" class="btn dsm-boton-neutro dsm-citas-fuera__todas" @onclick="CancelarTodasAsync">Cancelar todas</button>
+    }
 
     <ol class="dsm-citas-fuera__lista">
         @foreach (var cita in Citas)
@@ -27,6 +30,7 @@
                         <span class="dsm-citas-fuera__paciente">@(cita.Paciente ?? Agenda.PacienteNoEncontrado)</span>
                         @if (cita.SinCorreo)
                         {
+                            <span class="visually-hidden">, </span>
                             <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-citas-fuera__sin-correo">@PresentacionDeCita.SinCorreo</span>
                         }
                     </legend>
@@ -53,6 +57,7 @@
 
 @code {
     public const string Ayuda = "Elige qué hacer con cada una. Las que canceles reciben la disculpa con el enlace para elegir otro horario; las que conserves no cambian y su paciente no recibe nada.";
+    public const string AyudaDeUna = "Elige qué hacer con ella. Si la cancelas, su paciente recibe la disculpa con el enlace para elegir otro horario; si la conservas, no cambia y su paciente no recibe nada.";
     public const string FaltaElegirTexto = "Elige cancelar o conservar en cada cita.";
 
     /// <summary>Las Citas que quedan fuera, en orden de hora.</summary>

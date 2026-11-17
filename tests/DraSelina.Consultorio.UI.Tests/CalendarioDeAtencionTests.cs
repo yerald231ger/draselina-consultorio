@@ -34,6 +34,8 @@ public sealed class CalendarioDeAtencionTests : BunitContext
 
     private readonly BorrarFalso _borrar = new();
 
+    private readonly BunitJSModuleInterop _modulo;
+
     public CalendarioDeAtencionTests()
     {
         Services.AddSingleton<IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>>>(_consulta);
@@ -42,6 +44,9 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         Services.AddSingleton<ICommandHandler<BorrarAgendaCustom, AgendaCustomBorrada>>(_borrar);
         Services.AddSingleton<IClock>(new Reloj(Ahora));
         SetRendererInfo(Interactivo);
+        _modulo = JSInterop.SetupModule(CalendarioDeAtencion.RutaDelModulo);
+        _modulo.SetupVoid("abrir", _ => true).SetVoidResult();
+        _modulo.SetupVoid("cerrar", _ => true).SetVoidResult();
     }
 
     [Fact]
@@ -113,7 +118,7 @@ public sealed class CalendarioDeAtencionTests : BunitContext
 
         Celda(calendario, 14).QuerySelector("button")!.Click();
 
-        Assert.Contains("Sábado 14 de noviembre", calendario.Find("#editor-del-dia").TextContent, StringComparison.Ordinal);
+        Assert.Contains("sábado 14 de noviembre", calendario.Find("#editor-del-dia").TextContent, StringComparison.Ordinal);
         Assert.Equal("10:00:00", calendario.Find("#inicio-0").GetAttribute("value"));
         Assert.Equal("13:00:00", calendario.Find("#fin-0").GetAttribute("value"));
         Assert.Equal("sábado abierto", calendario.Find("#motivo").GetAttribute("value"));
@@ -155,7 +160,7 @@ public sealed class CalendarioDeAtencionTests : BunitContext
             enviado.Tramos.Select(t => (t.Inicio!.Value, t.Fin!.Value)));
         Assert.Equal(2, _consulta.Pedidas.Count);
         Assert.Empty(calendario.FindAll("form"));
-        Assert.Equal("Se guardó el horario propio del Martes 10 de noviembre.", calendario.Find(".dsm-atencion__guardado").TextContent);
+        Assert.Equal("Se guardó el horario propio del martes 10 de noviembre.", calendario.Find(".dsm-atencion__guardado").TextContent);
     }
 
     [Theory]
@@ -257,7 +262,7 @@ public sealed class CalendarioDeAtencionTests : BunitContext
             enviado.Citas.Select(c => (c.CitaId!.Value, c.Cancelar)));
         Assert.Single(_vista.Pedidas);
         Assert.Equal(
-            "Se guardó el horario propio del Sábado 14 de noviembre. Las 3 citas elegidas se cancelan en unos instantes y sus pacientes reciben la disculpa.",
+            "Se guardó el horario propio del sábado 14 de noviembre. Las 3 citas elegidas se cancelan en unos instantes; los pacientes con correo reciben la disculpa y a los demás avísales a mano.",
             calendario.Find(".dsm-atencion__guardado").TextContent);
     }
 
@@ -298,6 +303,7 @@ public sealed class CalendarioDeAtencionTests : BunitContext
 
         Assert.Equal(CitasFueraDelHorario.AlQuitar(new DateOnly(2026, 11, 11)), Assert.Single(_vista.Pedidas));
         Assert.Equal("El día vuelve a la semana tipo: 3:30 pm a 6:00 pm.", calendario.Find(".dsm-atencion__vuelve").TextContent);
+        Assert.Equal("#quitar-del-dia", _modulo.Invocations.Last(i => i.Identifier == "abrir").Arguments[1]);
         Assert.Empty(calendario.FindAll(".dsm-citas-fuera"));
 
         calendario.Find(".dsm-atencion__confirmar-quitar").Click();
@@ -305,7 +311,7 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         var borrado = Assert.Single(_borrar.Recibidos);
         Assert.Equal(new DateOnly(2026, 11, 11), borrado.Fecha);
         Assert.Empty(borrado.Citas);
-        Assert.Equal("El Miércoles 11 de noviembre volvió a la semana tipo.", calendario.Find(".dsm-atencion__guardado").TextContent);
+        Assert.Equal("El miércoles 11 de noviembre volvió a la semana tipo.", calendario.Find(".dsm-atencion__guardado").TextContent);
     }
 
     [Fact]
@@ -318,7 +324,7 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         var calendario = Render<CalendarioDeAtencion>();
         Celda(calendario, 14).QuerySelector("button")!.Click();
         calendario.Find(".dsm-atencion__quitar-custom").Click();
-        Assert.Equal("El día vuelve a la semana tipo: ese día no se atiende.", calendario.Find(".dsm-atencion__vuelve").TextContent);
+        Assert.Equal("El día vuelve a la semana tipo, que no atiende ese día.", calendario.Find(".dsm-atencion__vuelve").TextContent);
 
         calendario.Find(".dsm-atencion__confirmar-quitar").Click();
         Assert.Empty(_borrar.Recibidos);
@@ -350,6 +356,81 @@ public sealed class CalendarioDeAtencionTests : BunitContext
 
         Celda(calendario, 12).QuerySelector("button")!.Click();
         Assert.Empty(calendario.FindAll(".dsm-atencion__quitar-custom"));
+    }
+
+    [Fact]
+    public void Tocar_un_dia_abre_el_dialogo_con_el_horario_actual_y_Cerrar_lo_cierra_y_regresa_al_dia()
+    {
+        var calendario = Render<CalendarioDeAtencion>();
+        Assert.Empty(_modulo.Invocations);
+
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+
+        Assert.Equal("editor-del-dia", calendario.Find("dialog.dsm-atencion__dialogo").GetAttribute("aria-labelledby"));
+        Assert.Equal("-1", calendario.Find("#editor-del-dia").GetAttribute("tabindex"));
+        Assert.StartsWith("Horario actual: ", calendario.Find("#editor-del-dia + p").TextContent, StringComparison.Ordinal);
+        Assert.Equal("#editor-del-dia", Assert.Single(_modulo.Invocations, i => i.Identifier == "abrir").Arguments[1]);
+
+        calendario.Find(".dsm-atencion__cerrar").Click();
+
+        Assert.Empty(calendario.FindAll("#editor-del-dia"));
+        var cerrar = _modulo.VerifyInvoke("cerrar");
+        Assert.Equal("2026-11-14", cerrar.Arguments[1]);
+    }
+
+    [Fact]
+    public void Esc_cierra_el_dialogo_sin_guardar_y_regresa_al_dia()
+    {
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find("#motivo").Change("asunto personal");
+
+        // Esc lo cierra el navegador, que avisa con close.
+        calendario.Find("dialog").TriggerEvent("onclose", EventArgs.Empty);
+
+        Assert.Empty(calendario.FindAll("#editor-del-dia"));
+        Assert.Empty(_comando.Recibidos);
+        Assert.Equal("2026-11-14", _modulo.VerifyInvoke("cerrar").Arguments[1]);
+    }
+
+    [Fact]
+    public void Guardar_con_exito_cierra_el_dialogo()
+    {
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find("#motivo").Change("asunto personal");
+
+        calendario.Find("form").Submit();
+
+        Assert.Single(_comando.Recibidos);
+        Assert.Empty(calendario.FindAll("#editor-del-dia"));
+        Assert.Equal("2026-11-14", _modulo.VerifyInvoke("cerrar").Arguments[1]);
+    }
+
+    [Fact]
+    public void Con_una_sola_Cita_fuera_la_ayuda_va_en_singular_sin_Cancelar_todas_y_el_exito_pide_avisar_a_mano()
+    {
+        _vista.Responder = _ => new HorarioConCitasFuera([], [new(Citas[1], new(10, 30), new(11, 0), "Bruno Díaz", true, false)]);
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find("#motivo").Change("asunto personal");
+        calendario.Find("form").Submit();
+
+        Assert.Equal(ListaDeCitasFuera.AyudaDeUna, calendario.Find(".dsm-citas-fuera__ayuda").TextContent);
+        // Al aparecer la lista, el foco va a su título.
+        Assert.Equal(
+            ["#editor-del-dia", ".dsm-citas-fuera__titulo"],
+            _modulo.Invocations.Where(i => i.Identifier == "abrir").Select(i => i.Arguments[1]));
+        Assert.Equal("-1", calendario.Find(".dsm-citas-fuera__titulo").GetAttribute("tabindex"));
+        Assert.Empty(calendario.FindAll(".dsm-citas-fuera__todas"));
+        Assert.Equal(", ", calendario.Find(".dsm-citas-fuera__datos .visually-hidden").TextContent);
+
+        calendario.Find(".dsm-citas-fuera__cancelar").Change("cancelar");
+        calendario.Find("form").Submit();
+
+        Assert.Equal(
+            "Se guardó el horario propio del sábado 14 de noviembre. La cita elegida se cancela en unos instantes; su paciente no tiene correo: avísale a mano.",
+            calendario.Find(".dsm-atencion__guardado").TextContent);
     }
 
     private static readonly CitaId[] Citas = [.. Enumerable.Range(0, 4).Select(_ => new CitaId(Guid.CreateVersion7()))];

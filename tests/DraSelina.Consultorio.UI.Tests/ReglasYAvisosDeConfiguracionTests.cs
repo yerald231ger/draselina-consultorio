@@ -40,6 +40,9 @@ public sealed class ReglasYAvisosDeConfiguracionTests : BunitContext
     {
         var seccion = Render<SeccionReglasDeReserva>();
         Assert.Equal(["1", "2", "120", "3"], seccion.FindAll("input").Select(i => i.GetAttribute("value")));
+        // Los errores son los de la app, no los del navegador (entrada 6.9).
+        Assert.True(seccion.Find("form").HasAttribute("novalidate"));
+        Assert.Equal("Tope semanal por celular (citas)", seccion.Find("label[for='TopeSemanalPorTelefono']").TextContent);
 
         seccion.Find("#VentanaMeses").Change("3");
         seccion.Find("form").Submit();
@@ -69,6 +72,7 @@ public sealed class ReglasYAvisosDeConfiguracionTests : BunitContext
     {
         var seccion = Render<SeccionAvisosPorCorreo>();
         Assert.Equal("09:00:00", seccion.Find("#HoraDelRecordatorio").GetAttribute("value"));
+        Assert.True(seccion.Find("form").HasAttribute("novalidate"));
         Assert.Equal("doctora@correo.com", seccion.Find("#CorreoDeLaDoctora").GetAttribute("value"));
 
         seccion.Find("#HoraDelRecordatorio").Change("08:00:00");

@@ -51,7 +51,7 @@
                                 <input id="@($"{id}-fin-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Fin" />
                             </div>
                             <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__quitar" @onclick="() => Quitar(dia, t)">
-                                Quitar<span class="visually-hidden"> el tramo @(t + 1) del @Nombre(dia.Dia)</span>
+                                Quitar<span class="visually-hidden"> el tramo @(t + 1) del @EnFrase(dia.Dia)</span>
                             </button>
                         </div>
                     }
@@ -67,17 +67,17 @@
 
                     <div class="dsm-semana-tipo__acciones-del-dia">
                         <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__agregar" @onclick="() => Agregar(dia)">
-                            Agregar tramo<span class="visually-hidden"> al @Nombre(dia.Dia)</span>
+                            Agregar tramo<span class="visually-hidden"> al @EnFrase(dia.Dia)</span>
                         </button>
                         <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__copiar" aria-expanded="@(dia.Copiando ? "true" : "false")"
                                 @onclick="() => AlternarCopia(dia)">
-                            Copiar a otros días<span class="visually-hidden"> desde el @Nombre(dia.Dia)</span>
+                            Copiar a otros días<span class="visually-hidden"> desde el @EnFrase(dia.Dia)</span>
                         </button>
                     </div>
 
                     @if (dia.Copiando)
                     {
-                        <div class="dsm-semana-tipo__copia" role="group" aria-label="@($"Copiar los tramos del {Nombre(dia.Dia)} a")">
+                        <div class="dsm-semana-tipo__copia" role="group" aria-label="@($"Copiar los tramos del {EnFrase(dia.Dia)} a")">
                             @foreach (var otro in _dias.Where(o => o.Dia != dia.Dia))
                             {
                                 var destino = otro.Dia;
@@ -107,6 +107,7 @@
                                 <span class="dsm-citas-fuera__paciente">@(cita.Paciente ?? Agenda.PacienteNoEncontrado)</span>
                                 @if (cita.SinCorreo)
                                 {
+                                    <span class="visually-hidden">, </span>
                                     <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-citas-fuera__sin-correo">@PresentacionDeCita.SinCorreo</span>
                                 }
                             </li>
@@ -169,6 +170,9 @@
 
     /// <summary>"Lunes", "Martes"…</summary>
     public static string Nombre(DayOfWeek dia) => Nombres[(int)dia];
+
+    // A media frase, en minúscula: "Copiar a otros días desde el lunes".
+    private static string EnFrase(DayOfWeek dia) => Nombre(dia).ToLowerInvariant();
 
     private static string Id(DayOfWeek dia) => dia.ToString().ToLowerInvariant();
 

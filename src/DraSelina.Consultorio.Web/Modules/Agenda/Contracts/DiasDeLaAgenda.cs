@@ -84,7 +84,8 @@ public sealed record TramoDeLaAgenda(TimeOnly Inicio, TimeOnly Fin);
 /// `[ASSUMPTION]`.
 /// </param>
 /// <param name="FueraDeHorario">
-/// Cita del Consultorio que no cabe completa en ningún Tramo vigente de su fecha (INV-C6). Una en línea nunca.
+/// Cita no cancelada, de cualquier origen, que no cabe completa en ningún Tramo vigente de su fecha (INV-C6): una del
+/// Consultorio agendada fuera o una que se conservó al cambiar el horario.
 /// </param>
 /// <param name="Nota">La nota del Administrador; nula si no tiene.</param>
 public sealed record CitaDeLaAgenda(

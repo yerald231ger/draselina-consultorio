@@ -173,7 +173,7 @@ public sealed partial class ReprogramarDesdeTuCitaTests(Arnes arnes)
         var (estado, html) = await AbrirAsync(cliente, Reprogramar(cita));
 
         Assert.Equal(HttpStatusCode.OK, estado);
-        Assert.DoesNotContain("Este día no tiene horarios para este tipo de consulta", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Este día no tiene horarios disponibles", html, StringComparison.Ordinal);
         Assert.DoesNotContain("dsm-hora--actual", html, StringComparison.Ordinal);
         var horas = Horas().Matches(html).Select(m => m.Groups["href"].Value).ToList();
         Assert.Equal(5, horas.Count);

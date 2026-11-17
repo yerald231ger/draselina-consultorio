@@ -2852,6 +2852,55 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   max-width: 36rem;
 }
 
+/*
+ * El editor del día en un <dialog> modal (entrada 6.9): centrado en escritorio y, en el teléfono, una hoja desde abajo a
+ * todo el ancho. Con scroll adentro: la lista de Citas que quedan fuera puede ser larga. El fondo lo atenúa ::backdrop.
+ */
+.dsm-atencion__dialogo {
+  width: min(40rem, calc(100vw - 2 * var(--dsm-spacing-5)));
+  max-height: calc(100dvh - 2 * var(--dsm-spacing-7));
+  padding: var(--dsm-spacing-6);
+  border: 0;
+  border-radius: var(--dsm-rounded-xl);
+  background: var(--dsm-surface);
+  color: var(--dsm-ink);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dsm-atencion__dialogo::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.dsm-atencion__dialogo .dsm-atencion__editor {
+  max-width: none;
+}
+
+.dsm-atencion__dialogo h2:focus {
+  outline: none;
+}
+
+.dsm-atencion__dialogo h2:focus-visible {
+  outline: 2px solid var(--dsm-primary);
+  outline-offset: 2px;
+}
+
+.dsm-atencion__cerrar {
+  float: right;
+  margin: 0 0 var(--dsm-spacing-3) var(--dsm-spacing-3);
+}
+
+@media (max-width: 640px) {
+  .dsm-atencion__dialogo {
+    width: 100%;
+    max-width: 100%;
+    max-height: 85dvh;
+    margin: auto 0 0;
+    padding: var(--dsm-spacing-5);
+    border-radius: var(--dsm-rounded-xl) var(--dsm-rounded-xl) 0 0;
+  }
+}
+
 .dsm-atencion__tramos {
   display: flex;
   flex-direction: column;

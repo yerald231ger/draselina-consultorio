@@ -144,7 +144,7 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task Una_Cita_del_consultorio_fuera_de_los_Tramos_lleva_la_marca_y_su_nota_y_una_dentro_o_en_linea_no()
+    public async Task Una_Cita_fuera_de_los_Tramos_lleva_la_marca_de_cualquier_origen_y_una_dentro_o_cancelada_no()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
         var ana = await escenario.PacienteAsync("Ana Sofía López", "4441234567", "ana@correo.com");
@@ -155,8 +155,10 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
         // Martes dentro del Tramo, y uno que se sale por el final.
         await escenario.InsertarAsync(ana, Martes, new TimeOnly(16, 0), new TimeOnly(16, 30), "Agendada", null, "Dolor");
         await escenario.InsertarAsync(ana, Martes, new TimeOnly(17, 45), new TimeOnly(18, 15), "Agendada", null, "Dolor");
-        // En línea fuera de los Tramos (no debería pasar, INV-C6): nunca lleva la marca.
+        // En línea fuera de los Tramos: se conservó al cambiar el horario (épica 6); lleva la marca (entrada 6.9).
         await escenario.InsertarAsync(ana, Martes, new TimeOnly(18, 30), new TimeOnly(19, 0), "Agendada", null, "Dolor", enLinea: true);
+        // Cancelada fuera de los Tramos, de cualquier origen: ya no ocupa el horario, sin marca.
+        await escenario.InsertarAsync(ana, Martes, new TimeOnly(19, 0), new TimeOnly(19, 30), "Cancelada", "consultorio", "Dolor", enLinea: true);
 
         var dias = await escenario.ConsultarComoAdministradorAsync(new DiasDeLaAgenda(Martes, Sabado));
 
@@ -164,7 +166,7 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
         Assert.Equal(TipoDeDia.SinAtencion, dias[^1].Tipo);
         Assert.True(sabado.FueraDeHorario);
         Assert.Equal("lo pidió Selina", sabado.Nota);
-        Assert.Equal([false, true, false], dias[0].Citas.Select(c => c.FueraDeHorario));
+        Assert.Equal([false, true, true, false], dias[0].Citas.Select(c => c.FueraDeHorario));
     }
 
     [Fact]

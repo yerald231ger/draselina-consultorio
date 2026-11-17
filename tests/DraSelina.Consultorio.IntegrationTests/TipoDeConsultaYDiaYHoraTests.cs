@@ -465,7 +465,7 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
 
         var html = await PedirAsync(cliente, aSeguimiento);
 
-        Assert.Contains("Este día no tiene horarios para este tipo de consulta. Elige otro día en el calendario.", html, StringComparison.Ordinal);
+        Assert.Contains("Este día no tiene horarios disponibles. Elige otro día en el calendario.", html, StringComparison.Ordinal);
         var tabla = Assert.Single(Calendario().Matches(html)).Value;
         Assert.Contains("<caption class=\"visually-hidden\">Noviembre 2026</caption>", tabla, StringComparison.Ordinal);
         Assert.DoesNotContain("aria-current", tabla, StringComparison.Ordinal);

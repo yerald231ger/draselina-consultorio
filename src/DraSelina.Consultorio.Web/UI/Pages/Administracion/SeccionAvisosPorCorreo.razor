@@ -22,7 +22,7 @@
     }
     else if (_cargada)
     {
-        <form class="dsm-formulario dsm-seccion-de-configuracion__formulario" @onsubmit="GuardarAsync">
+        <form class="dsm-formulario dsm-seccion-de-configuracion__formulario" novalidate @onsubmit="GuardarAsync">
             <div class="dsm-campo">
                 <label for="HoraDelRecordatorio" class="dsm-campo__etiqueta">Hora del recordatorio</label>
                 <input id="HoraDelRecordatorio" type="time" class="dsm-campo__control" @bind="_comando.HoraDelRecordatorio"

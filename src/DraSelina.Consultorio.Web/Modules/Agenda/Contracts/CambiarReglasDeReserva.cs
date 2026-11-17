@@ -6,13 +6,14 @@ namespace DraSelina.Consultorio.Agenda.Contracts;
 /// <summary>
 /// El Administrador cambia las reglas de reserva sin desplegar (CAP-16, FR-19): surten efecto en la siguiente reserva,
 /// reprogramación o cancelación. Los límites los decide <c>ReglasDeReserva</c>: anticipación y umbral no negativos,
-/// ventana y tope mayores que cero; si alguno no vale, nada cambia y el error va bajo su propiedad. Solo el
+/// ventana y tope mayores que cero, ventana de a lo más 12 meses; si alguno no vale, nada cambia y el error va bajo su propiedad. Solo el
 /// Administrador (AD-22). Devuelve los valores guardados.
 /// </summary>
 public sealed class CambiarReglasDeReserva : ICommand<ReglasDeReservaValores>, IRequiereAdministrador
 {
     public const string MensajeDeAnticipacion = "La anticipación no puede ser negativa; 0 permite reservar el mismo día.";
     public const string MensajeDeVentana = "La ventana debe ser de al menos 1 mes.";
+    public const string MensajeDeVentanaMaxima = "La ventana puede ser de hasta 12 meses.";
     public const string MensajeDeUmbral = "El umbral no puede ser negativo; 0 hace que ninguna cancelación sea tardía.";
     public const string MensajeDeTope = "El tope debe ser de al menos 1 cita por semana.";
     public const string MensajeDeMaximo = "El número es demasiado grande.";
@@ -32,8 +33,8 @@ public sealed class CambiarReglasDeReserva : ICommand<ReglasDeReservaValores>, I
     [Range(int.MinValue, short.MaxValue, ErrorMessage = MensajeDeMaximo)]
     public int? UmbralCancelacionTardiaMin { get; set; }
 
-    /// <summary>Citas en línea por teléfono en una semana (RN-18).</summary>
-    [Required(ErrorMessage = "Escribe el tope semanal por teléfono.")]
+    /// <summary>Citas en línea por celular en una semana (RN-18).</summary>
+    [Required(ErrorMessage = "Escribe el tope semanal por celular.")]
     [Range(int.MinValue, short.MaxValue, ErrorMessage = MensajeDeMaximo)]
     public int? TopeSemanalPorTelefono { get; set; }
 }

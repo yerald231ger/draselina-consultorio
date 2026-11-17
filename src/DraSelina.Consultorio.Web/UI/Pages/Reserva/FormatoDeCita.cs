@@ -28,6 +28,9 @@ public static class FormatoDeCita
     /// <summary>"Martes 6 de octubre".</summary>
     public static string Largo(DateOnly fecha) => $"{Dia(fecha)} {DiaYMes(fecha)}";
 
+    /// <summary>"martes 6 de octubre": a media frase, con el día en minúscula ("Se guardó el horario del martes…").</summary>
+    public static string LargoEnFrase(DateOnly fecha) => $"{Dias[(int)fecha.DayOfWeek]} {DiaYMes(fecha)}";
+
     /// <summary>"6 de octubre".</summary>
     public static string DiaYMes(DateOnly fecha) => $"{fecha.Day} de {Meses[fecha.Month - 1]}";
 

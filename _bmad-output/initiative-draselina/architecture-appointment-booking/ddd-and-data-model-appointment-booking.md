@@ -90,7 +90,7 @@ Lo que justifica construir Agenda y no usar una herramienta genérica: la cancel
 | Tramos vigentes | Los tramos que valen para una fecha: los de su custom si existe; si no, los de la base | `TramosVigentes` |
 | Horario libre | Hora de inicio que hoy se puede reservar. Se calcula; nunca se guarda | `HorarioLibre` |
 | Rejilla | Horas de inicio dentro de un tramo, en pasos de la duración del tipo de visita | Parte del cálculo |
-| Ventana de reserva | Desde la anticipación mínima (hoy 1 día calendario: mañana) hasta el límite de la ventana (hoy 2 meses). Los dos valores son configurables | Parte de `ReglasDeAgenda` |
+| Ventana de reserva | Desde la anticipación mínima (hoy 1 día calendario: mañana) hasta el límite de la ventana (hoy 2 meses; de 1 a 12 meses, Gerardo 2026-11-17). Los dos valores son configurables | Parte de `ReglasDeAgenda` |
 | Tipo de visita | Clase de cita que elige el paciente; define la duración. En pantalla se muestra como "Tipo de consulta" | `TipoDeVisita` |
 | Motivo de consulta | Texto breve que escribe el paciente al reservar. Dato de salud | `MotivoDeConsulta` |
 | Cita en línea | Cita que crea el paciente desde el sitio | `OrigenDeCita.EnLinea` |

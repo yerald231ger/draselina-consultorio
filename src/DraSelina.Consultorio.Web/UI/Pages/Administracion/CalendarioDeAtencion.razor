@@ -2,10 +2,11 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 @layout LayoutAdministracion
-@implements IDisposable
+@implements IAsyncDisposable
 @using System.Globalization
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
 @using DraSelina.Consultorio.Agenda.Contracts
 @using DraSelina.Consultorio.BuildingBlocks.Contracts
 @using DraSelina.Consultorio.Kernel
@@ -16,6 +17,7 @@
 @inject IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera> VistaPrevia
 @inject IClock Reloj
 @inject ILogger<CalendarioDeAtencion> Registro
+@inject IJSRuntime JS
 
 @*
     Calendario de atención (CAP-11, FR-13, UJ-3, UJ-6; entrada 6.1): el mes, con cada día como lo distingue la Agenda
@@ -101,12 +103,17 @@
         </table>
     }
 
+    @* El editor del día va en un <dialog> modal (entrada 6.9): siempre está en la página, y el módulo JS lo abre con
+       showModal() al tocar un día y lo cierra al guardar, quitar o cancelar. Esc lo cierra el navegador y avisa con close. *@
+    <dialog @ref="_dialogo" class="dsm-atencion__dialogo" aria-labelledby="@(_quitando ? "quitar-del-dia" : "editor-del-dia")"
+            @onclose="AlCerrarElDialogo">
     @if (_seleccionada is { } seleccionada)
     {
+        <button type="button" class="btn dsm-boton-neutro dsm-atencion__cerrar" @onclick="Cerrar">Cerrar</button>
         @if (_quitando)
         {
             <section class="dsm-atencion__editor dsm-atencion__quitar-panel" aria-labelledby="quitar-del-dia">
-                <h2 id="quitar-del-dia" class="dsm-seccion">Quitar el horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
+                <h2 id="quitar-del-dia" class="dsm-seccion" tabindex="-1">Quitar el horario propio del @FormatoDeCita.LargoEnFrase(seleccionada.Fecha)</h2>
                 @if (_fuera is { } alQuitar)
                 {
                     <p class="dsm-cuerpo dsm-atencion__vuelve">@VuelveA(alQuitar.Tramos)</p>
@@ -126,8 +133,8 @@
         else
         {
             <form class="dsm-formulario dsm-atencion__editor" @onsubmit="GuardarAsync" aria-labelledby="editor-del-dia">
-                <h2 id="editor-del-dia" class="dsm-seccion">Horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
-                <p class="dsm-cuerpo">Hoy vale: @Descripcion(seleccionada)</p>
+                <h2 id="editor-del-dia" class="dsm-seccion" tabindex="-1">Horario propio del @FormatoDeCita.LargoEnFrase(seleccionada.Fecha)</h2>
+                <p class="dsm-cuerpo">Horario actual: @Descripcion(seleccionada)</p>
 
                 <fieldset class="dsm-atencion__tramos">
                     <legend class="dsm-campo__etiqueta">Tramos</legend>
@@ -186,6 +193,7 @@
             </form>
         }
     }
+    </dialog>
 </section>
 
 @code {
@@ -199,6 +207,9 @@
     public const string SinSesion = "Tu sesión terminó. Vuelve a entrar.";
     public const string NoSeGuardo = "No se pudo guardar. Intenta de nuevo.";
     public const string Normal = "Horario de la semana tipo";
+
+    /// <summary>El módulo JS junto a la página que abre y cierra el diálogo del editor.</summary>
+    public const string RutaDelModulo = "./UI/Pages/Administracion/CalendarioDeAtencion.razor.js";
 
     private static readonly string[] DiasDeLaSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -223,6 +234,13 @@
     private Dictionary<CitaId, bool?> _elecciones = [];
     private bool _faltaElegir;
     private bool _quitando;
+
+    // El <dialog> del editor, el módulo que lo abre y lo cierra, lo que tiene el foco (nulo: cerrado) y el día al que
+    // vuelve el foco.
+    private ElementReference _dialogo;
+    private IJSObjectReference? _modulo;
+    private string? _focoMostrado;
+    private DateOnly? _diaDelFoco;
 
     /// <summary>La dirección del Calendario en un mes: <c>/admin/calendario?mes=2026-11</c>.</summary>
     public static string Direccion(DateOnly mes) =>
@@ -319,6 +337,7 @@
     private void Abrir(DiaDeAtencion dia)
     {
         _seleccionada = dia;
+        _diaDelFoco = dia.Fecha;
         _resultado = null;
         _guardado = null;
         OlvidarLaVista();
@@ -392,8 +411,8 @@
             if (resultado.EsExito)
             {
                 _guardado = (resultado.Valor.SinCambios
-                    ? $"El {FormatoDeCita.Largo(resultado.Valor.Fecha)} ya tenía ese horario."
-                    : $"Se guardó el horario propio del {FormatoDeCita.Largo(resultado.Valor.Fecha)}.") + Cancelaciones(_comando.Citas);
+                    ? $"El {FormatoDeCita.LargoEnFrase(resultado.Valor.Fecha)} ya tenía ese horario."
+                    : $"Se guardó el horario propio del {FormatoDeCita.LargoEnFrase(resultado.Valor.Fecha)}.") + Cancelaciones(_comando.Citas);
                 Cerrar();
                 await CargarAsync();
                 return;
@@ -451,7 +470,7 @@
             var resultado = await Borrar.HandleAsync(new BorrarAgendaCustom { Fecha = _seleccionada.Fecha, Citas = decisiones }, _cierre.Token);
             if (resultado.EsExito)
             {
-                _guardado = $"El {FormatoDeCita.Largo(resultado.Valor.Fecha)} volvió a la semana tipo." + Cancelaciones(decisiones);
+                _guardado = $"El {FormatoDeCita.LargoEnFrase(resultado.Valor.Fecha)} volvió a la semana tipo." + Cancelaciones(decisiones);
                 Cerrar();
                 await CargarAsync();
                 return;
@@ -531,17 +550,26 @@
             ? [.. _comando.Tramos.Select(t => new TramoDeLaAgenda(t.Inicio!.Value, t.Fin!.Value))]
             : null;
 
-    private static string Cancelaciones(IReadOnlyCollection<DecisionSobreCita> decisiones) =>
-        decisiones.Count(d => d.Cancelar) switch
+    // Lo que pasa con las Citas elegidas para cancelar; la disculpa solo llega a quien tiene correo (RN-30), a los demás
+    // se les avisa a mano. Con la vista previa que se mandó (_fuera), antes de cerrar.
+    private string Cancelaciones(IReadOnlyCollection<DecisionSobreCita> decisiones)
+    {
+        var canceladas = decisiones.Where(d => d.Cancelar).Select(d => d.CitaId).ToHashSet();
+        var sinCorreo = _fuera?.Citas.Count(c => canceladas.Contains(c.CitaId) && c.SinCorreo) ?? 0;
+        return (canceladas.Count, sinCorreo) switch
         {
-            0 => "",
-            1 => " La cita elegida se cancela en unos instantes y su paciente recibe la disculpa.",
-            var n => $" Las {n} citas elegidas se cancelan en unos instantes y sus pacientes reciben la disculpa.",
+            (0, _) => "",
+            (1, 0) => " La cita elegida se cancela en unos instantes y su paciente recibe la disculpa.",
+            (1, _) => " La cita elegida se cancela en unos instantes; su paciente no tiene correo: avísale a mano.",
+            (var n, 0) => $" Las {n} citas elegidas se cancelan en unos instantes y sus pacientes reciben la disculpa.",
+            (var n, var s) when s == n => $" Las {n} citas elegidas se cancelan en unos instantes; sus pacientes no tienen correo: avísales a mano.",
+            (var n, _) => $" Las {n} citas elegidas se cancelan en unos instantes; los pacientes con correo reciben la disculpa y a los demás avísales a mano.",
         };
+    }
 
     private static string VuelveA(IReadOnlyList<TramoDeLaAgenda> tramos) =>
         tramos.Count == 0
-            ? "El día vuelve a la semana tipo: ese día no se atiende."
+            ? "El día vuelve a la semana tipo, que no atiende ese día."
             : $"El día vuelve a la semana tipo: {Tramos(tramos)}.";
 
     private RenderFragment? MensajeDeError() => MensajeGeneral() is { } mensaje
@@ -598,9 +626,72 @@
         };
     }
 
-    public void Dispose()
+    // Lo que lleva el foco dentro del diálogo: el título de quitar, la lista de Citas fuera cuando aparece (cierra el foco
+    // pendiente de la 6.3) o el título del día. Nulo con el diálogo cerrado.
+    private string? FocoDelDialogo() =>
+        _seleccionada is null ? null
+        : _quitando ? "#quitar-del-dia"
+        : _fuera is { Citas.Count: > 0 } ? ".dsm-citas-fuera__titulo"
+        : "#editor-del-dia";
+
+    // Abre o cierra el <dialog> cuando cambia si hay un día elegido, y mueve el foco cuando cambia lo que se muestra
+    // adentro. El módulo se importa la primera vez que hace falta.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var foco = FocoDelDialogo();
+        if (foco == _focoMostrado)
+        {
+            return;
+        }
+
+        _focoMostrado = foco;
+        var abierto = foco is not null;
+        try
+        {
+            _modulo ??= await JS.InvokeAsync<IJSObjectReference>("import", _cierre.Token, RutaDelModulo);
+            if (abierto)
+            {
+                await _modulo.InvokeVoidAsync("abrir", _cierre.Token, _dialogo, foco);
+            }
+            else
+            {
+                await _modulo.InvokeVoidAsync("cerrar", _cierre.Token, _dialogo, _diaDelFoco is { } dia ? Iso(dia) : null);
+            }
+        }
+        catch (Exception error) when (error is JSDisconnectedException || (error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            // El circuito se fue o la página se desechó: no hay diálogo que abrir ni cerrar.
+        }
+        catch (JSException error)
+        {
+            // El módulo no cargó: no tumba el circuito; queda en los registros.
+            Registro.LogWarning(error, "El diálogo del Calendario de atención no se pudo abrir o cerrar");
+        }
+    }
+
+    // Esc (o el navegador) cerró el diálogo: se olvida el día, como con Cancelar. Si ya se cerró desde aquí, nada.
+    private void AlCerrarElDialogo()
+    {
+        if (_seleccionada is not null)
+        {
+            Cerrar();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
     {
         _cierre.Cancel();
         _cierre.Dispose();
+        if (_modulo is not null)
+        {
+            try
+            {
+                await _modulo.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // El circuito ya no existe; el módulo se fue con él.
+            }
+        }
     }
 }

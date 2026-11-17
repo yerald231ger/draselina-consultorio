@@ -82,10 +82,11 @@ public sealed class DiasDeLaAgendaHandler(
             EstadoMostrado.Estado(cita.Estado, cita.Inicio, ahora),
             EstadoMostrado.Cancelacion(cita.MotivoDeCancelacion),
             SinCorreo: contacto?.Correo is null,
-            // INV-C6: solo una Cita del Consultorio puede quedar fuera de los Tramos; una en línea nunca lleva la marca. La
-            // regla vive en la Cita (T-13), la misma con la que pide la nota al agendarse; el rango leído de la base se
-            // reconstituye sin validar (T-6).
-            FueraDeHorario: cita.Origen == OrigenDeCita.Consultorio
+            // INV-C6: la regla vive en la Cita (T-13), la misma con la que pide la nota al agendarse; el rango leído de la
+            // base se reconstituye sin validar (T-6). De cualquier origen: una Cita en línea queda fuera si el
+            // Administrador la conservó al cambiar el horario (épica 6). Una cancelada ya no ocupa el horario: sin marca
+            // (Gerardo, 2026-11-17, entrada 6.9).
+            FueraDeHorario: cita.Estado != EstadoCita.Cancelada
                 && Domain.Cita.QuedaFueraDe(RangoDeTiempo.Reconstituir(cita.Inicio, cita.Fin), vigentes),
             cita.Nota);
     }

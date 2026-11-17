@@ -77,6 +77,8 @@ public sealed class CambiarReglasDeReservaHandler(
         RechazoDeReglasDeReserva.AnticipacionMinimaNegativa =>
             (nameof(CambiarReglasDeReserva.AnticipacionMinimaDias), CambiarReglasDeReserva.MensajeDeAnticipacion),
         RechazoDeReglasDeReserva.VentanaNoPositiva => (nameof(CambiarReglasDeReserva.VentanaMeses), CambiarReglasDeReserva.MensajeDeVentana),
+        RechazoDeReglasDeReserva.VentanaMayorAlMaximo =>
+            (nameof(CambiarReglasDeReserva.VentanaMeses), CambiarReglasDeReserva.MensajeDeVentanaMaxima),
         RechazoDeReglasDeReserva.UmbralNegativo =>
             (nameof(CambiarReglasDeReserva.UmbralCancelacionTardiaMin), CambiarReglasDeReserva.MensajeDeUmbral),
         RechazoDeReglasDeReserva.TopeNoPositivo => (nameof(CambiarReglasDeReserva.TopeSemanalPorTelefono), CambiarReglasDeReserva.MensajeDeTope),

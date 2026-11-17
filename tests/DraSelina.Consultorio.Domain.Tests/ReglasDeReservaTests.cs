@@ -35,6 +35,7 @@ public class ReglasDeReservaTests
     [InlineData(-1, 2, 120, 3, RechazoDeReglasDeReserva.AnticipacionMinimaNegativa)]
     [InlineData(1, 0, 120, 3, RechazoDeReglasDeReserva.VentanaNoPositiva)]
     [InlineData(1, -1, 120, 3, RechazoDeReglasDeReserva.VentanaNoPositiva)]
+    [InlineData(1, 13, 120, 3, RechazoDeReglasDeReserva.VentanaMayorAlMaximo)]
     [InlineData(1, 2, -30, 3, RechazoDeReglasDeReserva.UmbralNegativo)]
     [InlineData(1, 2, -1, 3, RechazoDeReglasDeReserva.UmbralNegativo)]
     [InlineData(1, 2, 120, 0, RechazoDeReglasDeReserva.TopeNoPositivo)]
@@ -60,6 +61,15 @@ public class ReglasDeReservaTests
     {
         Assert.Equal(esperado, ReglasDeReserva.Crear(anticipacion, ventana, umbral, tope, out var reglas));
         Assert.Null(reglas);
+    }
+
+    [Fact]
+    public void La_ventana_de_doce_meses_vale()
+    {
+        var reglas = Sembradas();
+
+        Assert.Null(reglas.Cambiar(1, ReglasDeReserva.VentanaMaximaMeses, 120, 3));
+        Assert.Equal(12, reglas.VentanaMeses);
     }
 
     [Fact]

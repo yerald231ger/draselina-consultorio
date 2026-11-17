@@ -58,6 +58,7 @@ public sealed class CambiarReglasDeReservaTests(Arnes arnes)
     [Theory]
     [InlineData(-1, 2, 120, 3, nameof(CambiarReglasDeReserva.AnticipacionMinimaDias), CambiarReglasDeReserva.MensajeDeAnticipacion)]
     [InlineData(1, 0, 120, 3, nameof(CambiarReglasDeReserva.VentanaMeses), CambiarReglasDeReserva.MensajeDeVentana)]
+    [InlineData(1, 13, 120, 3, nameof(CambiarReglasDeReserva.VentanaMeses), CambiarReglasDeReserva.MensajeDeVentanaMaxima)]
     [InlineData(1, 2, -5, 3, nameof(CambiarReglasDeReserva.UmbralCancelacionTardiaMin), CambiarReglasDeReserva.MensajeDeUmbral)]
     [InlineData(1, 2, 120, 0, nameof(CambiarReglasDeReserva.TopeSemanalPorTelefono), CambiarReglasDeReserva.MensajeDeTope)]
     [InlineData(1, 40000, 120, 3, nameof(CambiarReglasDeReserva.VentanaMeses), CambiarReglasDeReserva.MensajeDeMaximo)]

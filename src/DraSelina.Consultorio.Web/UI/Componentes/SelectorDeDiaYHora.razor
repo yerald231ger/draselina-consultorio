@@ -137,11 +137,11 @@ else
             }
             else if (_sinHorarios is { } sinHorarios)
             {
-                @* La dirección pide un día de la ventana sin horarios del tipo (p. ej. al cambiar de tipo): en
+                @* La dirección pide un día de la ventana sin horarios del tipo (no se atiende, o no caben; p. ej. al cambiar de tipo): en
                    escritorio no se elige otro día; el teléfono muestra el primero con horas. *@
                 <div class="dsm-horas dsm-horas--lleno dsm-solo-escritorio">
                     <h2 class="dsm-seccion">@FormatoDeCita.Largo(sinHorarios)</h2>
-                    <p class="dsm-horas__sin-horarios">Este día no tiene horarios para este tipo de consulta. Elige otro día en el calendario.</p>
+                    <p class="dsm-horas__sin-horarios">Este día no tiene horarios disponibles. Elige otro día en el calendario.</p>
                 </div>
             }
 

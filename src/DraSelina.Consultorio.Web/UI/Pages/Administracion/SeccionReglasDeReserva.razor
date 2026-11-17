@@ -22,7 +22,7 @@
     }
     else if (_cargada)
     {
-        <form class="dsm-formulario dsm-seccion-de-configuracion__formulario" @onsubmit="GuardarAsync">
+        <form class="dsm-formulario dsm-seccion-de-configuracion__formulario" novalidate @onsubmit="GuardarAsync">
             <div class="dsm-campo">
                 <label for="AnticipacionMinimaDias" class="dsm-campo__etiqueta">Anticipación mínima (días)</label>
                 <input id="AnticipacionMinimaDias" type="number" inputmode="numeric" class="dsm-campo__control" @bind="_comando.AnticipacionMinimaDias"
@@ -51,7 +51,7 @@
             </div>
 
             <div class="dsm-campo">
-                <label for="TopeSemanalPorTelefono" class="dsm-campo__etiqueta">Tope semanal por teléfono (citas)</label>
+                <label for="TopeSemanalPorTelefono" class="dsm-campo__etiqueta">Tope semanal por celular (citas)</label>
                 <input id="TopeSemanalPorTelefono" type="number" inputmode="numeric" class="dsm-campo__control" @bind="_comando.TopeSemanalPorTelefono"
                        aria-invalid="@Invalido(nameof(CambiarReglasDeReserva.TopeSemanalPorTelefono))"
                        aria-describedby="@DescritoPor(nameof(CambiarReglasDeReserva.TopeSemanalPorTelefono))" />
