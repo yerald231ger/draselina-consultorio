@@ -12,6 +12,8 @@
 @using DraSelina.Consultorio.UI.Pages.Reserva
 @inject IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>> Consulta
 @inject ICommandHandler<GuardarAgendaCustom, AgendaCustomGuardada> Guardar
+@inject ICommandHandler<BorrarAgendaCustom, AgendaCustomBorrada> Borrar
+@inject IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera> VistaPrevia
 @inject IClock Reloj
 @inject ILogger<CalendarioDeAtencion> Registro
 
@@ -19,9 +21,12 @@
     Calendario de atención (CAP-11, FR-13, UJ-3, UJ-6; entrada 6.1): el mes, con cada día como lo distingue la Agenda
     (no se atiende, horario especial o día abierto, con su motivo) y sus Tramos vigentes. Al tocar un día de hoy en
     adelante se abre el formulario de su horario propio, lleno con los Tramos que valen ese día y el motivo de su custom
-    si tiene: Tramos que se agregan y se quitan (ninguno: ese día no se atiende) y motivo. Guardar manda
-    GuardarAgendaCustom; si quedan Citas fuera, no se guarda nada y se dice (la lista para elegir cancelar o conservar es
-    de la entrada 6.3). Los días pasados se ven pero no se editan [ASSUMPTION].
+    si tiene: Tramos que se agregan y se quitan (ninguno: ese día no se atiende) y motivo. Antes de guardar, o de quitar el
+    horario propio (el día vuelve a la base, y se dice a qué Tramos), la vista previa CitasFueraDelHorario lista las Citas
+    que quedarían fuera; el Administrador elige cancelar o conservar cada una (ListaDeCitasFuera, entrada 6.3) y la página
+    manda esa lista con GuardarAgendaCustom o BorrarAgendaCustom. Si el comando responde que la lista ya no coincide, la
+    vuelve a cargar con un aviso y conserva las elecciones de las Citas que siguen. Los días pasados se ven pero no se
+    editan [ASSUMPTION].
 
     El mes va en la dirección (/admin/calendario?mes=2026-11); sin mes, o con uno que no se entiende, el mes de hoy (fecha
     local del consultorio, AD-17). Interactive Server (AD-11), con [Authorize]; la consulta y el comando llevan
@@ -98,60 +103,88 @@
 
     @if (_seleccionada is { } seleccionada)
     {
-        <form class="dsm-formulario dsm-calendario__editor" @onsubmit="GuardarAsync" aria-labelledby="editor-del-dia">
-            <h2 id="editor-del-dia" class="dsm-seccion">Horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
-            <p class="dsm-cuerpo">Hoy vale: @Descripcion(seleccionada)</p>
-
-            <fieldset class="dsm-calendario__tramos">
-                <legend class="dsm-campo__etiqueta">Tramos</legend>
-                @for (var i = 0; i < _comando.Tramos.Count; i++)
+        @if (_quitando)
+        {
+            <section class="dsm-calendario__editor dsm-calendario__quitar-panel" aria-labelledby="quitar-del-dia">
+                <h2 id="quitar-del-dia" class="dsm-seccion">Quitar el horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
+                @if (_fuera is { } alQuitar)
                 {
-                    var indice = i;
-                    var tramo = _comando.Tramos[indice];
-                    var propiedad = GuardarAgendaCustom.PropiedadDelTramo(indice);
-                    <div class="dsm-calendario__tramo" data-tramo="@indice">
-                        <div class="dsm-campo">
-                            <label for="inicio-@indice" class="dsm-campo__etiqueta">Inicio</label>
-                            <input id="inicio-@indice" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm"
-                                   aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
-                        </div>
-                        <div class="dsm-campo">
-                            <label for="fin-@indice" class="dsm-campo__etiqueta">Fin</label>
-                            <input id="fin-@indice" type="time" class="dsm-campo__control" @bind="tramo.Fin" @bind:format="HH:mm"
-                                   aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
-                        </div>
-                        <button type="button" class="btn dsm-boton-neutro dsm-calendario__quitar" @onclick="() => Quitar(indice)">
-                            Quitar<span class="visually-hidden"> el tramo @(indice + 1)</span>
-                        </button>
-                        @ErroresDe(propiedad)
-                    </div>
+                    <p class="dsm-cuerpo dsm-calendario__vuelve">@VuelveA(alQuitar.Tramos)</p>
+                    @if (alQuitar.Citas.Count > 0)
+                    {
+                        <ListaDeCitasFuera Citas="alQuitar.Citas" Elecciones="_elecciones" FaltaElegir="_faltaElegir" AlCambiar="AlElegir" />
+                    }
                 }
-                @if (_comando.Tramos.Count == 0)
-                {
-                    <p class="dsm-cuerpo dsm-calendario__sin-tramos">@SinTramos</p>
-                }
-                <button type="button" class="btn dsm-boton-neutro dsm-calendario__agregar" @onclick="Agregar">Agregar tramo</button>
-            </fieldset>
-
-            <div class="dsm-campo">
-                <label for="motivo" class="dsm-campo__etiqueta">Motivo</label>
-                <input id="motivo" class="dsm-campo__control" @bind="_comando.Motivo" autocomplete="off" placeholder="cirugía, vacaciones, sábado abierto"
-                       aria-invalid="@Invalido(nameof(GuardarAgendaCustom.Motivo))" aria-describedby="@DescritoPor(nameof(GuardarAgendaCustom.Motivo))" />
-                @ErroresDe(nameof(GuardarAgendaCustom.Motivo))
-            </div>
-
-            @if (MensajeGeneral() is { } mensaje)
-            {
-                <div class="dsm-aviso dsm-calendario__error" role="alert">
-                    <p class="dsm-aviso__mensaje">@mensaje</p>
+                @MensajeDeError()
+                <div class="dsm-calendario__acciones">
+                    <button type="button" class="btn btn-primary dsm-accion-principal dsm-calendario__confirmar-quitar"
+                            disabled="@(_ocupado || _fuera is null)" @onclick="QuitarAsync">Quitar horario propio</button>
+                    <button type="button" class="btn dsm-boton-neutro dsm-calendario__volver" @onclick="VolverAlEditor">Volver</button>
                 </div>
-            }
+            </section>
+        }
+        else
+        {
+            <form class="dsm-formulario dsm-calendario__editor" @onsubmit="GuardarAsync" aria-labelledby="editor-del-dia">
+                <h2 id="editor-del-dia" class="dsm-seccion">Horario propio del @FormatoDeCita.Largo(seleccionada.Fecha)</h2>
+                <p class="dsm-cuerpo">Hoy vale: @Descripcion(seleccionada)</p>
 
-            <div class="dsm-calendario__acciones">
-                <button type="submit" class="btn btn-primary dsm-accion-principal" disabled="@_ocupado">Guardar</button>
-                <button type="button" class="btn dsm-boton-neutro" @onclick="Cerrar">Cancelar</button>
-            </div>
-        </form>
+                <fieldset class="dsm-calendario__tramos">
+                    <legend class="dsm-campo__etiqueta">Tramos</legend>
+                    @for (var i = 0; i < _comando.Tramos.Count; i++)
+                    {
+                        var indice = i;
+                        var tramo = _comando.Tramos[indice];
+                        var propiedad = GuardarAgendaCustom.PropiedadDelTramo(indice);
+                        <div class="dsm-calendario__tramo" data-tramo="@indice">
+                            <div class="dsm-campo">
+                                <label for="inicio-@indice" class="dsm-campo__etiqueta">Inicio</label>
+                                <input id="inicio-@indice" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm"
+                                       aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
+                            </div>
+                            <div class="dsm-campo">
+                                <label for="fin-@indice" class="dsm-campo__etiqueta">Fin</label>
+                                <input id="fin-@indice" type="time" class="dsm-campo__control" @bind="tramo.Fin" @bind:format="HH:mm"
+                                       aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
+                            </div>
+                            <button type="button" class="btn dsm-boton-neutro dsm-calendario__quitar" @onclick="() => Quitar(indice)">
+                                Quitar<span class="visually-hidden"> el tramo @(indice + 1)</span>
+                            </button>
+                            @ErroresDe(propiedad)
+                        </div>
+                    }
+                    @if (_comando.Tramos.Count == 0)
+                    {
+                        <p class="dsm-cuerpo dsm-calendario__sin-tramos">@SinTramos</p>
+                    }
+                    <button type="button" class="btn dsm-boton-neutro dsm-calendario__agregar" @onclick="Agregar">Agregar tramo</button>
+                </fieldset>
+
+                <div class="dsm-campo">
+                    <label for="motivo" class="dsm-campo__etiqueta">Motivo</label>
+                    <input id="motivo" class="dsm-campo__control" @bind="_comando.Motivo" autocomplete="off" placeholder="cirugía, vacaciones, sábado abierto"
+                           aria-invalid="@Invalido(nameof(GuardarAgendaCustom.Motivo))" aria-describedby="@DescritoPor(nameof(GuardarAgendaCustom.Motivo))" />
+                    @ErroresDe(nameof(GuardarAgendaCustom.Motivo))
+                </div>
+
+                @if (_fuera is { Citas.Count: > 0 } alGuardar)
+                {
+                    <ListaDeCitasFuera Citas="alGuardar.Citas" Elecciones="_elecciones" FaltaElegir="_faltaElegir" AlCambiar="AlElegir" />
+                }
+
+                @MensajeDeError()
+
+                <div class="dsm-calendario__acciones">
+                    <button type="submit" class="btn btn-primary dsm-accion-principal" disabled="@_ocupado">Guardar</button>
+                    @if (seleccionada.ConCustom)
+                    {
+                        <button type="button" class="btn dsm-boton-neutro dsm-calendario__quitar-custom" disabled="@_ocupado"
+                                @onclick="EmpezarAQuitarAsync">Quitar horario propio</button>
+                    }
+                    <button type="button" class="btn dsm-boton-neutro" @onclick="Cerrar">Cancelar</button>
+                </div>
+            </form>
+        }
     }
 </section>
 
@@ -159,7 +192,7 @@
     public const string Ayuda = "Toca una fecha para darle su horario propio: recortarla, cerrarla o abrirla. Las demás siguen la semana tipo.";
     public const string NoSeCargo = "No se pudo cargar el calendario. Recarga la página.";
     public const string SinTramos = "Sin tramos, ese día no se atiende.";
-    public const string CitasFuera = "Esta fecha tiene citas que quedarían fuera de este horario. No se guardó nada.";
+    public const string CitasFuera = "La lista de citas cambió mientras la revisabas: revísala de nuevo. No se guardó nada.";
     public const string TramosEncimados = "Dos tramos se enciman. Revisa las horas.";
     public const string TramoCorto = "En cada tramo debe caber al menos una cita del tipo de consulta más corto.";
     public const string FechaPasada = "Esa fecha ya pasó.";
@@ -184,6 +217,13 @@
     private string? _guardado;
     private bool _ocupado;
 
+    // La vista previa de las Citas que quedan fuera y los Tramos con que se pidió (al guardar); las elecciones por Cita.
+    private HorarioConCitasFuera? _fuera;
+    private List<TramoDeLaAgenda>? _tramosVistos;
+    private Dictionary<CitaId, bool?> _elecciones = [];
+    private bool _faltaElegir;
+    private bool _quitando;
+
     /// <summary>La dirección del Calendario en un mes: <c>/admin/calendario?mes=2026-11</c>.</summary>
     public static string Direccion(DateOnly mes) =>
         $"/admin/calendario?mes={mes.ToString("yyyy-MM", CultureInfo.InvariantCulture)}";
@@ -205,6 +245,13 @@
         "dsm-calendario__dia"
         + (dia.Tramos.Count == 0 ? " dsm-calendario__dia--cerrado" : "")
         + (dia.ConCustom ? " dsm-calendario__dia--custom" : "")
+        + dia.Tipo switch
+        {
+            TipoDeDia.CustomSinAtencion => " dsm-calendario__dia--no-se-atiende",
+            TipoDeDia.HorarioEspecial => " dsm-calendario__dia--especial",
+            TipoDeDia.DiaAbierto => " dsm-calendario__dia--abierto",
+            _ => "",
+        }
         + (dia.Fecha == _hoy ? " dsm-calendario__dia--hoy" : "")
         + (dia.Fecha < _hoy ? " dsm-calendario__dia--pasado" : "")
         + (_seleccionada?.Fecha == dia.Fecha ? " dsm-calendario__dia--elegido" : "");
@@ -274,6 +321,7 @@
         _seleccionada = dia;
         _resultado = null;
         _guardado = null;
+        OlvidarLaVista();
         _comando = new GuardarAgendaCustom
         {
             Fecha = dia.Fecha,
@@ -286,6 +334,16 @@
     {
         _seleccionada = null;
         _resultado = null;
+        OlvidarLaVista();
+    }
+
+    private void OlvidarLaVista()
+    {
+        _fuera = null;
+        _tramosVistos = null;
+        _elecciones = [];
+        _faltaElegir = false;
+        _quitando = false;
     }
 
     private void Agregar() => _comando.Tramos.Add(new TramoAGuardar());
@@ -307,18 +365,45 @@
         _ocupado = true;
         try
         {
+            _resultado = null;
+
+            // Con Tramos completos, primero la vista previa; con Tramos incompletos o al revés, el comando dice qué falta.
+            if (TramosDelFormulario() is { } tramos && (_fuera is null || !_tramosVistos!.SequenceEqual(tramos)))
+            {
+                var vista = await VistaPrevia.HandleAsync(CitasFueraDelHorario.AlGuardar(_seleccionada.Fecha, tramos), _cierre.Token);
+                if (vista.EsExito)
+                {
+                    MostrarLaVista(vista.Valor, tramos);
+                    if (vista.Valor.Citas.Count > 0)
+                    {
+                        // Que el Administrador elija; el siguiente "Guardar" manda la lista.
+                        return;
+                    }
+                }
+            }
+
+            if (!TodasElegidas())
+            {
+                return;
+            }
+
+            _comando.Citas = Decisiones();
             var resultado = await Guardar.HandleAsync(_comando, _cierre.Token);
             if (resultado.EsExito)
             {
-                _guardado = resultado.Valor.SinCambios
+                _guardado = (resultado.Valor.SinCambios
                     ? $"El {FormatoDeCita.Largo(resultado.Valor.Fecha)} ya tenía ese horario."
-                    : $"Se guardó el horario propio del {FormatoDeCita.Largo(resultado.Valor.Fecha)}.";
+                    : $"Se guardó el horario propio del {FormatoDeCita.Largo(resultado.Valor.Fecha)}.") + Cancelaciones(_comando.Citas);
                 Cerrar();
                 await CargarAsync();
                 return;
             }
 
             _resultado = resultado;
+            if (resultado.Codigo == CodigosDeAgenda.CitasFuera && TramosDelFormulario() is { } vistos)
+            {
+                await RecargarLaVistaAsync(CitasFueraDelHorario.AlGuardar(_seleccionada.Fecha, vistos), vistos);
+            }
         }
         catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
         {
@@ -330,6 +415,143 @@
             _ocupado = false;
         }
     }
+
+    private async Task EmpezarAQuitarAsync()
+    {
+        if (_ocupado || _seleccionada is null)
+        {
+            return;
+        }
+
+        _ocupado = true;
+        try
+        {
+            OlvidarLaVista();
+            _resultado = null;
+            _quitando = true;
+            await RecargarLaVistaAsync(CitasFueraDelHorario.AlQuitar(_seleccionada.Fecha), tramos: null);
+        }
+        finally
+        {
+            _ocupado = false;
+        }
+    }
+
+    private async Task QuitarAsync()
+    {
+        if (_ocupado || _seleccionada is null || _fuera is null || !TodasElegidas())
+        {
+            return;
+        }
+
+        _ocupado = true;
+        try
+        {
+            var decisiones = Decisiones();
+            var resultado = await Borrar.HandleAsync(new BorrarAgendaCustom { Fecha = _seleccionada.Fecha, Citas = decisiones }, _cierre.Token);
+            if (resultado.EsExito)
+            {
+                _guardado = $"El {FormatoDeCita.Largo(resultado.Valor.Fecha)} volvió a la semana tipo." + Cancelaciones(decisiones);
+                Cerrar();
+                await CargarAsync();
+                return;
+            }
+
+            _resultado = resultado;
+            if (resultado.Codigo == CodigosDeAgenda.CitasFuera)
+            {
+                await RecargarLaVistaAsync(CitasFueraDelHorario.AlQuitar(_seleccionada.Fecha), tramos: null);
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "El horario propio no se pudo quitar");
+            _resultado = Resultado.Fallo("calendario.error");
+        }
+        finally
+        {
+            _ocupado = false;
+        }
+    }
+
+    private void VolverAlEditor()
+    {
+        OlvidarLaVista();
+        _resultado = null;
+    }
+
+    private void AlElegir() => _faltaElegir = false;
+
+    // Pide la vista previa otra vez; si no vuelve, lo dice sin perder lo que ya se mostraba.
+    private async Task RecargarLaVistaAsync(CitasFueraDelHorario consulta, List<TramoDeLaAgenda>? tramos)
+    {
+        try
+        {
+            var vista = await VistaPrevia.HandleAsync(consulta, _cierre.Token);
+            if (vista.EsExito)
+            {
+                MostrarLaVista(vista.Valor, tramos);
+                return;
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "Las citas que quedan fuera no se pudieron revisar");
+        }
+
+        _resultado ??= Resultado.Fallo("calendario.error");
+    }
+
+    // Conserva la elección de las Citas que siguen en la lista; las nuevas, con la preselección del Assumption de RN-10:
+    // las del Consultorio en conservar, las en línea sin elegir.
+    private void MostrarLaVista(HorarioConCitasFuera vista, List<TramoDeLaAgenda>? tramos)
+    {
+        _fuera = vista;
+        _tramosVistos = tramos;
+        _elecciones = vista.Citas.ToDictionary(
+            c => c.CitaId,
+            c => _elecciones.TryGetValue(c.CitaId, out var antes) && antes is not null ? antes : (c.DelConsultorio ? false : (bool?)null));
+        _faltaElegir = false;
+    }
+
+    private bool TodasElegidas()
+    {
+        _faltaElegir = _fuera is { } vista && vista.Citas.Any(c => _elecciones.GetValueOrDefault(c.CitaId) is null);
+        return !_faltaElegir;
+    }
+
+    private List<DecisionSobreCita> Decisiones() =>
+        _fuera is { } vista
+            ? [.. vista.Citas.Select(c => new DecisionSobreCita { CitaId = c.CitaId, Cancelar = _elecciones[c.CitaId] == true })]
+            : [];
+
+    // Los Tramos del formulario si todos están completos y con el inicio antes del fin; si no, nulo.
+    private List<TramoDeLaAgenda>? TramosDelFormulario() =>
+        _comando.Tramos.All(t => t.Inicio is { } inicio && t.Fin is { } fin && inicio < fin)
+            ? [.. _comando.Tramos.Select(t => new TramoDeLaAgenda(t.Inicio!.Value, t.Fin!.Value))]
+            : null;
+
+    private static string Cancelaciones(IReadOnlyCollection<DecisionSobreCita> decisiones) =>
+        decisiones.Count(d => d.Cancelar) switch
+        {
+            0 => "",
+            1 => " La cita elegida se cancela en unos instantes y su paciente recibe la disculpa.",
+            var n => $" Las {n} citas elegidas se cancelan en unos instantes y sus pacientes reciben la disculpa.",
+        };
+
+    private static string VuelveA(IReadOnlyList<TramoDeLaAgenda> tramos) =>
+        tramos.Count == 0
+            ? "El día vuelve a la semana tipo: ese día no se atiende."
+            : $"El día vuelve a la semana tipo: {Tramos(tramos)}.";
+
+    private RenderFragment? MensajeDeError() => MensajeGeneral() is { } mensaje
+        ? __builder =>
+        {
+            <div class="dsm-aviso dsm-calendario__error" role="alert">
+                <p class="dsm-aviso__mensaje">@mensaje</p>
+            </div>
+        }
+        : null;
 
     private string? MensajeGeneral()
     {

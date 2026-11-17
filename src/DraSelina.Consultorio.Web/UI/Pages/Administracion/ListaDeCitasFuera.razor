@@ -1,0 +1,93 @@
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.Kernel
+@using DraSelina.Consultorio.UI.Pages.Reserva
+
+@*
+    Las Citas que quedan fuera del horario nuevo de una fecha (RN-9, EXPERIENCE.md "Agenda custom que deja Citas fuera";
+    entrada 6.3): cada una con su hora, su Paciente y "sin correo" si hay que avisarle a mano, y la elección de cancelarla
+    o conservarla. "Cancelar todas" marca todas en cancelar; cada una se puede cambiar después. Las elecciones las guarda
+    la página (Elecciones): nulo es "sin elegir". Textos `[ASSUMPTION: texto]`.
+*@
+
+<fieldset class="dsm-citas-fuera" aria-describedby="citas-fuera-ayuda">
+    <legend class="dsm-seccion dsm-citas-fuera__titulo">@Titulo(Citas.Count)</legend>
+    <p id="citas-fuera-ayuda" class="dsm-cuerpo dsm-citas-fuera__ayuda">@Ayuda</p>
+
+    <button type="button" class="btn dsm-boton-neutro dsm-citas-fuera__todas" @onclick="CancelarTodasAsync">Cancelar todas</button>
+
+    <ol class="dsm-citas-fuera__lista">
+        @foreach (var cita in Citas)
+        {
+            var nombre = $"cita-{cita.CitaId.Valor}";
+            var eleccion = Elecciones.GetValueOrDefault(cita.CitaId);
+            <li class="dsm-citas-fuera__cita" data-cita="@cita.CitaId">
+                <fieldset class="dsm-citas-fuera__eleccion">
+                    <legend class="dsm-citas-fuera__datos">
+                        <span class="dsm-citas-fuera__hora">@FormatoDeCita.Hora(cita.Inicio) a @FormatoDeCita.Hora(cita.Fin)</span>
+                        <span class="dsm-citas-fuera__paciente">@(cita.Paciente ?? Agenda.PacienteNoEncontrado)</span>
+                        @if (cita.SinCorreo)
+                        {
+                            <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-citas-fuera__sin-correo">@PresentacionDeCita.SinCorreo</span>
+                        }
+                    </legend>
+                    <label class="dsm-citas-fuera__opcion">
+                        <input type="radio" name="@nombre" value="cancelar" class="dsm-citas-fuera__cancelar"
+                               checked="@(eleccion == true)" @onchange="() => ElegirAsync(cita.CitaId, true)" />
+                        Cancelar
+                    </label>
+                    <label class="dsm-citas-fuera__opcion">
+                        <input type="radio" name="@nombre" value="conservar" class="dsm-citas-fuera__conservar"
+                               checked="@(eleccion == false)" @onchange="() => ElegirAsync(cita.CitaId, false)" />
+                        Conservar
+                    </label>
+                </fieldset>
+            </li>
+        }
+    </ol>
+
+    @if (FaltaElegir)
+    {
+        <p class="dsm-campo__error dsm-citas-fuera__falta" role="alert">@FaltaElegirTexto</p>
+    }
+</fieldset>
+
+@code {
+    public const string Ayuda = "Elige qué hacer con cada una. Las que canceles reciben la disculpa con el enlace para elegir otro horario; las que conserves no cambian y su paciente no recibe nada.";
+    public const string FaltaElegirTexto = "Elige cancelar o conservar en cada cita.";
+
+    /// <summary>Las Citas que quedan fuera, en orden de hora.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<CitaFueraDelHorario> Citas { get; set; } = [];
+
+    /// <summary>La elección por Cita: verdadero cancelar, falso conservar; sin entrada o nulo, sin elegir.</summary>
+    [Parameter, EditorRequired]
+    public Dictionary<CitaId, bool?> Elecciones { get; set; } = [];
+
+    /// <summary>Si se intentó guardar con alguna sin elegir.</summary>
+    [Parameter]
+    public bool FaltaElegir { get; set; }
+
+    /// <summary>Avisa a la página que cambió una elección.</summary>
+    [Parameter]
+    public EventCallback AlCambiar { get; set; }
+
+    /// <summary>"1 cita queda fuera de este horario", "4 citas quedan fuera de este horario".</summary>
+    public static string Titulo(int cuantas) =>
+        cuantas == 1 ? "1 cita queda fuera de este horario" : $"{cuantas} citas quedan fuera de este horario";
+
+    private async Task ElegirAsync(CitaId cita, bool cancelar)
+    {
+        Elecciones[cita] = cancelar;
+        await AlCambiar.InvokeAsync();
+    }
+
+    private async Task CancelarTodasAsync()
+    {
+        foreach (var cita in Citas)
+        {
+            Elecciones[cita.CitaId] = true;
+        }
+
+        await AlCambiar.InvokeAsync();
+    }
+}

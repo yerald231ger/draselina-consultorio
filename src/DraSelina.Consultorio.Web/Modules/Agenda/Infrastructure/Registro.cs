@@ -72,7 +72,8 @@ public static class Registro
             .AddScoped<IQueryHandler<PacienteReconocido, PacienteDeLaCita>, PacienteReconocidoHandler>()
             .AddScoped<IQueryHandler<DetalleDeCita, CitaEnDetalle>, DetalleDeCitaHandler>()
             .AddScoped<IQueryHandler<HistorialDelPaciente, PacienteConHistorial>, HistorialDelPacienteHandler>()
-            .AddScoped<IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>>, MesDeAtencionHandler>();
+            .AddScoped<IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>>, MesDeAtencionHandler>()
+            .AddScoped<IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>, CitasFueraDelHorarioHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

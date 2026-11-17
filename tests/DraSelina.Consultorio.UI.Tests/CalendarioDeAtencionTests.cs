@@ -11,7 +11,8 @@ namespace DraSelina.Consultorio.UI.Tests;
 /// <summary>
 /// El Calendario de atención (entrada 6.1) con una consulta y un comando falsos: el mes de lunes a domingo, cada día con
 /// su marca y sus Tramos, los días pasados sin editar, el formulario lleno con lo que vale el día, agregar y quitar
-/// Tramos, el comando que se manda, y los mensajes de cada rechazo, incluido el de Citas fuera. Hoy es la fecha local del
+/// Tramos, el comando que se manda, y los mensajes de cada rechazo (entrada 6.1); la lista de Citas que quedan fuera con
+/// cancelar o conservar, el conflicto que la recarga, y quitar el horario propio (entrada 6.3). Hoy es la fecha local del
 /// reloj de la aplicación.
 /// </summary>
 public sealed class CalendarioDeAtencionTests : BunitContext
@@ -29,10 +30,16 @@ public sealed class CalendarioDeAtencionTests : BunitContext
 
     private readonly ComandoFalso _comando = new();
 
+    private readonly VistaPreviaFalsa _vista = new();
+
+    private readonly BorrarFalso _borrar = new();
+
     public CalendarioDeAtencionTests()
     {
         Services.AddSingleton<IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>>>(_consulta);
         Services.AddSingleton<ICommandHandler<GuardarAgendaCustom, AgendaCustomGuardada>>(_comando);
+        Services.AddSingleton<IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>>(_vista);
+        Services.AddSingleton<ICommandHandler<BorrarAgendaCustom, AgendaCustomBorrada>>(_borrar);
         Services.AddSingleton<IClock>(new Reloj(Ahora));
         SetRendererInfo(Interactivo);
     }
@@ -189,6 +196,174 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         Assert.Equal("error-Tramos-0", calendario.Find("#inicio-0").GetAttribute("aria-describedby"));
     }
 
+    [Fact]
+    public void Con_Citas_fuera_muestra_la_lista_antes_de_guardar_con_su_preseleccion()
+    {
+        _vista.Responder = _ => CuatroFuera();
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find("#motivo").Change("asunto personal");
+
+        calendario.Find("form").Submit();
+
+        Assert.Empty(_comando.Recibidos);
+        var pedida = Assert.Single(_vista.Pedidas);
+        Assert.Equal((Sabado, false), (pedida.Fecha, pedida.Quitar));
+        Assert.Empty(pedida.Tramos);
+        Assert.Equal(ListaDeCitasFuera.Titulo(4), calendario.Find(".dsm-citas-fuera__titulo").TextContent);
+        var filas = calendario.FindAll(".dsm-citas-fuera__cita");
+        Assert.Equal(
+            ["10:00 am a 10:30 am", "10:30 am a 11:00 am", "11:00 am a 11:30 am", "12:30 pm a 1:00 pm"],
+            filas.Select(f => f.QuerySelector(".dsm-citas-fuera__hora")!.TextContent));
+        Assert.Equal("Bruno Díaz", filas[1].QuerySelector(".dsm-citas-fuera__paciente")!.TextContent);
+        Assert.NotNull(filas[1].QuerySelector(".dsm-citas-fuera__sin-correo"));
+        Assert.Null(filas[0].QuerySelector(".dsm-citas-fuera__sin-correo"));
+        // En línea sin elegir; la del Consultorio (12:30) en conservar.
+        Assert.All(filas.Take(3), f => Assert.Empty(f.QuerySelectorAll("input[checked]")));
+        Assert.True(filas[3].QuerySelector(".dsm-citas-fuera__conservar")!.HasAttribute("checked"));
+    }
+
+    [Fact]
+    public void Sin_elegir_todas_no_manda_nada_y_lo_dice()
+    {
+        _vista.Responder = _ => CuatroFuera();
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find("#motivo").Change("asunto personal");
+        calendario.Find("form").Submit();
+
+        calendario.Find("form").Submit();
+
+        Assert.Empty(_comando.Recibidos);
+        Assert.Equal(ListaDeCitasFuera.FaltaElegirTexto, calendario.Find(".dsm-citas-fuera__falta").TextContent);
+    }
+
+    [Fact]
+    public void Cancelar_todas_y_conservar_la_de_las_12_30_manda_tres_y_una()
+    {
+        _vista.Responder = _ => CuatroFuera();
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find("#motivo").Change("asunto personal");
+        calendario.Find("form").Submit();
+
+        calendario.Find(".dsm-citas-fuera__todas").Click();
+        calendario.FindAll(".dsm-citas-fuera__conservar")[3].Change("conservar");
+        calendario.Find("form").Submit();
+
+        var enviado = Assert.Single(_comando.Recibidos);
+        Assert.Equal(
+            [(Citas[0], true), (Citas[1], true), (Citas[2], true), (Citas[3], false)],
+            enviado.Citas.Select(c => (c.CitaId!.Value, c.Cancelar)));
+        Assert.Single(_vista.Pedidas);
+        Assert.Equal(
+            "Se guardó el horario propio del Sábado 14 de noviembre. Las 3 citas elegidas se cancelan en unos instantes y sus pacientes reciben la disculpa.",
+            calendario.Find(".dsm-calendario__guardado").TextContent);
+    }
+
+    [Fact]
+    public void Un_conflicto_recarga_la_lista_y_conserva_lo_elegido()
+    {
+        _vista.Responder = _ => CuatroFuera();
+        _comando.Responder = _ => Resultado.Fallo(CodigosDeAgenda.CitasFuera).Como<AgendaCustomGuardada>();
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find("#motivo").Change("asunto personal");
+        calendario.Find("form").Submit();
+        calendario.Find(".dsm-citas-fuera__todas").Click();
+        var nueva = new CitaFueraDelHorario(new CitaId(Guid.CreateVersion7()), new(11, 30), new(12, 0), "Carla Ruiz", false, false);
+        _vista.Responder = _ => CuatroFuera() with { Citas = [.. CuatroFuera().Citas, nueva] };
+
+        calendario.Find("form").Submit();
+
+        Assert.Equal(CalendarioDeAtencion.CitasFuera, calendario.Find(".dsm-calendario__error").TextContent.Trim());
+        Assert.Equal(2, _vista.Pedidas.Count);
+        var filas = calendario.FindAll(".dsm-citas-fuera__cita");
+        Assert.Equal(5, filas.Count);
+        Assert.All(filas.Take(4), f => Assert.True(f.QuerySelector(".dsm-citas-fuera__cancelar")!.HasAttribute("checked")));
+        Assert.Empty(filas[4].QuerySelectorAll("input[checked]"));
+    }
+
+    [Fact]
+    public void Quitar_el_horario_propio_dice_a_que_Tramos_vuelve_y_borra()
+    {
+        _consulta.Personalizar = d => d.Fecha.Day == 11
+            ? d with { Tipo = TipoDeDia.CustomSinAtencion, MotivoDeCustom = "vacaciones", Tramos = [] }
+            : d;
+        _vista.Responder = c => new HorarioConCitasFuera([Tramo(15, 30, 18, 0)], []);
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 11).QuerySelector("button")!.Click();
+
+        calendario.Find(".dsm-calendario__quitar-custom").Click();
+
+        Assert.Equal(CitasFueraDelHorario.AlQuitar(new DateOnly(2026, 11, 11)), Assert.Single(_vista.Pedidas));
+        Assert.Equal("El día vuelve a la semana tipo: 3:30 pm a 6:00 pm.", calendario.Find(".dsm-calendario__vuelve").TextContent);
+        Assert.Empty(calendario.FindAll(".dsm-citas-fuera"));
+
+        calendario.Find(".dsm-calendario__confirmar-quitar").Click();
+
+        var borrado = Assert.Single(_borrar.Recibidos);
+        Assert.Equal(new DateOnly(2026, 11, 11), borrado.Fecha);
+        Assert.Empty(borrado.Citas);
+        Assert.Equal("El Miércoles 11 de noviembre volvió a la semana tipo.", calendario.Find(".dsm-calendario__guardado").TextContent);
+    }
+
+    [Fact]
+    public void Quitar_con_Citas_fuera_pide_la_misma_eleccion()
+    {
+        _consulta.Personalizar = d => d.Fecha == Sabado
+            ? d with { Tipo = TipoDeDia.DiaAbierto, MotivoDeCustom = "sábado abierto", Tramos = [Tramo(10, 0, 13, 0)] }
+            : d;
+        _vista.Responder = _ => new HorarioConCitasFuera([], CuatroFuera().Citas.Take(2).ToList());
+        var calendario = Render<CalendarioDeAtencion>();
+        Celda(calendario, 14).QuerySelector("button")!.Click();
+        calendario.Find(".dsm-calendario__quitar-custom").Click();
+        Assert.Equal("El día vuelve a la semana tipo: ese día no se atiende.", calendario.Find(".dsm-calendario__vuelve").TextContent);
+
+        calendario.Find(".dsm-calendario__confirmar-quitar").Click();
+        Assert.Empty(_borrar.Recibidos);
+        Assert.NotNull(calendario.Find(".dsm-citas-fuera__falta"));
+
+        calendario.FindAll(".dsm-citas-fuera__cancelar")[0].Change("cancelar");
+        calendario.FindAll(".dsm-citas-fuera__conservar")[1].Change("conservar");
+        calendario.Find(".dsm-calendario__confirmar-quitar").Click();
+
+        Assert.Equal([(Citas[0], true), (Citas[1], false)], Assert.Single(_borrar.Recibidos).Citas.Select(c => (c.CitaId!.Value, c.Cancelar)));
+    }
+
+    [Fact]
+    public void Un_dia_sin_custom_no_ofrece_quitar_y_los_tres_tipos_llevan_su_clase()
+    {
+        _consulta.Personalizar = d => d.Fecha.Day switch
+        {
+            10 => d with { Tipo = TipoDeDia.HorarioEspecial, MotivoDeCustom = "cirugía", Tramos = [Tramo(15, 30, 17, 0)] },
+            11 => d with { Tipo = TipoDeDia.CustomSinAtencion, MotivoDeCustom = "vacaciones", Tramos = [] },
+            14 => d with { Tipo = TipoDeDia.DiaAbierto, MotivoDeCustom = "sábado abierto", Tramos = [Tramo(10, 0, 13, 0)] },
+            _ => d,
+        };
+        var calendario = Render<CalendarioDeAtencion>();
+
+        Assert.Contains("dsm-calendario__dia--especial", Celda(calendario, 10).ClassName, StringComparison.Ordinal);
+        Assert.Contains("dsm-calendario__dia--no-se-atiende", Celda(calendario, 11).ClassName, StringComparison.Ordinal);
+        Assert.Contains("dsm-calendario__dia--abierto", Celda(calendario, 14).ClassName, StringComparison.Ordinal);
+        Assert.DoesNotContain("dsm-calendario__dia--", Celda(calendario, 12).ClassName!.Replace("dsm-calendario__dia--hoy", ""), StringComparison.Ordinal);
+
+        Celda(calendario, 12).QuerySelector("button")!.Click();
+        Assert.Empty(calendario.FindAll(".dsm-calendario__quitar-custom"));
+    }
+
+    private static readonly CitaId[] Citas = [.. Enumerable.Range(0, 4).Select(_ => new CitaId(Guid.CreateVersion7()))];
+
+    // Cuatro Citas del sábado: tres en línea (la de las 10:30 sin correo) y la de las 12:30 del Consultorio.
+    private static HorarioConCitasFuera CuatroFuera() => new(
+        [],
+        [
+            new(Citas[0], new(10, 0), new(10, 30), "Ana López", false, false),
+            new(Citas[1], new(10, 30), new(11, 0), "Bruno Díaz", true, false),
+            new(Citas[2], new(11, 0), new(11, 30), "Carmen Soto", false, false),
+            new(Citas[3], new(12, 30), new(13, 0), "Diego Paz", false, true),
+        ]);
+
     private static AngleSharp.Dom.IElement Celda(IRenderedComponent<CalendarioDeAtencion> calendario, int dia) =>
         calendario.Find($"td[data-fecha='2026-11-{dia:00}']");
 
@@ -233,6 +408,31 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         {
             Recibidos.Add(comando);
             return Task.FromResult(Responder(comando));
+        }
+    }
+
+    private sealed class VistaPreviaFalsa : IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>
+    {
+        public List<CitasFueraDelHorario> Pedidas { get; } = [];
+
+        /// <summary>Sin Citas fuera, con los mismos Tramos.</summary>
+        public Func<CitasFueraDelHorario, HorarioConCitasFuera> Responder { get; set; } = c => new HorarioConCitasFuera(c.Tramos, []);
+
+        public Task<Resultado<HorarioConCitasFuera>> HandleAsync(CitasFueraDelHorario consulta, CancellationToken cancellationToken)
+        {
+            Pedidas.Add(consulta);
+            return Task.FromResult(Resultado.Exito(Responder(consulta)));
+        }
+    }
+
+    private sealed class BorrarFalso : ICommandHandler<BorrarAgendaCustom, AgendaCustomBorrada>
+    {
+        public List<BorrarAgendaCustom> Recibidos { get; } = [];
+
+        public Task<Resultado<AgendaCustomBorrada>> HandleAsync(BorrarAgendaCustom comando, CancellationToken cancellationToken)
+        {
+            Recibidos.Add(comando);
+            return Task.FromResult(Resultado.Exito(new AgendaCustomBorrada(comando.Fecha!.Value)));
         }
     }
 
