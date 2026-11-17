@@ -63,10 +63,10 @@
                 {
                     <li class="dsm-pacientes__paciente" data-paciente="@paciente.PatientId.Valor" @key="paciente.PatientId">
                         <a class="dsm-pacientes__abrir" href="@HistorialDelPaciente.Direccion(paciente.PatientId)">@paciente.Nombre</a>
-                        <span class="dsm-pacientes__telefono">@DetalleDeCita.Telefono(paciente.Telefono)</span>
+                        <span class="dsm-pacientes__telefono">@PresentacionDeCita.Telefono(paciente.Telefono)</span>
                         @if (!paciente.TieneCorreo)
                         {
-                            <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-pacientes__sin-correo">@Agenda.SinCorreo</span>
+                            <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-pacientes__sin-correo">@PresentacionDeCita.SinCorreo</span>
                         }
                     </li>
                 }

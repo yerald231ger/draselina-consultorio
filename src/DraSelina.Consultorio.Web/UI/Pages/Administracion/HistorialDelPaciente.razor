@@ -58,7 +58,7 @@
         <dl class="dsm-detalle__datos">
             <div class="dsm-detalle__dato" data-dato="telefono">
                 <dt>Teléfono</dt>
-                <dd><a href="tel:@historial.Paciente.Telefono" class="dsm-enlace-en-texto">@DetalleDeCita.Telefono(historial.Paciente.Telefono)</a></dd>
+                <dd><a href="tel:@historial.Paciente.Telefono" class="dsm-enlace-en-texto">@PresentacionDeCita.Telefono(historial.Paciente.Telefono)</a></dd>
             </div>
             <div class="dsm-detalle__dato" data-dato="correo">
                 <dt>Correo</dt>
@@ -68,7 +68,7 @@
                 }
                 else
                 {
-                    <dd><span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-historial__sin-correo">@Agenda.SinCorreo</span></dd>
+                    <dd><span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-historial__sin-correo">@PresentacionDeCita.SinCorreo</span></dd>
                 }
             </div>
         </dl>
@@ -88,7 +88,7 @@
                             <a class="dsm-historial__abrir" href="@DetalleDeCita.Direccion(cita.CitaId)">@Cuando(cita)</a>
                             <span class="dsm-historial__tipo">@($"{cita.TipoDeVisita ?? DetalleDeCita.TipoNoEncontrado} · {DetalleDeCita.Origen(cita.Origen)}")</span>
                         </div>
-                        <span class="@Agenda.ClaseDeEtiqueta(cita.Estado, cita.Cancelacion) dsm-historial__estado">@Agenda.Etiqueta(cita.Estado, cita.Cancelacion)</span>
+                        <span class="@PresentacionDeCita.ClaseDeEtiqueta(cita.Estado, cita.Cancelacion) dsm-historial__estado">@PresentacionDeCita.Etiqueta(cita.Estado, cita.Cancelacion)</span>
                     </li>
                 }
             </ol>

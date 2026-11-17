@@ -33,7 +33,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Anonimo);
+        Arnes.FijarUsuario(ambito, Anonimo);
 
         var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
 
@@ -46,7 +46,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Autenticado);
+        Arnes.FijarUsuario(ambito, Autenticado);
 
         var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
 
@@ -60,7 +60,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Anonimo);
+        Arnes.FijarUsuario(ambito, Anonimo);
 
         var resultado = await Consulta(ambito).HandleAsync(new LeerAdministracion(), Cancelacion);
 
@@ -73,7 +73,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Autenticado);
+        Arnes.FijarUsuario(ambito, Autenticado);
 
         var resultado = await Consulta(ambito).HandleAsync(new LeerAdministracion(), Cancelacion);
 
@@ -87,7 +87,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Anonimo);
+        Arnes.FijarUsuario(ambito, Anonimo);
 
         var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar { Texto = "" }, Cancelacion);
 
@@ -101,7 +101,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Autenticado);
+        Arnes.FijarUsuario(ambito, Autenticado);
 
         var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar { Texto = "" }, Cancelacion);
 
@@ -128,7 +128,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Anonimo);
+        Arnes.FijarUsuario(ambito, Anonimo);
 
         var resultado = await Handler<PreguntarActor>(ambito).HandleAsync(new PreguntarActor(), Cancelacion);
 
@@ -181,7 +181,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Autenticado);
+        Arnes.FijarUsuario(ambito, Autenticado);
 
         Assert.Equal(IdDeLaCuenta, await ambito.ServiceProvider.GetRequiredService<IActorActual>().IdDelAdministradorAsync());
     }
@@ -191,7 +191,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var anonimo = web.Services.CreateAsyncScope();
-        FijarUsuario(anonimo, Anonimo);
+        Arnes.FijarUsuario(anonimo, Anonimo);
         await using var sistema = web.Services.CreateAsyncScope();
         DeclararSistema(sistema);
 
@@ -223,7 +223,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Autenticado);
+        Arnes.FijarUsuario(ambito, Autenticado);
         using var _ = EnLaPeticion(web, ambito, ruta);
 
         var resultado = await Handler<PreguntarActor>(ambito).HandleAsync(new PreguntarActor(), Cancelacion);
@@ -238,7 +238,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Autenticado);
+        Arnes.FijarUsuario(ambito, Autenticado);
         using var _ = EnLaPeticion(web, ambito, "/reservar");
 
         var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
@@ -255,7 +255,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Autenticado);
+        Arnes.FijarUsuario(ambito, Autenticado);
         using var _ = EnLaPeticion(web, ambito, ruta);
 
         var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
@@ -270,7 +270,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     {
         await using var web = arnes.ArrancarWeb();
         await using var ambito = web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, Anonimo);
+        Arnes.FijarUsuario(ambito, Anonimo);
         using var _ = EnLaPeticion(web, ambito, "/admin/citas/0b6f7c1e");
 
         var resultado = await Handler<Administrar>(ambito).HandleAsync(new Administrar(), Cancelacion);
@@ -285,7 +285,7 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
         await using var web = arnes.ArrancarWeb();
         await using var conexion = web.Services.CreateAsyncScope();
         await using var circuito = web.Services.CreateAsyncScope();
-        FijarUsuario(circuito, Autenticado);
+        Arnes.FijarUsuario(circuito, Autenticado);
         // La petición de la conexión del circuito (/_blazor) es de otro ámbito.
         using var _ = EnLaPeticion(web, conexion, "/_blazor");
 
@@ -309,13 +309,6 @@ public sealed class ActorYAdministracionTests(Arnes arnes)
     private sealed class PeticionEnCurso(IHttpContextAccessor acceso) : IDisposable
     {
         public void Dispose() => acceso.HttpContext = null;
-    }
-
-    private static void FijarUsuario(AsyncServiceScope ambito, ClaimsPrincipal usuario)
-    {
-        var proveedor = Assert.IsAssignableFrom<IHostEnvironmentAuthenticationStateProvider>(
-            ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>());
-        proveedor.SetAuthenticationState(Task.FromResult(new AuthenticationState(usuario)));
     }
 
     private static void DeclararSistema(AsyncServiceScope ambito) =>

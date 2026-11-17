@@ -6,7 +6,6 @@ using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.Extensions.DependencyInjection;
@@ -820,11 +819,7 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
     /// Fija un usuario anónimo en el ámbito, como lo fija el renderizador de Blazor en una petición sin sesión: el
     /// actor de <see cref="IActorActual"/> es el Paciente (AD-22).
     /// </summary>
-    internal static void SinSesion(AsyncServiceScope ambito)
-    {
-        var autenticacion = (IHostEnvironmentAuthenticationStateProvider)ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>();
-        autenticacion.SetAuthenticationState(Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()))));
-    }
+    internal static void SinSesion(AsyncServiceScope ambito) => Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity()));
 
     /// <summary>
     /// Un comando válido: Primera consulta, mañana a las 16:00 (o lo que se pida), con Consentimiento y una solicitud
@@ -968,14 +963,9 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         /// </summary>
         /// <param name="pacienteId">El Paciente de la Cita; si no se da, uno al azar que no existe.</param>
         public Task InsertarCitaDelConsultorioAsync(DateOnly fecha, TimeOnly inicio, TimeOnly fin, Guid? pacienteId = null) =>
-            EjecutarAsync(
-                $"""
-                insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, origen, nota,
-                    consentimiento_en, consentimiento_version_aviso, consentimiento_canal, creada_en, token_hash)
-                values (gen_random_uuid(), {(pacienteId is { } id ? $"'{id}'" : "gen_random_uuid()")}, '{TiposDeVisitaSembrados.PrimeraConsulta}',
-                    '{HoraLocal.AUtc(fecha, inicio):O}', '{HoraLocal.AUtc(fecha, fin):O}', 'Agendada', 'consultorio',
-                    'Pidió por WhatsApp', now(), '2026-11-borrador', 'externo', now(), sha256(uuid_send(gen_random_uuid())))
-                """);
+            Arnes.SembrarCitaAsync(
+                Cadena, HoraLocal.AUtc(fecha, inicio), HoraLocal.AUtc(fecha, fin), pacienteId: pacienteId,
+                nota: "Pidió por WhatsApp", cancelacion: Cancelacion);
 
         /// <summary>Una agenda custom escrita directo en la base; sin tramos, ese día no se atiende.</summary>
         public async Task InsertarCustomAsync(DateOnly fecha, string motivo, params (TimeOnly Inicio, TimeOnly Fin)[] tramos)

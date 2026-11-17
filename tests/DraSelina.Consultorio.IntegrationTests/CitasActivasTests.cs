@@ -111,23 +111,10 @@ public sealed class CitasActivasTests(Arnes arnes)
         return new AgendaDbContext(opciones.Options);
     }
 
-    private static async Task InsertarCitaAsync(string cadena, TimeOnly inicio, TimeOnly fin, string estado)
-    {
-        var cancelacion = estado == "Cancelada" ? "'paciente', now()" : "null, null";
-        await using var conexion = new NpgsqlConnection(cadena);
-        await conexion.OpenAsync(Cancelacion);
-        await using var comando = new NpgsqlCommand(
-            $"""
-            insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, motivo_de_cancelacion,
-                cancelada_en, origen, consentimiento_en, consentimiento_version_aviso, consentimiento_canal, creada_en,
-                token_hash)
-            values (gen_random_uuid(), gen_random_uuid(), '{TiposDeVisitaSembrados.PrimeraConsulta}',
-                '{HoraLocal.AUtc(Martes, inicio):O}', '{HoraLocal.AUtc(Martes, fin):O}', '{estado}', {cancelacion},
-                'consultorio', now(), '2026-11-borrador', 'externo', now(), sha256(uuid_send(gen_random_uuid())))
-            """,
-            conexion);
-        await comando.ExecuteNonQueryAsync(Cancelacion);
-    }
+    private static Task InsertarCitaAsync(string cadena, TimeOnly inicio, TimeOnly fin, string estado) =>
+        Arnes.SembrarCitaAsync(
+            cadena, HoraLocal.AUtc(Martes, inicio), HoraLocal.AUtc(Martes, fin), estado,
+            motivoDeCancelacion: estado == "Cancelada" ? "paciente" : null, cancelacion: Cancelacion);
 
     /// <summary>Lo que el contexto manda a la base al leer: el texto del comando y una copia de sus parámetros.</summary>
     private sealed class CapturaDeComando : DbCommandInterceptor

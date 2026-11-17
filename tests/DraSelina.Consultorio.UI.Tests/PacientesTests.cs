@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 // Las páginas y las consultas se llaman como los módulos: los alias evitan los choques.
 using ConsultaDelHistorial = DraSelina.Consultorio.Agenda.Contracts.HistorialDelPaciente;
-using PaginaAgenda = DraSelina.Consultorio.UI.Pages.Administracion.Agenda;
 using PaginaDelHistorial = DraSelina.Consultorio.UI.Pages.Administracion.HistorialDelPaciente;
 using PaginaDePacientes = DraSelina.Consultorio.UI.Pages.Administracion.Pacientes;
 
@@ -68,7 +67,7 @@ public sealed class PacientesTests : BunitContext
                 fila.QuerySelector(".dsm-pacientes__telefono")!.TextContent,
                 fila.QuerySelector(".dsm-pacientes__sin-correo") is not null)));
         var sinCorreo = pagina.Find($"[data-paciente='{Perez.Valor}'] .dsm-pacientes__sin-correo");
-        Assert.Equal(PaginaAgenda.SinCorreo, sinCorreo.TextContent);
+        Assert.Equal(PresentacionDeCita.SinCorreo, sinCorreo.TextContent);
         Assert.Contains("dsm-chip-de-estado--neutro", sinCorreo.ClassName, StringComparison.Ordinal);
         Assert.Empty(pagina.FindAll(".dsm-pacientes__hay-mas"));
         Assert.Empty(pagina.FindAll(".dsm-pacientes__aviso"));
@@ -265,7 +264,7 @@ public sealed class PacientesTests : BunitContext
 
         var pagina = AbrirHistorial(Mariana);
 
-        Assert.Equal(PaginaAgenda.SinCorreo, pagina.Find("[data-dato=correo] .dsm-historial__sin-correo").TextContent);
+        Assert.Equal(PresentacionDeCita.SinCorreo, pagina.Find("[data-dato=correo] .dsm-historial__sin-correo").TextContent);
     }
 
     [Fact]

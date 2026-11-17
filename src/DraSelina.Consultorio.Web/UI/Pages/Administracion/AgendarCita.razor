@@ -491,7 +491,7 @@
 
         if (conEstado)
         {
-            partes.Add(Agenda.Etiqueta(cita.Estado, cita.Cancelacion));
+            partes.Add(PresentacionDeCita.Etiqueta(cita.Estado, cita.Cancelacion));
         }
 
         return string.Join(" · ", partes);

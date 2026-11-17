@@ -58,7 +58,7 @@
     {
         <div class="dsm-detalle__cabeza">
             <h1 id="detalle-de-cita" class="dsm-titulo-de-estado dsm-detalle__paciente">@(cita.Paciente?.Nombre ?? Agenda.PacienteNoEncontrado)</h1>
-            <span class="@Agenda.ClaseDeEtiqueta(cita.Estado, cita.Cancelacion) dsm-detalle__estado">@Agenda.Etiqueta(cita.Estado, cita.Cancelacion)</span>
+            <span class="@PresentacionDeCita.ClaseDeEtiqueta(cita.Estado, cita.Cancelacion) dsm-detalle__estado">@PresentacionDeCita.Etiqueta(cita.Estado, cita.Cancelacion)</span>
         </div>
         @* La fecha y la hora van solo aquí, no otra vez entre los datos (entrada 5.10). *@
         <p class="dsm-detalle__cuando">@Fecha(cita.Fecha), @Horario(cita)</p>
@@ -104,7 +104,7 @@
             {
                 <div class="dsm-detalle__dato" data-dato="telefono">
                     <dt>Teléfono</dt>
-                    <dd><a href="tel:@paciente.Telefono" class="dsm-enlace-en-texto">@Telefono(paciente.Telefono)</a></dd>
+                    <dd><a href="tel:@paciente.Telefono" class="dsm-enlace-en-texto">@PresentacionDeCita.Telefono(paciente.Telefono)</a></dd>
                 </div>
             }
             <div class="dsm-detalle__dato" data-dato="correo">
@@ -426,12 +426,6 @@
         var cuando = $"{FormatoDeCita.DiaYMes(consentimiento.Fecha)} de {consentimiento.Fecha.Year}, {FormatoDeCita.Hora(consentimiento.Hora)}";
         return $"{canal} · {cuando} · aviso {consentimiento.VersionDelAviso}";
     }
-
-    /// <summary>"444 123 4567" de un celular de México en E.164; cualquier otra forma, tal cual.</summary>
-    public static string Telefono(string e164) =>
-        e164 is { Length: 13 } && e164.StartsWith("+52", StringComparison.Ordinal)
-            ? $"{e164[3..6]} {e164[6..9]} {e164[9..]}"
-            : e164;
 
     /// <summary>
     /// Qué pasó y quién lo hizo: "Agendada · en línea · Paciente", "Reprogramada de 3 de noviembre, 4:00 pm a 5 de

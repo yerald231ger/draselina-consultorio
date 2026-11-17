@@ -5,7 +5,6 @@ using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Contracts;
 using DraSelina.Consultorio.Notificaciones.Features;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
 
@@ -358,12 +357,7 @@ public sealed class ConfiguracionDeEnvioTests(Arnes arnes)
         ambito.ServiceProvider.GetRequiredService<IQueryHandler<ConfiguracionDeEnvioVigente, ConfiguracionDeEnvioValores>>();
 
     // Fija un usuario autenticado en el ámbito, como ActorYAdministracionTests: el actor es el Administrador.
-    private static void ConSesion(AsyncServiceScope ambito)
-    {
-        var proveedor = Assert.IsAssignableFrom<IHostEnvironmentAuthenticationStateProvider>(
-            ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>());
-        proveedor.SetAuthenticationState(Task.FromResult(new AuthenticationState(Autenticado)));
-    }
+    private static void ConSesion(AsyncServiceScope ambito) => Arnes.FijarUsuario(ambito, Autenticado);
 
     // Agenda a Ana ese día a las 16:00 y entrega su CitaAgendada (la confirmación y el Recordatorio).
     private static async Task<CitaLeida> AgendarAsync(Escenario escenario, DateOnly fecha)

@@ -1,9 +1,12 @@
+using System.Security.Claims;
+using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.IntegrationTests;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Features;
 using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Web;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -183,6 +186,60 @@ public sealed class Arnes : IAsyncLifetime
 
     /// <summary>Arranca la web en memoria contra la base migrada de la corrida.</summary>
     public WebApplicationFactory<Program> ArrancarWeb() => ArrancarWeb(CadenaDeConexion);
+
+    /// <summary>
+    /// Una fila de <c>agenda.cita</c> escrita directo en la base de <paramref name="cadenaDeConexion"/>, sin pasar por la
+    /// Cita: puede quedar fuera de la rejilla o de los Tramos, que la base no valida (AD-7, RN-13). Del tipo Primera
+    /// consulta; del consultorio con consentimiento externo o, con <paramref name="enLinea"/>, en línea. Si
+    /// <paramref name="estado"/> es <c>Cancelada</c>, lleva la hora de cancelación.
+    /// </summary>
+    /// <param name="pacienteId">El Paciente de la Cita; si no se da, uno al azar que no existe.</param>
+    public static async Task SembrarCitaAsync(
+        string cadenaDeConexion,
+        DateTimeOffset inicio,
+        DateTimeOffset fin,
+        string estado = "Agendada",
+        Guid? pacienteId = null,
+        string? motivoDeCancelacion = null,
+        bool enLinea = false,
+        string? nota = null,
+        string? motivoDeConsulta = null,
+        CancellationToken cancelacion = default)
+    {
+        await using var conexion = new NpgsqlConnection(cadenaDeConexion);
+        await conexion.OpenAsync(cancelacion);
+        await using var comando = new NpgsqlCommand(
+            """
+            insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, motivo_de_cancelacion,
+                cancelada_en, origen, nota, motivo_de_consulta, consentimiento_en, consentimiento_version_aviso,
+                consentimiento_canal, creada_en, token_hash)
+            values (gen_random_uuid(), coalesce(@paciente, gen_random_uuid()), @tipo, @inicio, @fin, @estado,
+                @motivoDeCancelacion, case when @estado = 'Cancelada' then now() end, @origen, @nota, @motivo, now(),
+                '2026-11-borrador', @canal, now(), sha256(uuid_send(gen_random_uuid())))
+            """, conexion);
+        comando.Parameters.Add(new NpgsqlParameter<Guid?>("paciente", pacienteId) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Uuid });
+        comando.Parameters.AddWithValue("tipo", TiposDeVisitaSembrados.PrimeraConsulta.Valor);
+        comando.Parameters.AddWithValue("inicio", inicio);
+        comando.Parameters.AddWithValue("fin", fin);
+        comando.Parameters.AddWithValue("estado", estado);
+        comando.Parameters.AddWithValue("motivoDeCancelacion", (object?)motivoDeCancelacion ?? DBNull.Value);
+        comando.Parameters.AddWithValue("origen", enLinea ? "en_linea" : "consultorio");
+        comando.Parameters.AddWithValue("canal", enLinea ? "en_linea" : "externo");
+        comando.Parameters.AddWithValue("nota", (object?)nota ?? DBNull.Value);
+        comando.Parameters.AddWithValue("motivo", (object?)motivoDeConsulta ?? DBNull.Value);
+        await comando.ExecuteNonQueryAsync(cancelacion);
+    }
+
+    /// <summary>
+    /// Fija el usuario del ámbito, como lo fija el host de Blazor en un circuito: lo que el
+    /// <see cref="AuthenticationStateProvider"/> del ámbito entrega a los handlers.
+    /// </summary>
+    public static void FijarUsuario(AsyncServiceScope ambito, ClaimsPrincipal usuario)
+    {
+        var proveedor = Assert.IsAssignableFrom<IHostEnvironmentAuthenticationStateProvider>(
+            ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>());
+        proveedor.SetAuthenticationState(Task.FromResult(new AuthenticationState(usuario)));
+    }
 
     // Una sola fábrica por llamada, que desecha quien la pidió.
     // Con reloj de prueba, la web no entrega eventos por su cuenta: las vueltas las da la prueba. Los envíos

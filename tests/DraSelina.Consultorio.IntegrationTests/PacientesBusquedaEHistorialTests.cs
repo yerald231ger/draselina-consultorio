@@ -6,7 +6,6 @@ using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
 using PaginaDelHistorial = DraSelina.Consultorio.UI.Pages.Administracion.HistorialDelPaciente;
@@ -402,10 +401,9 @@ public sealed class PacientesBusquedaEHistorialTests(Arnes arnes)
     }
 
     private static void ComoAdministrador(AsyncServiceScope ambito) =>
-        ((IHostEnvironmentAuthenticationStateProvider)ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>())
-            .SetAuthenticationState(Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(
-                [new Claim(ClaimTypes.NameIdentifier, IdDelAdministrador), new Claim(ClaimTypes.Name, "administradora")],
-                authenticationType: "Prueba")))));
+        Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, IdDelAdministrador), new Claim(ClaimTypes.Name, "administradora")],
+            authenticationType: "Prueba")));
 
     // Los enlaces de la navegación de administración, en orden: su texto, su dirección y si está activo.
     private static List<(string Texto, string Href, bool Activo)> Navegacion(string pagina)

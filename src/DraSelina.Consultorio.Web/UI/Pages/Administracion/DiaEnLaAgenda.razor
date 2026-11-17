@@ -64,7 +64,7 @@
                                     }
                                     @if (cita.SinCorreo)
                                     {
-                                        <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-agenda__sin-correo">@Agenda.SinCorreo</span>
+                                        <span class="dsm-chip-de-estado dsm-chip-de-estado--neutro dsm-agenda__sin-correo">@PresentacionDeCita.SinCorreo</span>
                                     }
                                 </div>
                             }
@@ -73,7 +73,7 @@
                                 <div class="dsm-agenda__nota">@nota</div>
                             }
                         </div>
-                        <span class="@Agenda.ClaseDeEtiqueta(cita) dsm-agenda__estado">@Agenda.Etiqueta(cita)</span>
+                        <span class="@PresentacionDeCita.ClaseDeEtiqueta(cita) dsm-agenda__estado">@PresentacionDeCita.Etiqueta(cita)</span>
                     </li>
                 }
             </ol>

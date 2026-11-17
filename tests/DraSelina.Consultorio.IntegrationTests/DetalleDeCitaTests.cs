@@ -5,7 +5,6 @@ using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.Kernel;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
 using PaginaDelDetalle = DraSelina.Consultorio.UI.Pages.Administracion.DetalleDeCita;
@@ -364,10 +363,9 @@ public sealed class DetalleDeCitaTests(Arnes arnes)
     }
 
     private static void ComoAdministrador(AsyncServiceScope ambito) =>
-        ((IHostEnvironmentAuthenticationStateProvider)ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>())
-            .SetAuthenticationState(Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(
-                [new Claim(ClaimTypes.NameIdentifier, IdDelAdministrador), new Claim(ClaimTypes.Name, "administradora")],
-                authenticationType: "Prueba")))));
+        Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, IdDelAdministrador), new Claim(ClaimTypes.Name, "administradora")],
+            authenticationType: "Prueba")));
 
     private static async Task<string> LeerAsync(HttpClient cliente, string ruta)
     {

@@ -97,9 +97,6 @@
     /// <summary>Si la consulta no vuelve con éxito (sin sesión no se llega aquí).</summary>
     public const string NoSeCargo = "No se pudo cargar la agenda. Vuelve a entrar.";
 
-    /// <summary>El Paciente no tiene correo guardado: hay que avisarle a mano (RN-30, EXPERIENCE.md).</summary>
-    public const string SinCorreo = "sin correo";
-
     /// <summary>Una Cita del Consultorio fuera de los Tramos vigentes (INV-C6).</summary>
     public const string FueraDeHorario = "Fuera de horario";
 
@@ -188,33 +185,6 @@
     /// <summary>"1 cancelada oculta", "2 canceladas ocultas".</summary>
     public static string CanceladasOcultas(int cuantas) =>
         cuantas == 1 ? "1 cancelada oculta" : $"{cuantas} canceladas ocultas";
-
-    /// <summary>La etiqueta del estado de una Cita en la Agenda.</summary>
-    public static string Etiqueta(CitaDeLaAgenda cita) => Etiqueta(cita.Estado, cita.Cancelacion);
-
-    /// <summary>La etiqueta de un estado mostrado, con su cancelación; la misma en la Agenda y en Agendar cita.</summary>
-    public static string Etiqueta(EstadoEnLaAgenda estado, CancelacionEnLaAgenda? cancelacion) => (estado, cancelacion) switch
-    {
-        (EstadoEnLaAgenda.Agendada, _) => "Agendada",
-        (EstadoEnLaAgenda.Atendida, _) => "Atendida",
-        (EstadoEnLaAgenda.NoSePresento, _) => "No se presentó",
-        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "Cancelada (tardía)",
-        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.PorElConsultorio) => "Cancelada (por el Consultorio)",
-        (EstadoEnLaAgenda.Cancelada, _) => "Cancelada (por el Paciente)",
-        _ => estado.ToString(),
-    };
-
-    // DESIGN.md: el ámbar (warning) es solo de la cancelación tardía y el rojo (danger) solo de la acción de cancelar;
-    // las demás cancelaciones y No se presentó van en un chip neutro.
-    internal static string ClaseDeEtiqueta(CitaDeLaAgenda cita) => ClaseDeEtiqueta(cita.Estado, cita.Cancelacion);
-
-    /// <summary>La clase del chip de un estado mostrado, con su cancelación; la misma en la Agenda y en el Detalle de Cita.</summary>
-    internal static string ClaseDeEtiqueta(EstadoEnLaAgenda estado, CancelacionEnLaAgenda? cancelacion) => (estado, cancelacion) switch
-    {
-        (EstadoEnLaAgenda.Cancelada, CancelacionEnLaAgenda.Tardia) => "dsm-chip-de-estado dsm-chip-de-estado--tardia",
-        (EstadoEnLaAgenda.Cancelada or EstadoEnLaAgenda.NoSePresento, _) => "dsm-chip-de-estado dsm-chip-de-estado--neutro",
-        _ => "dsm-chip-de-estado",
-    };
 
     private static string ClaseDeVista(bool activa) =>
         activa ? "dsm-agenda__control dsm-agenda__control--activo" : "dsm-agenda__control";

@@ -6,7 +6,6 @@ using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -45,7 +44,7 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
         await using var ambito = escenario.Web.Services.CreateAsyncScope();
-        FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity()));
+        Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity()));
 
         var resultado = await Consulta(ambito).HandleAsync(DiasDeLaAgenda.DelDia(Hoy), Cancelacion);
 
@@ -169,6 +168,25 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task Con_la_regla_de_la_Cita_una_Cita_del_consultorio_que_cruza_la_medianoche_conserva_la_marca()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var ana = await escenario.PacienteAsync("Ana Sofía López", "4441234567", "ana@correo.com");
+        // Un Tramo que llega hasta el final del martes: la Cita empieza dentro, pero termina el miércoles. Ya llevaba la
+        // marca antes de usar Cita.QuedaFueraDe; la prueba comprueba que la conserva con la regla de la Cita.
+        await escenario.CustomAsync(Martes, "noche larga", (new TimeOnly(20, 0), new TimeOnly(23, 59)));
+        var inicio = HoraLocal.AUtc(Martes, new TimeOnly(23, 45));
+        var fin = HoraLocal.AUtc(Miercoles, new TimeOnly(0, 15));
+        await escenario.InsertarAsync(ana, inicio, fin, "lo pidió Selina");
+
+        var dias = await escenario.ConsultarComoAdministradorAsync(DiasDeLaAgenda.DelDia(Martes));
+
+        var cita = Assert.Single(dias[0].Citas);
+        Assert.Equal([new TramoDeLaAgenda(new TimeOnly(20, 0), new TimeOnly(23, 59))], dias[0].Tramos);
+        Assert.True(cita.FueraDeHorario);
+    }
+
+    [Fact]
     public async Task Cada_Agenda_custom_da_su_tipo_su_motivo_y_sus_Tramos()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
@@ -261,10 +279,6 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
     private static IQueryHandler<DiasDeLaAgenda, IReadOnlyList<DiaDeLaAgenda>> Consulta(AsyncServiceScope ambito) =>
         ambito.ServiceProvider.GetRequiredService<IQueryHandler<DiasDeLaAgenda, IReadOnlyList<DiaDeLaAgenda>>>();
 
-    private static void FijarUsuario(AsyncServiceScope ambito, ClaimsPrincipal usuario) =>
-        ((IHostEnvironmentAuthenticationStateProvider)ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>())
-            .SetAuthenticationState(Task.FromResult(new AuthenticationState(usuario)));
-
     private sealed class Escenario(string cadena, WebApplicationFactory<Program> web) : IAsyncDisposable
     {
         public WebApplicationFactory<Program> Web { get; } = web;
@@ -288,33 +302,16 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
         /// Una Cita escrita directo en la base, en hora local: del consultorio (con <paramref name="nota"/>) o, con
         /// <paramref name="enLinea"/>, en línea y sin nota.
         /// </summary>
-        public async Task InsertarAsync(
+        public Task InsertarAsync(
             PatientId paciente, DateOnly fecha, TimeOnly inicio, TimeOnly fin, string estado, string? motivoDeCancelacion, string? motivo,
-            string? nota = null, bool enLinea = false)
-        {
-            await using var conexion = new NpgsqlConnection(cadena);
-            await conexion.OpenAsync(Cancelacion);
-            await using var comando = new NpgsqlCommand(
-                """
-                insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, motivo_de_cancelacion,
-                    cancelada_en, origen, nota, motivo_de_consulta, consentimiento_en, consentimiento_version_aviso,
-                    consentimiento_canal, creada_en, token_hash)
-                values (gen_random_uuid(), @paciente, @tipo, @inicio, @fin, @estado, @motivoDeCancelacion,
-                    case when @estado = 'Cancelada' then now() end, @origen, @nota, @motivo, now(),
-                    '2026-11-borrador', @canal, now(), sha256(uuid_send(gen_random_uuid())))
-                """, conexion);
-            comando.Parameters.AddWithValue("paciente", paciente.Valor);
-            comando.Parameters.AddWithValue("tipo", TiposDeVisitaSembrados.PrimeraConsulta.Valor);
-            comando.Parameters.AddWithValue("inicio", HoraLocal.AUtc(fecha, inicio));
-            comando.Parameters.AddWithValue("fin", HoraLocal.AUtc(fecha, fin));
-            comando.Parameters.AddWithValue("estado", estado);
-            comando.Parameters.AddWithValue("motivoDeCancelacion", (object?)motivoDeCancelacion ?? DBNull.Value);
-            comando.Parameters.AddWithValue("origen", enLinea ? "en_linea" : "consultorio");
-            comando.Parameters.AddWithValue("canal", enLinea ? "en_linea" : "externo");
-            comando.Parameters.AddWithValue("nota", (object?)nota ?? DBNull.Value);
-            comando.Parameters.AddWithValue("motivo", (object?)motivo ?? DBNull.Value);
-            await comando.ExecuteNonQueryAsync(Cancelacion);
-        }
+            string? nota = null, bool enLinea = false) =>
+            Arnes.SembrarCitaAsync(
+                cadena, HoraLocal.AUtc(fecha, inicio), HoraLocal.AUtc(fecha, fin), estado, paciente.Valor, motivoDeCancelacion,
+                enLinea, nota, motivo, Cancelacion);
+
+        /// <summary>Una Cita del consultorio escrita directo en la base, de un instante a otro (UTC).</summary>
+        public Task InsertarAsync(PatientId paciente, DateTimeOffset inicio, DateTimeOffset fin, string nota) =>
+            Arnes.SembrarCitaAsync(cadena, inicio, fin, pacienteId: paciente.Valor, nota: nota, cancelacion: Cancelacion);
 
         /// <summary>La Agenda custom de una fecha, escrita directo en la base; sin Tramos, ese día no se atiende.</summary>
         public async Task CustomAsync(DateOnly fecha, string motivo, params (TimeOnly Inicio, TimeOnly Fin)[] tramos)
@@ -345,7 +342,7 @@ public sealed class DiasDeLaAgendaTests(Arnes arnes)
         public async Task<Resultado<IReadOnlyList<DiaDeLaAgenda>>> ConsultarAsync(DiasDeLaAgenda consulta)
         {
             await using var ambito = Web.Services.CreateAsyncScope();
-            FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity(
+            Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity(
                 [new Claim(ClaimTypes.NameIdentifier, "administrador"), new Claim(ClaimTypes.Name, "administrador")],
                 authenticationType: "Prueba")));
 

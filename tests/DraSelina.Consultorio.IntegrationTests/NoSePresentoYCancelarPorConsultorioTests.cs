@@ -6,7 +6,6 @@ using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
 using DraSelina.Consultorio.Kernel;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
@@ -552,10 +551,9 @@ public sealed class NoSePresentoYCancelarPorConsultorioTests(Arnes arnes)
     }
 
     private static void ComoAdministrador(AsyncServiceScope ambito) =>
-        ((IHostEnvironmentAuthenticationStateProvider)ambito.ServiceProvider.GetRequiredService<AuthenticationStateProvider>())
-            .SetAuthenticationState(Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(
-                [new Claim(ClaimTypes.NameIdentifier, IdDelAdministrador), new Claim(ClaimTypes.Name, "administradora")],
-                authenticationType: "Prueba")))));
+        Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, IdDelAdministrador), new Claim(ClaimTypes.Name, "administradora")],
+            authenticationType: "Prueba")));
 
     private static async Task EjecutarEnAsync(NpgsqlConnection conexion, NpgsqlTransaction transaccion, string sql)
     {

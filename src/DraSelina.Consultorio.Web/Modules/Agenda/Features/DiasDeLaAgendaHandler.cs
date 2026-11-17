@@ -11,7 +11,7 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// Citas del rango, la agenda de atención del rango (base y customs, una lectura cada una) y los contactos en lote de
 /// Pacientes (AD-10, RN-29): la página no compone módulos ni decide marcas. Atendida se deriva aquí, con
 /// <see cref="EstadoMostrado"/> (RN-19, RN-31);
-/// "fuera de horario" sale de <see cref="AgendaAtencion.TramosVigentes"/> y <see cref="Tramo.Contiene"/> (INV-C6).
+/// "fuera de horario" sale de <see cref="AgendaAtencion.TramosVigentes"/> y <see cref="Domain.Cita.QuedaFueraDe"/> (INV-C6).
 /// </summary>
 public sealed class DiasDeLaAgendaHandler(
     ICitasDeLaAgenda citas, IAgendaDelRango agenda, IPacientesApi pacientes, IClock reloj)
@@ -94,8 +94,11 @@ public sealed class DiasDeLaAgendaHandler(
             EstadoMostrado.Estado(cita.Estado, cita.Inicio, ahora),
             EstadoMostrado.Cancelacion(cita.MotivoDeCancelacion),
             SinCorreo: contacto?.Correo is null,
-            // INV-C6: solo una Cita del Consultorio puede quedar fuera de los Tramos; una en línea nunca lleva la marca.
-            FueraDeHorario: cita.Origen == OrigenDeCita.Consultorio && !vigentes.Tramos.Any(t => t.Contiene(inicio, fin)),
+            // INV-C6: solo una Cita del Consultorio puede quedar fuera de los Tramos; una en línea nunca lleva la marca. La
+            // regla vive en la Cita (T-13), la misma con la que pide la nota al agendarse; el rango leído de la base se
+            // reconstituye sin validar (T-6).
+            FueraDeHorario: cita.Origen == OrigenDeCita.Consultorio
+                && Domain.Cita.QuedaFueraDe(RangoDeTiempo.Reconstituir(cita.Inicio, cita.Fin), vigentes),
             cita.Nota);
     }
 }

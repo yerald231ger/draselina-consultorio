@@ -201,7 +201,7 @@ public sealed class AgendaTests : BunitContext
         var agenda = Render<PaginaAgenda>();
         var filas = agenda.FindAll(".dsm-agenda__cita");
 
-        Assert.Equal(PaginaAgenda.SinCorreo, filas[0].QuerySelector(".dsm-agenda__sin-correo")!.TextContent);
+        Assert.Equal(PresentacionDeCita.SinCorreo, filas[0].QuerySelector(".dsm-agenda__sin-correo")!.TextContent);
         Assert.Null(filas[0].QuerySelector(".dsm-chip-de-estado--fuera"));
         Assert.Null(filas[1].QuerySelector(".dsm-agenda__marcas"));
     }
