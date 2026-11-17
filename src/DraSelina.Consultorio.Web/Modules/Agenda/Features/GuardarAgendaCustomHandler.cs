@@ -18,7 +18,7 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// sin ninguna Cita elegida para cancelar son éxito sin guardar ni anotar nada; con alguna, se anota y se publica igual.
 /// </summary>
 public sealed class GuardarAgendaCustomHandler(
-    ITiposDeVisitaActivos tiposActivos,
+    DuracionMinima minima,
     ITransaccionDeAgenda transaccion,
     ICandadoDeFecha candado,
     IAgendaAtencion agendaAtencion,
@@ -44,7 +44,7 @@ public sealed class GuardarAgendaCustomHandler(
             return Resultado.Fallo(CodigosDeAgenda.FechaPasada).Como<AgendaCustomGuardada>();
         }
 
-        var duracionMinima = await DuracionMinimaAsync(cancellationToken);
+        var duracionMinima = await minima.ObtenerAsync(cancellationToken);
 
         // El comando es solo del Administrador (AD-22): su id va a la bitácora (RN-24).
         var actor = await actorActual.ObtenerAsync();
@@ -133,18 +133,6 @@ public sealed class GuardarAgendaCustomHandler(
             AgendaCustomFueBorrada e => outbox.PublicarAsync(e, e.EventoId, e.EventoId, e.OcurridoEn, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(evento), evento.GetType().Name, "Evento de Agenda custom desconocido."),
         };
-
-    // INV-A6: la duración del Tipo de visita activo más corto, la de este momento (T-6).
-    private async Task<TimeSpan> DuracionMinimaAsync(CancellationToken cancellationToken)
-    {
-        var tipos = await tiposActivos.ListarAsync(cancellationToken);
-        if (tipos.Count == 0)
-        {
-            throw new InvalidOperationException("No hay Tipos de visita activos: no se puede comprobar la duración mínima de un Tramo.");
-        }
-
-        return TimeSpan.FromMinutes(tipos.Min(t => t.DuracionMin));
-    }
 
     private static bool MismosTramos(IReadOnlyList<Tramo> guardados, IEnumerable<Tramo> nuevos) =>
         guardados.SequenceEqual(nuevos.OrderBy(t => t.Inicio));

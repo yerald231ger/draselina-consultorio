@@ -48,6 +48,7 @@ public static class Registro
             .AddScoped<IBitacoraDeLaCita, BitacoraDeLaCita>()
             .AddScoped<CitasQueQuedanFuera>()
             .AddScoped<CancelacionPorConsultorio>()
+            .AddScoped<DuracionMinima>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
@@ -58,6 +59,7 @@ public static class Registro
             .AddScoped<ICommandHandler<CancelarCitaPorConsultorio, CitaCanceladaPorConsultorio>, CancelarCitaPorConsultorioHandler>()
             .AddScoped<ICommandHandler<GuardarAgendaCustom, AgendaCustomGuardada>, GuardarAgendaCustomHandler>()
             .AddScoped<ICommandHandler<BorrarAgendaCustom, AgendaCustomBorrada>, BorrarAgendaCustomHandler>()
+            .AddScoped<ICommandHandler<CambiarAgendaBase, AgendaBaseCambiada>, CambiarAgendaBaseHandler>()
             .AddScoped<IEventHandler<AgendaCustomFueRegistrada>, CancelarCitasElegidas>()
             .AddScoped<IEventHandler<AgendaCustomFueCambiada>, CancelarCitasElegidas>()
             .AddScoped<IEventHandler<AgendaCustomFueBorrada>, CancelarCitasElegidas>()
@@ -73,7 +75,8 @@ public static class Registro
             .AddScoped<IQueryHandler<DetalleDeCita, CitaEnDetalle>, DetalleDeCitaHandler>()
             .AddScoped<IQueryHandler<HistorialDelPaciente, PacienteConHistorial>, HistorialDelPacienteHandler>()
             .AddScoped<IQueryHandler<MesDeAtencion, IReadOnlyList<DiaDeAtencion>>, MesDeAtencionHandler>()
-            .AddScoped<IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>, CitasFueraDelHorarioHandler>();
+            .AddScoped<IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>, CitasFueraDelHorarioHandler>()
+            .AddScoped<IQueryHandler<CambioDeAgendaBase, CambioDeBaseRevisado>, CambioDeAgendaBaseHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

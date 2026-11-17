@@ -34,6 +34,44 @@ public sealed class CitasQueQuedanFuera(ICitasDeLaAgenda citas, IClock reloj)
     }
 
     /// <summary>
+    /// Las Citas que quedarían fuera al cambiar la base (RN-6): las Agendadas que todavía no empiezan, de hoy en
+    /// adelante, en fechas sin custom cuyo día de la semana está en <paramref name="cambiados"/>, que no caben en los
+    /// Tramos nuevos de ese día. Una Cita que ya estaba fuera en un día que no cambia no se lista. En orden de inicio.
+    /// </summary>
+    /// <param name="cambiados">Los Tramos nuevos de cada día que cambia.</param>
+    /// <param name="fechasConCustom">Las fechas con Agenda custom: la base no las toca (RN-7).</param>
+    public async Task<IReadOnlyList<CitaQueQuedaFuera>> DeLaBaseAsync(
+        IReadOnlyDictionary<DayOfWeek, IReadOnlyList<Tramo>> cambiados,
+        IReadOnlyCollection<DateOnly> fechasConCustom,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(cambiados);
+        ArgumentNullException.ThrowIfNull(fechasConCustom);
+        if (cambiados.Count == 0)
+        {
+            return [];
+        }
+
+        var ahora = reloj.UtcNow;
+        var leidas = await citas.EntreAsync(ahora, DateTimeOffset.MaxValue, cancellationToken);
+        var conCustom = fechasConCustom.ToHashSet();
+
+        return
+        [
+            .. leidas
+                .Where(c => c.Estado == EstadoCita.Agendada && c.Inicio > ahora)
+                .Where(c =>
+                {
+                    var fecha = HoraLocal.DesdeUtc(c.Inicio).Fecha;
+                    return !conCustom.Contains(fecha)
+                        && cambiados.TryGetValue(fecha.DayOfWeek, out var tramos)
+                        && Cita.QuedaFueraDe(RangoDeTiempo.Crear(c.Inicio, c.Fin), new TramosVigentes(fecha, tramos, OrigenDeTramos.Base));
+                })
+                .Select(c => new CitaQueQuedaFuera(c.Id, c.PacienteId, c.Inicio, c.Fin, c.Origen)),
+        ];
+    }
+
+    /// <summary>
     /// Si la lista que vio el Administrador es exactamente la de las Citas que quedan fuera (RN-9): las mismas Citas, ni
     /// una de más ni una de menos. La forma del comando ya garantizó que ninguna viene dos veces.
     /// </summary>
