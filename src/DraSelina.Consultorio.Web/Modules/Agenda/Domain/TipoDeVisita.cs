@@ -4,7 +4,8 @@ namespace DraSelina.Consultorio.Agenda.Domain;
 
 /// <summary>
 /// La clase de Cita que elige el Paciente; define la duración. En pantalla, "Tipo de consulta". Los dos tipos iniciales
-/// se siembran con la migración; su edición llega con la épica de configuración.
+/// se siembran con la migración; el Administrador los cambia, crea y desactiva desde Configuración (entrada 6.7). No se
+/// borran ni se reactivan (Gerardo, 2026-11-17).
 /// </summary>
 public sealed class TipoDeVisita
 {
@@ -50,6 +51,38 @@ public sealed class TipoDeVisita
             Orden = orden,
             Activo = true,
         };
+    }
+
+    /// <summary>
+    /// Cambia sus datos. Igual que <see cref="Crear"/>: nombre no vacío y duración mayor que cero. Las Citas ya agendadas
+    /// no cambian (RN-8) y los Tramos guardados no se revalidan con la duración nueva (T-6).
+    /// </summary>
+    public void Cambiar(string nombre, string? descripcion, int duracionMin, bool reservableEnLinea, int orden)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(nombre);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(duracionMin);
+
+        Nombre = nombre.Trim();
+        Descripcion = descripcion;
+        DuracionMin = duracionMin;
+        ReservableEnLinea = reservableEnLinea;
+        Orden = orden;
+    }
+
+    /// <summary>
+    /// Deja de ofrecerse, en línea y en el consultorio; sus Citas siguen como están. No se reactiva. Quien lo llama cuida
+    /// que no sea el último activo (Gerardo, 2026-11-17).
+    /// </summary>
+    /// <returns>Falso si ya estaba inactivo.</returns>
+    public bool Desactivar()
+    {
+        if (!Activo)
+        {
+            return false;
+        }
+
+        Activo = false;
+        return true;
     }
 
     /// <summary>Si el Paciente puede agendarlo desde el sitio: activo y reservable en línea.</summary>

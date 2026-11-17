@@ -1,0 +1,274 @@
+@implements IDisposable
+@using Microsoft.Extensions.Logging
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Kernel
+@inject IQueryHandler<TiposDeVisitaEnConfiguracion, IReadOnlyList<TipoDeVisitaEditable>> Consulta
+@inject ICommandHandler<CrearTipoDeVisita, TipoDeVisitaGuardado> Crear
+@inject ICommandHandler<CambiarTipoDeVisita, TipoDeVisitaGuardado> Cambiar
+@inject ICommandHandler<DesactivarTipoDeVisita, TipoDeVisitaGuardado> Desactivar
+@inject ILogger<SeccionTiposDeConsulta> Registro
+
+@*
+    Los Tipos de consulta en Configuración (CAP-16; entrada 6.7): cada tipo activo con su nombre, descripción, duración,
+    si se reserva en línea y su orden, con "Guardar" y "Desactivar" (pide confirmar); y un formulario para agregar uno.
+    Desactivar lo quita del sitio y de Agendar cita; sus Citas siguen. No se borran ni se reactivan, y el último activo no
+    se desactiva (Gerardo, 2026-11-17). Los errores van bajo cada campo de su tipo. Textos `[ASSUMPTION: texto]`.
+*@
+
+<section class="dsm-seccion-de-configuracion dsm-tipos" aria-labelledby="tipos-de-consulta">
+    <h2 id="tipos-de-consulta" class="dsm-seccion">Tipos de consulta</h2>
+    <p class="dsm-cuerpo dsm-semana-tipo__ayuda">@Ayuda</p>
+
+    @if (_fallo)
+    {
+        <div class="dsm-aviso" role="alert"><p class="dsm-aviso__mensaje">@NoSeCargo</p></div>
+    }
+    else
+    {
+        @if (_desactivado is { } desactivado)
+        {
+            <p class="dsm-aviso dsm-tipos__desactivado" role="status">@desactivado</p>
+        }
+
+        @foreach (var tipo in _tipos)
+        {
+            var edicion = tipo;
+            <form class="dsm-formulario dsm-tipos__tipo" data-tipo="@edicion.Id" @onsubmit="() => GuardarAsync(edicion)"
+                  aria-label="@($"Tipo de consulta {edicion.NombreGuardado}")">
+                @Campos(edicion)
+
+                @* Un fallo con mensaje propio no lleva además el "Intenta de nuevo" del aviso. *@
+                <AvisoDeSeccion Resultado="@(MensajeDeFallo(edicion.Resultado) is null ? edicion.Resultado : null)" Guardado="edicion.Guardado" />
+                @if (MensajeDeFallo(edicion.Resultado) is { } fallo)
+                {
+                    <p class="dsm-campo__error dsm-tipos__fallo" role="alert">@fallo</p>
+                }
+
+                <div class="dsm-calendario__acciones">
+                    <button type="submit" class="btn btn-primary dsm-accion-principal dsm-tipos__guardar" disabled="@_ocupado">Guardar</button>
+                    @if (edicion.Confirmando)
+                    {
+                        <span class="dsm-tipos__confirmacion">@ConfirmarTexto</span>
+                        <button type="button" class="btn dsm-boton-peligro dsm-tipos__confirmar" disabled="@_ocupado"
+                                @onclick="() => DesactivarAsync(edicion)">Sí, desactivar</button>
+                        <button type="button" class="btn dsm-boton-neutro dsm-tipos__no-confirmar" @onclick="() => edicion.Confirmando = false">No</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn dsm-boton-neutro dsm-tipos__desactivar" disabled="@_ocupado"
+                                @onclick="() => edicion.Confirmando = true">Desactivar</button>
+                    }
+                </div>
+            </form>
+        }
+
+        <form class="dsm-formulario dsm-tipos__nuevo" @onsubmit="AgregarAsync" aria-labelledby="tipo-nuevo">
+            <h3 id="tipo-nuevo" class="dsm-campo__etiqueta">Agregar tipo de consulta</h3>
+            @Campos(_nuevo)
+            <AvisoDeSeccion Resultado="_nuevo.Resultado" Guardado="_nuevo.Guardado" />
+            <div class="dsm-calendario__acciones">
+                <button type="submit" class="btn btn-primary dsm-accion-principal dsm-tipos__agregar" disabled="@_ocupado">Agregar</button>
+            </div>
+        </form>
+    }
+</section>
+
+@code {
+    public const string Ayuda = "Lo que el paciente elige al reservar. Una duración nueva vale desde la siguiente reserva; las citas ya agendadas no cambian.";
+    public const string NoSeCargo = "No se pudieron cargar los tipos de consulta. Recarga la página.";
+    public const string ConfirmarTexto = "Dejará de ofrecerse; sus citas siguen igual.";
+    public const string UltimoActivo = "Debe quedar al menos un tipo de consulta activo.";
+    public const string NoEncontrado = "Ese tipo de consulta ya no está activo. Recarga la página.";
+
+    private readonly CancellationTokenSource _cierre = new();
+    private List<TipoEnEdicion> _tipos = [];
+    private TipoEnEdicion _nuevo = TipoEnEdicion.Nuevo(0);
+    private bool _fallo;
+    private bool _ocupado;
+    private string? _desactivado;
+
+    /// <summary>Un tipo mientras se edita, con su último Resultado.</summary>
+    private sealed class TipoEnEdicion
+    {
+        public string Id { get; init; } = "nuevo";
+
+        public TipoDeVisitaId? TipoId { get; init; }
+
+        public string NombreGuardado { get; init; } = "";
+
+        public string? Nombre { get; set; }
+
+        public string? Descripcion { get; set; }
+
+        public int? DuracionMin { get; set; }
+
+        public bool ReservableEnLinea { get; set; }
+
+        public int? Orden { get; set; }
+
+        public bool Confirmando { get; set; }
+
+        public bool Guardado { get; set; }
+
+        public Resultado? Resultado { get; set; }
+
+        public static TipoEnEdicion De(TipoDeVisitaEditable tipo) => new()
+        {
+            Id = $"tipo-{tipo.Id.Valor:N}",
+            TipoId = tipo.Id,
+            NombreGuardado = tipo.Nombre,
+            Nombre = tipo.Nombre,
+            Descripcion = tipo.Descripcion,
+            DuracionMin = tipo.DuracionMin,
+            ReservableEnLinea = tipo.ReservableEnLinea,
+            Orden = tipo.Orden,
+        };
+
+        public static TipoEnEdicion Nuevo(int orden) => new() { DuracionMin = 30, ReservableEnLinea = true, Orden = orden };
+
+        public T Llenar<T>(T comando)
+            where T : DatosDeTipoDeVisita
+        {
+            comando.Nombre = Nombre;
+            comando.Descripcion = Descripcion;
+            comando.DuracionMin = DuracionMin;
+            comando.ReservableEnLinea = ReservableEnLinea;
+            comando.Orden = Orden;
+            return comando;
+        }
+
+        public IReadOnlyList<string> Errores(string propiedad) =>
+            Resultado?.Errores.TryGetValue(propiedad, out var errores) == true ? errores : [];
+    }
+
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        try
+        {
+            var resultado = await Consulta.HandleAsync(new TiposDeVisitaEnConfiguracion(), _cierre.Token);
+            _fallo = !resultado.EsExito;
+            if (resultado.EsExito)
+            {
+                _tipos = [.. resultado.Valor.Select(TipoEnEdicion.De)];
+                _nuevo = TipoEnEdicion.Nuevo(_tipos.Count == 0 ? 1 : _tipos.Max(t => t.Orden ?? 0) + 1);
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "Los tipos de consulta no se pudieron cargar");
+            _fallo = true;
+        }
+    }
+
+    private Task GuardarAsync(TipoEnEdicion tipo) =>
+        EjecutarAsync(tipo, () => Cambiar.HandleAsync(tipo.Llenar(new CambiarTipoDeVisita { Id = tipo.TipoId }), _cierre.Token));
+
+    private Task DesactivarAsync(TipoEnEdicion tipo) =>
+        EjecutarAsync(tipo, () => Desactivar.HandleAsync(new DesactivarTipoDeVisita { Id = tipo.TipoId }, _cierre.Token));
+
+    private Task AgregarAsync() =>
+        EjecutarAsync(_nuevo, () => Crear.HandleAsync(_nuevo.Llenar(new CrearTipoDeVisita()), _cierre.Token));
+
+    // Una llamada a la vez. Con éxito se recarga la lista y el tipo dice "Se guardó."; si no, el Resultado queda en ese tipo.
+    private async Task EjecutarAsync(TipoEnEdicion tipo, Func<Task<Resultado<TipoDeVisitaGuardado>>> llamar)
+    {
+        if (_ocupado)
+        {
+            return;
+        }
+
+        _ocupado = true;
+        _desactivado = null;
+        try
+        {
+            var resultado = await llamar();
+            if (!resultado.EsExito)
+            {
+                tipo.Resultado = resultado;
+                tipo.Guardado = false;
+                tipo.Confirmando = false;
+                return;
+            }
+
+            var id = resultado.Valor.Id;
+            await CargarAsync();
+            if (_tipos.FirstOrDefault(t => t.TipoId == id) is { } guardado)
+            {
+                guardado.Guardado = true;
+            }
+            else
+            {
+                // Desactivado: ya no está en la lista; el aviso va arriba.
+                _desactivado = $"Se desactivó {tipo.NombreGuardado}.";
+            }
+        }
+        catch (Exception error) when (!(error is OperationCanceledException && _cierre.IsCancellationRequested))
+        {
+            Registro.LogWarning(error, "El tipo de consulta no se pudo guardar");
+            tipo.Resultado = Resultado.Fallo("configuracion.error");
+        }
+        finally
+        {
+            _ocupado = false;
+        }
+    }
+
+    private static string? MensajeDeFallo(Resultado? resultado) => resultado?.Codigo switch
+    {
+        CodigosDeAgenda.UltimoTipoActivo => UltimoActivo,
+        CodigosDeAgenda.TipoNoEncontrado => NoEncontrado,
+        _ => null,
+    };
+
+    private RenderFragment Campos(TipoEnEdicion tipo) => __builder =>
+    {
+        <div class="dsm-tipos__campos">
+            <div class="dsm-campo">
+                <label for="@($"{tipo.Id}-nombre")" class="dsm-campo__etiqueta">Nombre</label>
+                <input id="@($"{tipo.Id}-nombre")" class="dsm-campo__control" @bind="tipo.Nombre" autocomplete="off"
+                       aria-invalid="@Invalido(tipo, nameof(DatosDeTipoDeVisita.Nombre))" />
+                @ErroresDe(tipo, nameof(DatosDeTipoDeVisita.Nombre))
+            </div>
+            <div class="dsm-campo">
+                <label for="@($"{tipo.Id}-descripcion")" class="dsm-campo__etiqueta">Descripción (opcional)</label>
+                <input id="@($"{tipo.Id}-descripcion")" class="dsm-campo__control" @bind="tipo.Descripcion" autocomplete="off"
+                       aria-invalid="@Invalido(tipo, nameof(DatosDeTipoDeVisita.Descripcion))" />
+                @ErroresDe(tipo, nameof(DatosDeTipoDeVisita.Descripcion))
+            </div>
+            <div class="dsm-campo">
+                <label for="@($"{tipo.Id}-duracion")" class="dsm-campo__etiqueta">Duración (minutos)</label>
+                <input id="@($"{tipo.Id}-duracion")" type="number" inputmode="numeric" class="dsm-campo__control" @bind="tipo.DuracionMin"
+                       aria-invalid="@Invalido(tipo, nameof(DatosDeTipoDeVisita.DuracionMin))" />
+                @ErroresDe(tipo, nameof(DatosDeTipoDeVisita.DuracionMin))
+            </div>
+            <div class="dsm-campo">
+                <label for="@($"{tipo.Id}-orden")" class="dsm-campo__etiqueta">Orden</label>
+                <input id="@($"{tipo.Id}-orden")" type="number" inputmode="numeric" class="dsm-campo__control" @bind="tipo.Orden"
+                       aria-invalid="@Invalido(tipo, nameof(DatosDeTipoDeVisita.Orden))" />
+                @ErroresDe(tipo, nameof(DatosDeTipoDeVisita.Orden))
+            </div>
+            <label class="dsm-tipos__en-linea">
+                <input id="@($"{tipo.Id}-en-linea")" type="checkbox" @bind="tipo.ReservableEnLinea" />
+                Se reserva en línea
+            </label>
+        </div>
+    };
+
+    private static string? Invalido(TipoEnEdicion tipo, string propiedad) => tipo.Errores(propiedad).Count > 0 ? "true" : null;
+
+    private static RenderFragment? ErroresDe(TipoEnEdicion tipo, string propiedad) => tipo.Errores(propiedad) is { Count: > 0 } errores
+        ? __builder =>
+        {
+            <p id="@($"error-{tipo.Id}-{propiedad}")" class="dsm-campo__error">@string.Join(" ", errores)</p>
+        }
+        : null;
+
+    public void Dispose()
+    {
+        _cierre.Cancel();
+        _cierre.Dispose();
+    }
+}

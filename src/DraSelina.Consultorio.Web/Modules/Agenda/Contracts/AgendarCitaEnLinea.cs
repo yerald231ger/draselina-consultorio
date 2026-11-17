@@ -160,4 +160,10 @@ public static class CodigosDeAgenda
 
     /// <summary>La fecha no tiene Agenda custom que borrar.</summary>
     public const string FechaSinCustom = "agenda.fecha_sin_custom";
+
+    /// <summary>No hay Tipo de visita activo con ese id: no existe o ya se desactivó.</summary>
+    public const string TipoNoEncontrado = "agenda.tipo_no_encontrado";
+
+    /// <summary>Es el último Tipo de visita activo: debe quedar al menos uno (Gerardo, 2026-11-17).</summary>
+    public const string UltimoTipoActivo = "agenda.ultimo_tipo_activo";
 }

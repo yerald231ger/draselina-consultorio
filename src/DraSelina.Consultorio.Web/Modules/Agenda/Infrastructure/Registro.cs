@@ -49,6 +49,7 @@ public static class Registro
             .AddScoped<CitasQueQuedanFuera>()
             .AddScoped<CancelacionPorConsultorio>()
             .AddScoped<DuracionMinima>()
+            .AddScoped<ITiposDeVisitaEditables, TiposDeVisitaEditables>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()
@@ -61,6 +62,9 @@ public static class Registro
             .AddScoped<ICommandHandler<BorrarAgendaCustom, AgendaCustomBorrada>, BorrarAgendaCustomHandler>()
             .AddScoped<ICommandHandler<CambiarAgendaBase, AgendaBaseCambiada>, CambiarAgendaBaseHandler>()
             .AddScoped<ICommandHandler<CambiarReglasDeReserva, ReglasDeReservaValores>, CambiarReglasDeReservaHandler>()
+            .AddScoped<ICommandHandler<CrearTipoDeVisita, TipoDeVisitaGuardado>, CrearTipoDeVisitaHandler>()
+            .AddScoped<ICommandHandler<CambiarTipoDeVisita, TipoDeVisitaGuardado>, CambiarTipoDeVisitaHandler>()
+            .AddScoped<ICommandHandler<DesactivarTipoDeVisita, TipoDeVisitaGuardado>, DesactivarTipoDeVisitaHandler>()
             .AddScoped<IEventHandler<AgendaCustomFueRegistrada>, CancelarCitasElegidas>()
             .AddScoped<IEventHandler<AgendaCustomFueCambiada>, CancelarCitasElegidas>()
             .AddScoped<IEventHandler<AgendaCustomFueBorrada>, CancelarCitasElegidas>()
@@ -79,7 +83,8 @@ public static class Registro
             .AddScoped<IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>, CitasFueraDelHorarioHandler>()
             .AddScoped<IQueryHandler<CambioDeAgendaBase, CambioDeBaseRevisado>, CambioDeAgendaBaseHandler>()
             .AddScoped<IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>>, SemanaTipoHandler>()
-            .AddScoped<IQueryHandler<ReglasDeReservaVigentes, ReglasDeReservaValores>, ReglasDeReservaVigentesHandler>();
+            .AddScoped<IQueryHandler<ReglasDeReservaVigentes, ReglasDeReservaValores>, ReglasDeReservaVigentesHandler>()
+            .AddScoped<IQueryHandler<TiposDeVisitaEnConfiguracion, IReadOnlyList<TipoDeVisitaEditable>>, TiposDeVisitaEnConfiguracionHandler>();
 
     private static IServiceCollection AddEnlaceDeGestion(this IServiceCollection servicios)
     {

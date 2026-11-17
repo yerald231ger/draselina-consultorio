@@ -3033,3 +3033,33 @@ a.dsm-calendario__dia[aria-current="true"] .dsm-calendario__punto {
   flex-direction: column;
   gap: var(--dsm-spacing-5);
 }
+
+/* Tipos de consulta en Configuración (entrada 6.7). */
+.dsm-tipos__tipo,
+.dsm-tipos__nuevo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-4);
+  padding: var(--dsm-spacing-5) var(--dsm-spacing-6);
+  border: 1px solid var(--dsm-border);
+  border-radius: var(--dsm-rounded-md);
+  background: var(--dsm-surface);
+}
+
+.dsm-tipos__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--dsm-spacing-4);
+  align-items: end;
+}
+
+.dsm-tipos__en-linea {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dsm-spacing-2);
+}
+
+.dsm-tipos__confirmacion {
+  align-self: center;
+  color: var(--dsm-warning-text);
+}
