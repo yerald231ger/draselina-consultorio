@@ -1,15 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Kernel;
 
 namespace DraSelina.Consultorio.Agenda.Contracts;
 
 /// <summary>
 /// El Administrador da a una fecha su horario propio, o cambia el que ya tiene (CAP-11, FR-13, UJ-3, UJ-6): reemplaza
 /// por completo a la Agenda base ese día (RN-4). Cero Tramos: ese día no se atiende (INV-A3). Siempre con motivo
-/// (INV-A4). Desde hoy (fecha local) en adelante, con cualquier anticipación (RN-11). Si con los Tramos nuevos queda
-/// fuera alguna Cita Agendada que todavía no empieza, no guarda nada y vuelve <see cref="CodigosDeAgenda.CitasFuera"/>:
-/// la elección de cancelar o conservar cada una llega con la entrada 6.2. Solo el Administrador (AD-22). El motivo no va
-/// a registros: <see cref="ToString"/> no lo muestra.
+/// (INV-A4). Desde hoy (fecha local) en adelante, con cualquier anticipación (RN-11). Trae la lista completa de Citas
+/// que el Administrador vio fuera de los Tramos nuevos, con su decisión por cada una (RN-9); si ya no coincide con las
+/// que quedan fuera, no guarda nada y vuelve <see cref="CodigosDeAgenda.CitasFuera"/>. Las elegidas para cancelar se
+/// cancelan después, cada una por su cuenta, a nombre del Administrador (P-1, RN-10). Solo el Administrador (AD-22). El
+/// motivo no va a registros: <see cref="ToString"/> no lo muestra.
 /// </summary>
 public sealed class GuardarAgendaCustom : ICommand<AgendaCustomGuardada>, IRequiereAdministrador, IValidatableObject
 {
@@ -29,11 +31,22 @@ public sealed class GuardarAgendaCustom : ICommand<AgendaCustomGuardada>, IRequi
     /// <summary>Los Tramos de ese día, en hora local; vacío: ese día no se atiende (INV-A3).</summary>
     public List<TramoAGuardar> Tramos { get; set; } = [];
 
+    /// <summary>
+    /// Las Citas que quedan fuera, como las vio el Administrador, cada una con su decisión (RN-9). Vacía si no vio
+    /// ninguna.
+    /// </summary>
+    public List<DecisionSobreCita> Citas { get; set; } = [];
+
     /// <summary>Nombre de la propiedad de error del Tramo en la posición <paramref name="indice"/>.</summary>
     public static string PropiedadDelTramo(int indice) => $"{nameof(Tramos)}[{indice}]";
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        foreach (var error in DecisionSobreCita.Validar(Citas, nameof(Citas)))
+        {
+            yield return error;
+        }
+
         for (var i = 0; i < Tramos.Count; i++)
         {
             var tramo = Tramos[i];
@@ -49,7 +62,36 @@ public sealed class GuardarAgendaCustom : ICommand<AgendaCustomGuardada>, IRequi
     }
 
     public override string ToString() =>
-        $"GuardarAgendaCustom {{ Fecha = {Fecha:yyyy-MM-dd}, Motivo = oculto, Tramos = {Tramos.Count} }}";
+        $"GuardarAgendaCustom {{ Fecha = {Fecha:yyyy-MM-dd}, Motivo = oculto, Tramos = {Tramos.Count}, Citas = {Citas.Count} }}";
+}
+
+/// <summary>Lo que el Administrador decidió para una Cita que queda fuera (RN-9).</summary>
+public sealed class DecisionSobreCita
+{
+    public const string MensajeSinCita = "Falta la cita.";
+    public const string MensajeRepetida = "Una cita aparece dos veces en la lista.";
+
+    public CitaId? CitaId { get; set; }
+
+    /// <summary>Verdadero: se cancela a nombre del Consultorio. Falso: se conserva sin cambios ni aviso.</summary>
+    public bool Cancelar { get; set; }
+
+    /// <summary>Cada decisión con su Cita, y ninguna Cita dos veces; el error va bajo <c>Citas[i]</c>.</summary>
+    public static IEnumerable<ValidationResult> Validar(IReadOnlyList<DecisionSobreCita?> decisiones, string propiedad)
+    {
+        var vistas = new HashSet<CitaId>();
+        for (var i = 0; i < decisiones.Count; i++)
+        {
+            if (decisiones[i]?.CitaId is not { } id)
+            {
+                yield return new ValidationResult(MensajeSinCita, [$"{propiedad}[{i}]"]);
+            }
+            else if (!vistas.Add(id))
+            {
+                yield return new ValidationResult(MensajeRepetida, [$"{propiedad}[{i}]"]);
+            }
+        }
+    }
 }
 
 /// <summary>Un Tramo del comando, en hora local, <c>[Inicio, Fin)</c>.</summary>

@@ -157,4 +157,7 @@ public static class CodigosDeAgenda
 
     /// <summary>La fecha es anterior a hoy (fecha local): las custom pasadas no se guardan.</summary>
     public const string FechaPasada = "agenda.fecha_pasada";
+
+    /// <summary>La fecha no tiene Agenda custom que borrar.</summary>
+    public const string FechaSinCustom = "agenda.fecha_sin_custom";
 }
