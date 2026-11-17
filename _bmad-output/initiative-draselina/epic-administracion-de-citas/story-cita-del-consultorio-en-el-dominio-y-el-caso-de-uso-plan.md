@@ -3,7 +3,7 @@ title: 'Cita del consultorio en el dominio y el caso de uso'
 type: 'feature'
 ticket: '3'
 created: '2026-11-10'
-status: 'built'
+status: done
 baseline_revision: '95242a52e111c0bc9a5e2c4438a53df09b942a64'
 route: 'full'
 route_source: 'auto'

@@ -3,7 +3,7 @@ title: 'No se presentó y cancelar por el Consultorio, en el dominio y los casos
 type: 'feature'
 ticket: '5'
 created: '2026-11-10'
-status: 'built'
+status: done
 baseline_revision: '4b7b52d8ffeb5ea248becf477c63cffc8cff038c'
 route: 'full'
 route_source: 'auto'

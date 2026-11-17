@@ -3,7 +3,7 @@ title: 'Pacientes: búsqueda e historial'
 type: 'feature'
 ticket: '7'
 created: '2026-11-10'
-status: 'built'
+status: done
 baseline_revision: 'cc72d9bc19efa7a246ec718ccacd2e11720173f1'
 route: 'full'
 route_source: 'auto'

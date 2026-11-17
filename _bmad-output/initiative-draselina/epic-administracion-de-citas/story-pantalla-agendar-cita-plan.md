@@ -3,7 +3,7 @@ title: 'Pantalla Agendar cita'
 type: 'feature'
 ticket: '4'
 created: '2026-11-10'
-status: 'built'
+status: done
 baseline_revision: '902d2173c02d0c29fc880e25a4de938ec5597d72'
 route: 'full'
 route_source: 'auto'

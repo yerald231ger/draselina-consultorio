@@ -3,7 +3,7 @@ title: 'Entrar con segundo factor y ver las citas del día'
 type: 'feature'
 ticket: '1'
 created: '2026-11-09'
-status: 'built'
+status: done
 baseline_revision: 'c759f87c1c157308d72b28264d5fd3d247716bbe'
 route: 'full'
 route_source: 'auto'

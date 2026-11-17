@@ -3,7 +3,7 @@ title: 'Reloj desplazado y recorrido de UJ-4 y UJ-6'
 type: 'chore'
 ticket: '8'
 created: '2026-11-10'
-status: 'built'
+status: done
 baseline_revision: 'fdb9be71dcdb9759cbcd5eb49e0190f70f70dac9'
 route: 'oneshot'
 route_source: 'auto'

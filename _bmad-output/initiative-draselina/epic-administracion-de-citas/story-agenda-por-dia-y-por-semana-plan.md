@@ -3,7 +3,7 @@ title: 'Agenda por día y por semana'
 type: 'feature'
 ticket: '2'
 created: '2026-11-09'
-status: 'built'
+status: done
 baseline_revision: '2518d3f0906c43559fc7a782c6be18b292a7e8be'
 route: 'full'
 route_source: 'auto'

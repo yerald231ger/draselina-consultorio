@@ -3,7 +3,7 @@ title: 'Detalle de Cita con su bitácora'
 type: 'feature'
 ticket: '6'
 created: '2026-11-10'
-status: 'built'
+status: done
 baseline_revision: '5d7512072b6bd33223f7cdff2647feed7c10dd66'
 route: 'full'
 route_source: 'auto'

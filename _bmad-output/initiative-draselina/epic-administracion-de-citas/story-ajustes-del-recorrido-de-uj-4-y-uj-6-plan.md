@@ -3,7 +3,7 @@ title: 'Ajustes del recorrido de UJ-4 y UJ-6'
 type: 'bugfix'
 ticket: '10'
 created: '2026-11-16'
-status: 'built'
+status: done
 baseline_revision: '77fffaa132ea6d98df7fde8d4f22c61633802a82'
 route: 'full'
 route_source: 'auto'
