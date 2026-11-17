@@ -68,10 +68,10 @@ public sealed class ReglasYAvisosDeConfiguracionTests : BunitContext
     public void Los_avisos_cargan_sus_valores_y_guardan_la_hora_nueva()
     {
         var seccion = Render<SeccionAvisosPorCorreo>();
-        Assert.Equal("09:00", seccion.Find("#HoraDelRecordatorio").GetAttribute("value"));
+        Assert.Equal("09:00:00", seccion.Find("#HoraDelRecordatorio").GetAttribute("value"));
         Assert.Equal("doctora@correo.com", seccion.Find("#CorreoDeLaDoctora").GetAttribute("value"));
 
-        seccion.Find("#HoraDelRecordatorio").Change("08:00");
+        seccion.Find("#HoraDelRecordatorio").Change("08:00:00");
         seccion.Find("form").Submit();
 
         Assert.Equal(new TimeOnly(8, 0), Assert.Single(_envio.Recibidos).HoraDelRecordatorio);

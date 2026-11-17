@@ -114,8 +114,8 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         Celda(calendario, 14).QuerySelector("button")!.Click();
 
         Assert.Contains("Sábado 14 de noviembre", calendario.Find("#editor-del-dia").TextContent, StringComparison.Ordinal);
-        Assert.Equal("10:00", calendario.Find("#inicio-0").GetAttribute("value"));
-        Assert.Equal("13:00", calendario.Find("#fin-0").GetAttribute("value"));
+        Assert.Equal("10:00:00", calendario.Find("#inicio-0").GetAttribute("value"));
+        Assert.Equal("13:00:00", calendario.Find("#fin-0").GetAttribute("value"));
         Assert.Equal("sábado abierto", calendario.Find("#motivo").GetAttribute("value"));
     }
 
@@ -143,9 +143,9 @@ public sealed class CalendarioDeAtencionTests : BunitContext
         Celda(calendario, 10).QuerySelector("button")!.Click();
 
         calendario.Find(".dsm-atencion__agregar").Click();
-        calendario.Find("#fin-0").Change("17:00");
-        calendario.Find("#inicio-1").Change("17:30");
-        calendario.Find("#fin-1").Change("18:00");
+        calendario.Find("#fin-0").Change("17:00:00");
+        calendario.Find("#inicio-1").Change("17:30:00");
+        calendario.Find("#fin-1").Change("18:00:00");
         calendario.Find("#motivo").Change("junta");
         calendario.Find("form").Submit();
 

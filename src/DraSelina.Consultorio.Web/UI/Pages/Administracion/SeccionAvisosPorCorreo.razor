@@ -25,7 +25,7 @@
         <form class="dsm-formulario dsm-seccion-de-configuracion__formulario" @onsubmit="GuardarAsync">
             <div class="dsm-campo">
                 <label for="HoraDelRecordatorio" class="dsm-campo__etiqueta">Hora del recordatorio</label>
-                <input id="HoraDelRecordatorio" type="time" class="dsm-campo__control" @bind="_comando.HoraDelRecordatorio" @bind:format="HH:mm"
+                <input id="HoraDelRecordatorio" type="time" class="dsm-campo__control" @bind="_comando.HoraDelRecordatorio"
                        aria-invalid="@Invalido(nameof(CambiarConfiguracionDeEnvio.HoraDelRecordatorio))"
                        aria-describedby="@DescritoPor(nameof(CambiarConfiguracionDeEnvio.HoraDelRecordatorio))" />
                 <div id="ayuda-HoraDelRecordatorio" class="dsm-campo__ayuda">Sale el día anterior a la cita, a los pacientes con correo.</div>
@@ -34,7 +34,7 @@
 
             <div class="dsm-campo">
                 <label for="HoraDeLaAgendaDelDia" class="dsm-campo__etiqueta">Hora de "Tus citas de hoy"</label>
-                <input id="HoraDeLaAgendaDelDia" type="time" class="dsm-campo__control" @bind="_comando.HoraDeLaAgendaDelDia" @bind:format="HH:mm"
+                <input id="HoraDeLaAgendaDelDia" type="time" class="dsm-campo__control" @bind="_comando.HoraDeLaAgendaDelDia"
                        aria-invalid="@Invalido(nameof(CambiarConfiguracionDeEnvio.HoraDeLaAgendaDelDia))"
                        aria-describedby="@DescritoPor(nameof(CambiarConfiguracionDeEnvio.HoraDeLaAgendaDelDia))" />
                 <div id="ayuda-HoraDeLaAgendaDelDia" class="dsm-campo__ayuda">El correo con las citas del día para la doctora.</div>

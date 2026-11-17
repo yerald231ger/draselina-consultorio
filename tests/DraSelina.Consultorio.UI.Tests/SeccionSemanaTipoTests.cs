@@ -43,8 +43,8 @@ public sealed class SeccionSemanaTipoTests : BunitContext
         Assert.Equal(
             ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
             seccion.FindAll(".dsm-semana-tipo__nombre").Select(l => l.TextContent));
-        Assert.Equal("15:30", seccion.Find("#monday-inicio-0").GetAttribute("value"));
-        Assert.Equal("18:00", seccion.Find("#monday-fin-0").GetAttribute("value"));
+        Assert.Equal("15:30:00", seccion.Find("#monday-inicio-0").GetAttribute("value"));
+        Assert.Equal("18:00:00", seccion.Find("#monday-fin-0").GetAttribute("value"));
         Assert.Equal("No se atiende", Dia(seccion, "saturday").QuerySelector(".dsm-semana-tipo__sin-tramos")!.TextContent);
     }
 
@@ -52,16 +52,16 @@ public sealed class SeccionSemanaTipoTests : BunitContext
     public void Copiar_el_lunes_a_miercoles_y_viernes_les_pone_sus_Tramos()
     {
         var seccion = Render<SeccionSemanaTipo>();
-        seccion.Find("#monday-fin-0").Change("17:00");
+        seccion.Find("#monday-fin-0").Change("17:00:00");
 
         Dia(seccion, "monday").QuerySelector(".dsm-semana-tipo__copiar")!.Click();
         Casilla(seccion, "wednesday").Change(true);
         Casilla(seccion, "friday").Change(true);
         seccion.Find(".dsm-semana-tipo__aplicar").Click();
 
-        Assert.Equal("17:00", seccion.Find("#wednesday-fin-0").GetAttribute("value"));
-        Assert.Equal("17:00", seccion.Find("#friday-fin-0").GetAttribute("value"));
-        Assert.Equal("18:00", seccion.Find("#tuesday-fin-0").GetAttribute("value"));
+        Assert.Equal("17:00:00", seccion.Find("#wednesday-fin-0").GetAttribute("value"));
+        Assert.Equal("17:00:00", seccion.Find("#friday-fin-0").GetAttribute("value"));
+        Assert.Equal("18:00:00", seccion.Find("#tuesday-fin-0").GetAttribute("value"));
         Assert.Empty(seccion.FindAll(".dsm-semana-tipo__copia"));
     }
 
@@ -71,7 +71,7 @@ public sealed class SeccionSemanaTipoTests : BunitContext
         _cambiar.Responder = _ => Resultado.Exito(new AgendaBaseCambiada(
             [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday], [new DateOnly(2026, 11, 4)]));
         var seccion = Render<SeccionSemanaTipo>();
-        seccion.Find("#monday-fin-0").Change("17:00");
+        seccion.Find("#monday-fin-0").Change("17:00:00");
         Dia(seccion, "monday").QuerySelector(".dsm-semana-tipo__copiar")!.Click();
         Casilla(seccion, "wednesday").Change(true);
         Casilla(seccion, "friday").Change(true);
@@ -97,7 +97,7 @@ public sealed class SeccionSemanaTipoTests : BunitContext
             [new(new CitaId(Guid.CreateVersion7()), new DateOnly(2026, 11, 9), new(17, 30), new(18, 0), "Ana López", true, false)],
             []);
         var seccion = Render<SeccionSemanaTipo>();
-        seccion.Find("#monday-fin-0").Change("17:00");
+        seccion.Find("#monday-fin-0").Change("17:00:00");
 
         seccion.Find("form").Submit();
 
@@ -120,10 +120,10 @@ public sealed class SeccionSemanaTipoTests : BunitContext
             [new(new CitaId(Guid.CreateVersion7()), new DateOnly(2026, 11, 9), new(17, 30), new(18, 0), "Ana López", false, false)],
             []);
         var seccion = Render<SeccionSemanaTipo>();
-        seccion.Find("#monday-fin-0").Change("17:00");
+        seccion.Find("#monday-fin-0").Change("17:00:00");
         seccion.Find("form").Submit();
 
-        seccion.Find("#monday-fin-0").Change("16:30");
+        seccion.Find("#monday-fin-0").Change("16:30:00");
         seccion.Find("form").Submit();
 
         Assert.Equal(2, _vista.Pedidas.Count);

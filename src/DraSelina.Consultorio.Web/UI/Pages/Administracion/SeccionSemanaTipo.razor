@@ -44,11 +44,11 @@
                         <div class="dsm-atencion__tramo" data-tramo="@t">
                             <div class="dsm-campo">
                                 <label for="@($"{id}-inicio-{t}")" class="dsm-campo__etiqueta">Inicio</label>
-                                <input id="@($"{id}-inicio-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm" />
+                                <input id="@($"{id}-inicio-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Inicio" />
                             </div>
                             <div class="dsm-campo">
                                 <label for="@($"{id}-fin-{t}")" class="dsm-campo__etiqueta">Fin</label>
-                                <input id="@($"{id}-fin-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Fin" @bind:format="HH:mm" />
+                                <input id="@($"{id}-fin-{t}")" type="time" class="dsm-campo__control" @bind="tramo.Fin" />
                             </div>
                             <button type="button" class="btn dsm-boton-neutro dsm-semana-tipo__quitar" @onclick="() => Quitar(dia, t)">
                                 Quitar<span class="visually-hidden"> el tramo @(t + 1) del @Nombre(dia.Dia)</span>

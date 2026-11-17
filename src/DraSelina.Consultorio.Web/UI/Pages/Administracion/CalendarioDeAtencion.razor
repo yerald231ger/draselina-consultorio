@@ -139,12 +139,12 @@
                         <div class="dsm-atencion__tramo" data-tramo="@indice">
                             <div class="dsm-campo">
                                 <label for="inicio-@indice" class="dsm-campo__etiqueta">Inicio</label>
-                                <input id="inicio-@indice" type="time" class="dsm-campo__control" @bind="tramo.Inicio" @bind:format="HH:mm"
+                                <input id="inicio-@indice" type="time" class="dsm-campo__control" @bind="tramo.Inicio"
                                        aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
                             </div>
                             <div class="dsm-campo">
                                 <label for="fin-@indice" class="dsm-campo__etiqueta">Fin</label>
-                                <input id="fin-@indice" type="time" class="dsm-campo__control" @bind="tramo.Fin" @bind:format="HH:mm"
+                                <input id="fin-@indice" type="time" class="dsm-campo__control" @bind="tramo.Fin"
                                        aria-invalid="@Invalido(propiedad)" aria-describedby="@DescritoPor(propiedad)" />
                             </div>
                             <button type="button" class="btn dsm-boton-neutro dsm-atencion__quitar" @onclick="() => Quitar(indice)">
