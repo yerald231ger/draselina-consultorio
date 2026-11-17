@@ -1,0 +1,111 @@
+# Historias de epic-agenda-de-atencion-y-configuracion, en orden de construcción.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Dar horario propio a una fecha"
+description = "Camino trazador: agrega \"Calendario de atención\" a la navegación; el mes muestra en cada fecha sus Tramos vigentes y, si tiene custom, su motivo; al tocar una fecha, el formulario de Tramos y motivo; el comando GuardarAgendaCustom (IRequiereAdministrador) registra o cambia la custom con el candado de fecha (AD-26) y deja la bitácora AgendaCustom a nombre del Administrador con su id; incluye el servicio \"Citas que quedan fuera\" (AD-6: no cabe completa en un solo Tramo vigente), que reusa la entrada 4, y con él el comando devuelve conflicto si quedan Citas fuera que no venían en la lista vista (aquí siempre vacía; la elección por Cita es de la entrada 2)."
+verify = "Con el AppHost arriba, Gerardo da al sábado 10:00–13:00 con motivo \"sábado abierto\" y ese sábado aparece en /reservar con Horarios libres y el siguiente no; pruebas de integración: un Tramo encimado o donde no cabe una Cita se rechaza, una fecha con Citas fuera devuelve conflicto sin guardar nada, la bitácora dice Administrador, y sin sesión el comando vuelve No autorizado."
+covers = ["CAP-11", "CAP-17"]
+after = ["5.1", "2.4", "2.6"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Elegir cita por cita: evento interno y P-1"
+description = "GuardarAgendaCustom y BorrarAgendaCustom reciben la lista completa vista con la decisión cancelar o conservar por Cita y devuelven conflicto si no coincide con las que quedan fuera (RN-9, sobre el servicio de la entrada 1); AgendaAtencion levanta sus eventos de dominio, AgendaCustomFueRegistrada, Cambiada y Borrada con las Citas elegidas y el actor, y también AgendaBaseFueCambiada que usa la entrada 4; el evento de custom va al outbox en la misma transacción (T-30) y la política P-1, handler en Features, cancela cada Cita elegida en su propia transacción con cita.CancelarPorConsultorio, el actor del evento (T-31) y su bitácora, omite las que ya no estén Agendadas (T-29) y publica CitaCancelada con motivo consultorio, cuya disculpa envía el handler existente de la 4.4."
+verify = "Pruebas de dominio e integración: cerrar un sábado con cuatro Citas, cancelando tres y conservando la de las 12:30, deja tres Canceladas por el Consultorio a nombre del Administrador con su disculpa en el canal de prueba y la de las 12:30 intacta y sin aviso; entregar el evento dos veces no cambia nada; una lista que ya no coincide devuelve conflicto y no cambia ni la custom ni las Citas; borrar la custom que abría un sábado con Citas pide la misma elección."
+covers = ["CAP-11", "CAP-17"]
+after = [1, "5.5", "4.4"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Pantalla: Citas que quedan fuera y quitar el horario propio"
+description = "Sobre el Calendario de la entrada 1 y los comandos de la entrada 2: antes de guardar o quitar, la lista de Citas que quedan fuera con las que no tienen correo señaladas (IPacientesApi.ObtenerContactos), cancelar o conservar por Cita con la preselección del Assumption de RN-10 y el atajo \"cancelar todas\"; el aviso de conflicto que vuelve a cargar la lista; \"Quitar horario propio\" dice a qué Tramos de la base vuelve el día; y \"no se atiende\", \"horario especial\" y \"día abierto\" se leen distintos (EXPERIENCE.md, estados del Administrador)."
+verify = "Pruebas bUnit y de integración: con Citas fuera aparece la lista antes de guardar, la Cita sin correo se señala, \"cancelar todas\" marca todas y se puede cambiar una a conservar; un conflicto muestra el aviso y la lista nueva; quitar el horario propio dice los Tramos de la base; los tres tipos de día se distinguen en el mes."
+covers = ["CAP-11"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Cambiar la semana tipo, en el dominio y el caso de uso"
+description = "Según la Decision de semana completa: una consulta previa (IRequiereAdministrador) lista las Citas futuras Agendadas que quedan fuera en fechas sin custom, con el servicio de la entrada 1, y las fechas con custom que no cambian (RN-7); el comando CambiarAgendaBase recibe los siete días, llama a CambiarBase por cada día que cambió con la duración del Tipo de visita activo más corto (INV-B5), no cancela ninguna Cita (RN-6), no guarda nada si un día no vale, levanta AgendaBaseFueCambiada de la entrada 2 y deja una bitácora AgendaBase/Cambiada por día cambiado; [ASSUMPTION: no toma candado de fecha, AD-26 solo lo pide para la custom]."
+verify = "Pruebas de dominio e integración: pasar lunes, miércoles y viernes a 15:30–17:00 lista la Cita de un lunes a las 17:30 y la fecha con custom, guarda sin cancelarla y deja tres entradas de bitácora; un Tramo encimado en un día no guarda ninguno; la siguiente consulta de HorariosLibres usa la base nueva; sin sesión vuelve No autorizado."
+covers = ["CAP-10", "CAP-17"]
+after = [1, 2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Configuración: la semana tipo"
+description = "Agrega \"Configuración\" a la navegación y su primera sección, sobre la consulta y el comando de la entrada 4: la semana tipo con varios Tramos por día y \"aplicar a varios días\"; antes de guardar, la lista de Citas que quedan fuera, que no se cancelan; al guardar, la lista de fechas con Agenda custom que no cambian; y los mensajes de Tramo encimado y de Tramo donde no cabe una Cita."
+verify = "Pruebas bUnit y de integración: copiar los Tramos del lunes a miércoles y viernes y guardar cambia los tres; con una Cita fuera se ve antes de guardar y sigue Agendada después; al guardar se listan las fechas con custom; un Tramo encimado muestra su mensaje sin guardar."
+covers = ["CAP-10"]
+after = [4]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Configuración: reglas de reserva y horas de envío"
+description = "El comando CambiarReglasDeReserva (IRequiereAdministrador) sobre ReglasDeReserva.Cambiar, con su bitácora ReglasDeReserva/Cambiada, y su consulta; la sección de Configuración de la entrada 5 compone anticipación mínima, ventana, umbral de cancelación tardía y tope semanal con la hora del Recordatorio, la de la Agenda del día y los destinatarios, pidiendo cada valor a su módulo (AD-14) sobre CambiarConfiguracionDeEnvio de la 4.7."
+verify = "Pruebas de integración y bUnit: subir la ventana a 3 meses hace que la siguiente consulta de HorariosLibres ofrezca fechas del tercer mes, sin reiniciar; un valor negativo muestra su mensaje sin guardar; cambiar la hora del Recordatorio guarda en Notificaciones; sin sesión ambos comandos vuelven No autorizado."
+covers = ["CAP-16", "CAP-17"]
+after = [5, "4.7"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Configuración: Tipos de consulta"
+description = "Según la Decision de Tipos de visita: TipoDeVisita.Cambiar (nombre, descripción, duración, reservable en línea, orden) y Desactivar; los comandos CrearTipoDeVisita, CambiarTipoDeVisita y DesactivarTipoDeVisita (IRequiereAdministrador) con bitácora TipoDeVisita; la sección \"Tipos de consulta\" de Configuración, después de la de la entrada 6; un tipo desactivado deja de ofrecerse en /reservar y en Agendar cita y conserva sus Citas en la Agenda y el historial; [ASSUMPTION: un tipo desactivado no se reactiva en esta épica]."
+verify = "Pruebas de dominio, integración y bUnit: crear \"Infiltración\" de 45 minutos solo del consultorio no aparece en /reservar y sí en Agendar cita; cambiar la duración de \"Primera consulta\" cambia la Rejilla de la siguiente consulta de HorariosLibres; desactivar \"Consulta de seguimiento\" la quita de /reservar y sus Citas siguen en el historial; sin sesión los comandos vuelven No autorizado."
+covers = ["CAP-16", "CAP-17"]
+after = [6]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 8
+type = "story"
+title = "Recorrido de UJ-3, UJ-6 y UJ-7"
+description = "Gerardo recorre con el AppHost y Mailpit: recortar un martes a 15:30–17:00 por cirugía cancelando la Cita de las 17:30 (UJ-3), abrir un sábado al público (segunda mitad de UJ-6), cerrar un sábado conservando la Cita de las 12:30 (UJ-7), y cambiar la semana tipo, una regla y un Tipo de consulta en Configuración; lo que no le guste va a la entrada 9 (Decision sin mockups, 2026-11-17)."
+verify = "Gerardo completa el recorrido y anota en el plan lo que aprueba y lo que pide cambiar."
+covers = ["CAP-10", "CAP-11", "CAP-16"]
+after = [3, 5, 6, 7]
+hitl = true
+risk = "low"
+
+[[entry]]
+id = 9
+type = "story"
+title = "Ajustes del recorrido de UJ-3, UJ-6 y UJ-7"
+description = "Lo que el recorrido de la entrada 8 pida cambiar (su plan, Resultado del recorrido), más el punto de deferred-work.md que entra aquí: en /reservar, un día que no se atiende deja de decir que no tiene horarios para ese tipo de consulta y dice que ese día no hay consulta (texto por decidir con Gerardo)."
+verify = "Pruebas de integración y bUnit de cada ajuste; un sábado sin Tramos en /reservar muestra el texto acordado; el recorrido de la entrada 8 ya no muestra esos puntos."
+covers = ["CAP-10", "CAP-11", "CAP-16"]
+after = [8]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 10
+type = "story"
+title = "Refactor sweep"
+description = "Limpieza de lo aplazado en los planes y revisiones de la épica, más el punto de deferred-work.md que entra aquí: el puerto con el que HorariosLibresHandler lee AgendaAtencion (un puerto de lectura o documentar IAgendaAtencion para lecturas sin rastrear); su alcance se fija al empezar."
+verify = "Las pruebas de la épica siguen pasando y los pendientes de revisión anotados quedan cerrados o registrados."
+covers = []
+after = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+hitl = false
+risk = "low"
