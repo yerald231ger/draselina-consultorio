@@ -1,12 +1,107 @@
 @page "/"
+@layout LayoutSitio
+@using DraSelina.Consultorio.Agenda.Contracts
+@using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.UI.Pages.Sitio
+@using Microsoft.AspNetCore.Http
+@inject IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>> Horario
+@inject IContenidoApi Contenido
+
+@*
+    Sitio · Inicio (CAP-21; mockups SitioInicio y SitioMovil): una sola página con secciones y navegación por anclas
+    (Decision de la épica 7, 2026-11-17). Los días y horas salen de la Agenda base por HorarioDeAtencion, agrupados
+    por HorarioAgrupado; lugar, dirección, mapa y WhatsApp, de Contenido (AD-15). SSR estático sin scripts (AD-11); el
+    mapa es el iframe de Google Maps, la única excepción con nombre a "Nada de terceros" (README). Sobre mí y
+    Padecimientos se llenan en la entrada 7.2.
+*@
 
 <PageTitle>Dra. Selina Medina Castillo · Traumatología y Ortopedia</PageTitle>
 
-<section class="dsm-contenedor dsm-inicio">
+<section id="inicio" class="dsm-contenedor dsm-inicio">
     <div class="dsm-rotulo">Traumatología y Ortopedia</div>
     <h1 class="dsm-display">Dra. Selina Medina Castillo</h1>
     <p class="dsm-cuerpo">
         Diagnóstico y tratamiento de lesiones y enfermedades de huesos, articulaciones, músculos y ligamentos.
     </p>
-    <a href="/reservar" class="btn btn-primary dsm-accion-principal">Agendar una cita</a>
+    <a href="/reservar" class="btn btn-primary dsm-accion-principal">Agendar cita en línea</a>
 </section>
+
+<section id="sobre-mi" class="dsm-contenedor dsm-seccion-del-sitio" aria-labelledby="titulo-sobre-mi">
+    <h2 id="titulo-sobre-mi" class="dsm-seccion-del-sitio__titulo">Sobre mí</h2>
+</section>
+
+<section id="padecimientos" class="dsm-contenedor dsm-seccion-del-sitio" aria-labelledby="titulo-padecimientos">
+    <h2 id="titulo-padecimientos" class="dsm-seccion-del-sitio__titulo">Padecimientos y tratamientos</h2>
+</section>
+
+<section id="ubicacion" class="dsm-contenedor dsm-seccion-del-sitio dsm-ubicacion" aria-labelledby="titulo-ubicacion">
+    <div class="dsm-ubicacion__datos">
+        <div class="dsm-rotulo">Ubicación y horarios</div>
+        <h2 id="titulo-ubicacion" class="dsm-seccion-del-sitio__titulo">@Consultorio.Lugar</h2>
+
+        <div class="dsm-ubicacion__dato">
+            <span>@Consultorio.Direccion, @Consultorio.Ciudad</span>
+        </div>
+
+        <div class="dsm-ubicacion__dato">
+            @if (_grupos.Count == 0)
+            {
+                <span>Por ahora no hay horario de atención en línea.</span>
+            }
+            else
+            {
+                <ul class="dsm-ubicacion__horario">
+                    @foreach (var grupo in _grupos)
+                    {
+                        <li><span class="dsm-ubicacion__dias">@grupo.Dias</span> <span>@grupo.Horas</span></li>
+                    }
+                </ul>
+            }
+        </div>
+
+        <div class="dsm-ubicacion__dato">
+            <span class="dsm-ubicacion__etiqueta">WhatsApp</span>
+            @if (EnlaceDeWhatsApp.HayNumero(Contenido.WhatsApp))
+            {
+                <EnlaceDeWhatsApp WhatsApp="@Contenido.WhatsApp" Clase="dsm-ubicacion__whatsapp" />
+            }
+            else
+            {
+                <span><MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" /></span>
+            }
+        </div>
+
+        @if (Consultorio.EnlaceDelMapa is { } enlace)
+        {
+            <a href="@enlace" class="dsm-ubicacion__como-llegar">Cómo llegar</a>
+        }
+    </div>
+
+    <iframe class="dsm-ubicacion__mapa" src="@MapaIncrustado" loading="lazy" title="Mapa del consultorio"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+</section>
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    private IReadOnlyList<GrupoDeHorario> _grupos = [];
+
+    private CancellationToken Cancelacion => HttpContext?.RequestAborted ?? CancellationToken.None;
+
+    private DatosDelConsultorio Consultorio => Contenido.DatosDelConsultorio;
+
+    /// <summary>
+    /// El mapa incrustado de Google Maps, sin clave: la misma búsqueda de lugar, dirección y ciudad que
+    /// <see cref="DatosDelConsultorio.EnlaceDelMapa"/>, con <c>output=embed</c>.
+    /// </summary>
+    private string MapaIncrustado =>
+        $"https://www.google.com/maps?q={Uri.EscapeDataString($"{Consultorio.Lugar}, {Consultorio.Direccion}, {Consultorio.Ciudad}")}&output=embed";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var horario = await Horario.HandleAsync(new HorarioDeAtencion(), Cancelacion);
+        _grupos = horario.EsExito ? HorarioAgrupado.Agrupar(horario.Valor) : [];
+    }
+}

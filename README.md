@@ -599,6 +599,11 @@ DESIGN.md con su `--dsm-*` y falla nombrando el que falte o difiera.
 `url(...)` con `http(s)://`. Para actualizar Bootstrap o la fuente, se descarga la versión nueva de la distribución
 oficial, se reemplaza el archivo con su licencia y se actualiza esta tabla.
 
+La única excepción tiene nombre (Gerardo, 2026-11-17): en Ubicación y horarios de `/`, el mapa es un `<iframe>` de
+Google Maps sin clave (`src="https://www.google.com/maps?q=...&output=embed"`, `loading="lazy"`), y los enlaces
+`href` pueden ir a `https://www.google.com/maps/` ("Cómo llegar") y a `https://wa.me/` (WhatsApp), porque un enlace
+navega y no carga nada. `BaseVisualTests` falla con cualquier otro `src` o `href` absoluto en `/`.
+
 **Sin script.** `App.razor` no carga `blazor.web.js` ni ningún otro script: el sitio y la reserva van en SSR
 estático y cada página llega completa, sin conexión interactiva (AD-11). `BaseVisualTests` lo comprueba.
 

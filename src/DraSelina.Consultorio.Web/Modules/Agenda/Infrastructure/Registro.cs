@@ -84,6 +84,7 @@ public static class Registro
             .AddScoped<IQueryHandler<CitasFueraDelHorario, HorarioConCitasFuera>, CitasFueraDelHorarioHandler>()
             .AddScoped<IQueryHandler<CambioDeAgendaBase, CambioDeBaseRevisado>, CambioDeAgendaBaseHandler>()
             .AddScoped<IQueryHandler<SemanaTipo, IReadOnlyList<DiaDeLaBase>>, SemanaTipoHandler>()
+            .AddScoped<IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>>, HorarioDeAtencionHandler>()
             .AddScoped<IQueryHandler<ReglasDeReservaVigentes, ReglasDeReservaValores>, ReglasDeReservaVigentesHandler>()
             .AddScoped<IQueryHandler<TiposDeVisitaEnConfiguracion, IReadOnlyList<TipoDeVisitaEditable>>, TiposDeVisitaEnConfiguracionHandler>();
 

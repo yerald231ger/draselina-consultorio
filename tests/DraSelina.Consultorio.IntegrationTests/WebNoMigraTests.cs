@@ -8,7 +8,8 @@ namespace DraSelina.Consultorio.IntegrationTests;
 
 /// <summary>
 /// La web nunca crea ni migra nada al arrancar (AD-25). Se prueba contra una base vacía: contra la migrada no
-/// habría nada pendiente y la prueba pasaría aunque la web migrara.
+/// habría nada pendiente y la prueba pasaría aunque la web migrara. Se pide el Aviso de privacidad, una página que
+/// no lee la base: desde la entrada 7.1, <c>/</c> lee la Agenda base y en una base vacía no tiene de dónde.
 /// </summary>
 public sealed class WebNoMigraTests(Arnes arnes)
 {
@@ -21,7 +22,7 @@ public sealed class WebNoMigraTests(Arnes arnes)
 
         await using var web = arnes.ArrancarWeb(vacia);
         using var cliente = web.CreateClient();
-        using var respuesta = await cliente.GetAsync("/", Cancelacion);
+        using var respuesta = await cliente.GetAsync("/aviso-de-privacidad", Cancelacion);
 
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
 
@@ -47,7 +48,7 @@ public sealed class WebNoMigraTests(Arnes arnes)
         Assert.Equal(0, await Arnes.DarUnaVueltaDeEntregaAsync(web, Cancelacion));
         Assert.Contains(Arnes.Registros(web), r => r.Nivel == LogLevel.Error && r.Mensaje.Contains("outbox"));
 
-        using var respuesta = await cliente.GetAsync("/", Cancelacion);
+        using var respuesta = await cliente.GetAsync("/aviso-de-privacidad", Cancelacion);
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
 
         Assert.False(await Consultas.ExisteEsquemaAsync(vacia, AgendaDbContext.Esquema, Cancelacion), "La web creó el esquema 'agenda'.");

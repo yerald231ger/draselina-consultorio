@@ -1,0 +1,29 @@
+@inherits LayoutComponentBase
+
+@*
+    El layout del sitio del Consultorio (CAP-21; entrada 7.1): el encabezado con la marca, la navegación por anclas a
+    las secciones de / y "Agendar cita" siempre a la mano (FR-28), el contenido y el pie. Con flex-wrap, como en el
+    mockup SitioInicio: en el teléfono la navegación baja de renglón y el botón sigue a la vista sin desplazarse. La
+    reserva y la gestión conservan LayoutPublico.
+*@
+<header class="dsm-encabezado">
+    <div class="dsm-contenedor dsm-encabezado__fila dsm-encabezado__fila--sitio">
+        <a class="dsm-marca" href="/#inicio">
+            <span class="dsm-marca__nombre">Dra. Selina Medina Castillo</span>
+            <span class="dsm-rotulo">Traumatología y Ortopedia</span>
+        </a>
+        <nav aria-label="Principal" class="dsm-navegacion">
+            <a href="/#inicio" class="dsm-navegacion__enlace">Inicio</a>
+            <a href="/#sobre-mi" class="dsm-navegacion__enlace">Sobre mí</a>
+            <a href="/#padecimientos" class="dsm-navegacion__enlace">Padecimientos</a>
+            <a href="/#ubicacion" class="dsm-navegacion__enlace">Ubicación y horarios</a>
+        </nav>
+        <a href="/reservar" class="btn btn-primary dsm-encabezado__agendar">Agendar cita</a>
+    </div>
+</header>
+
+<main>
+    @Body
+</main>
+
+<PieDelSitio />

@@ -281,6 +281,114 @@ a:hover {
   }
 }
 
+/* Encabezado del sitio (LayoutSitio; mockup SitioInicio): marca, navegación por anclas y "Agendar cita". Con
+   flex-wrap: en el teléfono la navegación baja de renglón y el botón queda a la vista sin desplazarse. */
+.dsm-encabezado__fila--sitio {
+  flex-wrap: wrap;
+  gap: var(--dsm-spacing-5) 32px;
+}
+
+.dsm-navegacion {
+  display: flex;
+  flex: 1 1 360px;
+  flex-wrap: wrap;
+  gap: 0 24px;
+  font-size: var(--dsm-body-small-font-size);
+  font-weight: 600;
+}
+
+.dsm-navegacion__enlace {
+  display: flex;
+  align-items: center;
+  min-height: var(--dsm-spacing-touch-min);
+  color: var(--dsm-ink-soft);
+  text-decoration: none;
+}
+
+.dsm-navegacion__enlace:hover {
+  color: var(--dsm-primary);
+}
+
+.dsm-encabezado__agendar {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--dsm-spacing-touch-min);
+  padding-inline: var(--dsm-spacing-9);
+}
+
+/* Secciones de Sitio · Inicio. */
+.dsm-seccion-del-sitio {
+  padding-block: 40px;
+  scroll-margin-top: var(--dsm-spacing-7);
+}
+
+.dsm-seccion-del-sitio__titulo {
+  margin: 0;
+  font-size: var(--dsm-page-title-font-size);
+  font-weight: var(--dsm-page-title-font-weight);
+  line-height: var(--dsm-page-title-line-height);
+  color: var(--dsm-primary);
+}
+
+/* Ubicación y horarios: datos y mapa lado a lado en escritorio, apilados en el teléfono. */
+.dsm-ubicacion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+.dsm-ubicacion__datos {
+  display: flex;
+  flex: 1 1 340px;
+  flex-direction: column;
+  gap: var(--dsm-spacing-9);
+  min-width: 0;
+}
+
+.dsm-ubicacion__dato {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--dsm-body-font-size);
+  line-height: var(--dsm-body-line-height);
+  color: var(--dsm-ink-soft);
+}
+
+.dsm-ubicacion__etiqueta,
+.dsm-ubicacion__dias {
+  font-weight: 600;
+  color: var(--dsm-ink);
+}
+
+.dsm-ubicacion__horario {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsm-ubicacion__horario li {
+  display: flex;
+  flex-direction: column;
+}
+
+.dsm-ubicacion__whatsapp,
+.dsm-ubicacion__como-llegar {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--dsm-spacing-touch-min);
+  font-weight: 700;
+}
+
+.dsm-ubicacion__mapa {
+  flex: 999 1 460px;
+  min-width: 0;
+  min-height: 340px;
+  border: 1px solid var(--dsm-border);
+  border-radius: var(--dsm-rounded-3xl);
+  background: var(--dsm-tint);
+}
+
 /* Campo (UI/Componentes/Campo.razor): etiqueta en negritas arriba, control de 50 px, ayuda y errores debajo. */
 .dsm-campo {
   display: flex;

@@ -96,15 +96,20 @@ public sealed partial class BaseVisualTests(Arnes arnes)
         }
     }
 
+    // La única excepción con nombre a "Nada de terceros" (README; Gerardo, 2026-11-17, entrada 7.1): en src solo el
+    // mapa incrustado de Google Maps; en href, que navega y no carga nada, solo Google Maps y WhatsApp.
     [Fact]
-    public async Task Ni_Inicio_ni_la_hoja_propia_piden_nada_a_terceros()
+    public async Task Ni_Inicio_ni_la_hoja_propia_piden_nada_a_terceros_salvo_el_mapa()
     {
         await using var web = arnes.ArrancarWeb();
         using var cliente = web.CreateClient();
         var html = await cliente.GetStringAsync("/", Cancelacion);
         var propia = await cliente.GetStringAsync(HojaPropia(Hojas(html)), Cancelacion);
 
-        Assert.Empty(AtributoConUrlAbsoluta().Matches(html).Select(m => m.Value));
+        var terceros = AtributoConUrlAbsoluta().Matches(html)
+            .Where(m => !EsExcepcionConNombre(m.Groups["atributo"].Value, m.Groups["url"].Value))
+            .Select(m => m.Value);
+        Assert.Empty(terceros);
         Assert.DoesNotContain(UrlsEnCss().Matches(propia).Select(m => m.Groups["url"].Value), EsAbsoluta);
         Assert.DoesNotMatch(ImportEnCss(), propia);
     }
@@ -143,6 +148,13 @@ public sealed partial class BaseVisualTests(Arnes arnes)
 
         Assert.True(problemas.Count == 0, "La hoja propia no coincide con DESIGN.md: " + string.Join("; ", problemas));
     }
+
+    private static bool EsExcepcionConNombre(string atributo, string url) =>
+        atributo.Equals("src", StringComparison.OrdinalIgnoreCase)
+            ? url.StartsWith("https://www.google.com/maps?", StringComparison.Ordinal)
+              && url.Contains("output=embed", StringComparison.Ordinal)
+            : url.StartsWith("https://www.google.com/maps/", StringComparison.Ordinal)
+              || url.StartsWith("https://wa.me/", StringComparison.Ordinal);
 
     private async Task<string> PedirInicioAsync()
     {
@@ -209,13 +221,13 @@ public sealed partial class BaseVisualTests(Arnes arnes)
     [GeneratedRegex("""<h1[^>]*>\s*Dra\. Selina Medina Castillo\s*</h1>""")]
     private static partial Regex H1ConNombre();
 
-    [GeneratedRegex("""<a(?=[^>]*href="/reservar")[^>]*class="[^"]*\bbtn-primary\b[^"]*"[^>]*>\s*Agendar una cita\s*</a>""")]
+    [GeneratedRegex("""<a(?=[^>]*href="/reservar")[^>]*class="[^"]*\bbtn-primary\b[^"]*"[^>]*>\s*Agendar cita\s*</a>""")]
     private static partial Regex BotonAgendar();
 
     [GeneratedRegex("""<link[^>]*rel="stylesheet"[^>]*href="(?<href>[^"]+)""")]
     private static partial Regex EnlaceAHoja();
 
-    [GeneratedRegex("""(?:href|src)\s*=\s*["']?\s*(?:https?:)?//""", RegexOptions.IgnoreCase)]
+    [GeneratedRegex("""(?<atributo>href|src)\s*=\s*["']?\s*(?<url>(?:https?:)?//[^"'\s>]*)""", RegexOptions.IgnoreCase)]
     private static partial Regex AtributoConUrlAbsoluta();
 
     [GeneratedRegex("""url\(\s*['"]?(?<url>[^'")\s]+)""")]
