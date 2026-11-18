@@ -605,7 +605,9 @@ Google Maps sin clave (`src="https://www.google.com/maps?q=...&output=embed"`, `
 navega y no carga nada. `BaseVisualTests` falla con cualquier otro `src` o `href` absoluto en `/`.
 
 **Sin script.** `App.razor` no carga `blazor.web.js` ni ningún otro script: el sitio y la reserva van en SSR
-estático y cada página llega completa, sin conexión interactiva (AD-11). `BaseVisualTests` lo comprueba.
+estático y cada página llega completa, sin conexión interactiva (AD-11). La única excepción tiene nombre (Gerardo,
+2026-11-17): `/` lleva un `<script type="application/ld+json">` con el `Physician` de schema.org para buscadores, que
+son datos y no código (entrada 7.4). `BaseVisualTests` falla con cualquier otro `<script`.
 
 El layout público es `UI/Layout/LayoutPublico.razor`, el layout por defecto de `Routes.razor`.
 

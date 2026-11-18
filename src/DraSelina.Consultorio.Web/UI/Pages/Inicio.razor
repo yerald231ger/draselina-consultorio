@@ -11,14 +11,22 @@
 @*
     Sitio · Inicio (CAP-21; mockups SitioInicio y SitioMovil): una sola página con secciones y navegación por anclas
     (Decision de la épica 7, 2026-11-17). Los días y horas salen de la Agenda base por HorarioDeAtencion, agrupados
-    por HorarioAgrupado; lugar, dirección, mapa y WhatsApp, de Contenido (AD-15). SSR estático sin scripts (AD-11); el
-    mapa es el iframe de Google Maps, la única excepción con nombre a "Nada de terceros" (README). La portada, Sobre mí
+    por HorarioAgrupado; lugar, dirección, mapa y WhatsApp, de Contenido (AD-15). SSR estático sin más script que el
+    JSON-LD (AD-11); el mapa es el iframe de Google Maps, la única excepción con nombre a "Nada de terceros" (README). La portada, Sobre mí
     y Padecimientos muestran los datos de la doctora de Contenido; lo que es nulo se ve como Pendiente (entrada 7.2).
     Sin testimonios ni fotos de antes/después (FR-27): el retrato es un recuadro con las iniciales. Termina con la
-    franja "Agenda tu consulta en menos de un minuto" (entrada 7.3).
+    franja "Agenda tu consulta en menos de un minuto" (entrada 7.3). Título, description y el JSON-LD Physician para
+    buscadores (FR-29; entrada 7.4).
 *@
 
-<PageTitle>Dra. Selina Medina Castillo · Traumatología y Ortopedia</PageTitle>
+<PageTitle>@TextosDelSitio.TituloDeInicio(Contenido)</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="@TextosDelSitio.DescriptionDeInicio(Contenido)" />
+    @* Razor no deja escribir <script> en un componente: el bloque va entero como MarkupString. Es JSON con <, > y &
+       escapados (FichaDelConsultorio), datos y no código: la única excepción a "Sin script" (README, AD-11). *@
+    @((MarkupString)$"<script type=\"application/ld+json\">{_ficha}</script>")
+</HeadContent>
 
 <section id="inicio" class="dsm-portada">
     <svg class="dsm-portada__ola" viewBox="0 0 390 110" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -197,6 +205,8 @@
 
     private IReadOnlyList<GrupoDeHorario> _grupos = [];
 
+    private string _ficha = "";
+
     private CancellationToken Cancelacion => HttpContext?.RequestAborted ?? CancellationToken.None;
 
     private DatosDelConsultorio Consultorio => Contenido.DatosDelConsultorio;
@@ -210,9 +220,15 @@
     private string MapaIncrustado =>
         $"https://www.google.com/maps?q={Uri.EscapeDataString($"{Consultorio.Lugar}, {Consultorio.Direccion}, {Consultorio.Ciudad}")}&output=embed";
 
+    // La dirección del sitio con el esquema y el host de la petición (Gerardo, 2026-11-17).
+    private string UrlDelSitio =>
+        HttpContext?.Request is { } peticion ? $"{peticion.Scheme}://{peticion.Host}/" : "/";
+
     protected override async Task OnInitializedAsync()
     {
         var horario = await Horario.HandleAsync(new HorarioDeAtencion(), Cancelacion);
-        _grupos = horario.EsExito ? HorarioAgrupado.Agrupar(horario.Valor) : [];
+        IReadOnlyList<DiaDeLaBase> dias = horario.EsExito ? horario.Valor : [];
+        _grupos = HorarioAgrupado.Agrupar(dias);
+        _ficha = FichaDelConsultorio.JsonLd(Doctora, Consultorio, Contenido.WhatsApp, dias, UrlDelSitio);
     }
 }

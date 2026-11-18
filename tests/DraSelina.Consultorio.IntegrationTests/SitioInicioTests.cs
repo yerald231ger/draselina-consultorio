@@ -86,8 +86,7 @@ public sealed partial class SitioInicioTests(Arnes arnes)
             Assert.Contains($"id=\"{ancla}\"", html, StringComparison.Ordinal);
         }
 
-        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("blazor.web.js", html, StringComparison.Ordinal);
+        EncontrableTests.SinMasScriptQueElJsonLd(html);
     }
 
     [Fact]
@@ -126,7 +125,7 @@ public sealed partial class SitioInicioTests(Arnes arnes)
 
         Assert.DoesNotContain("<img", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("testimonio", html, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+        EncontrableTests.SinMasScriptQueElJsonLd(html);
     }
 
     [Fact]

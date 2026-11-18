@@ -1,15 +1,21 @@
 @page "/aviso-de-privacidad"
 @layout LayoutSitio
 @using DraSelina.Consultorio.Contenido.Contracts
+@using DraSelina.Consultorio.UI.Pages.Sitio
 @inject IContenidoApi Contenido
 
 @*
     Aviso de privacidad: una página aparte (EXPERIENCE.md) con el texto y la versión vigentes de Contenido, la misma
     versión que queda en el Consentimiento de cada Cita (AD-24). Se llega desde la casilla de Tus datos y desde el pie.
-    Va bajo el encabezado del sitio, con "Agendar cita" a la mano (FR-28; entrada 7.3).
+    Va bajo el encabezado del sitio, con "Agendar cita" a la mano (FR-28; entrada 7.3), con título y description para
+    buscadores y sin JSON-LD (entrada 7.4): no toca la base.
 *@
 
-<PageTitle>Aviso de privacidad · Dra. Selina Medina Castillo</PageTitle>
+<PageTitle>@TextosDelSitio.TituloDelAviso(Contenido)</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="@TextosDelSitio.DescriptionDelAviso(Contenido)" />
+</HeadContent>
 
 <article class="dsm-contenedor dsm-aviso-de-privacidad">
     <h1 class="dsm-titulo-de-paso">Aviso de privacidad</h1>

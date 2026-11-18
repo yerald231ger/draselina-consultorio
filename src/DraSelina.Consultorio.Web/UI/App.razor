@@ -8,7 +8,7 @@
     <base href="/" />
     @* Solo hojas propias, servidas por MapStaticAssets con su huella. Sin blazor.web.js ni ningún otro script fuera de
        la administración: el sitio y la reserva se entregan en SSR estático, cada página completa y sin conexión interactiva
-       (AD-11). *@
+       (AD-11). La única excepción es el JSON-LD de / (type="application/ld+json"): datos para buscadores, no código. *@
     <link rel="stylesheet" href="@Assets["lib/bootstrap/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["css/consultorio.css"]" />
     <HeadOutlet />

@@ -6,6 +6,7 @@ using DraSelina.Consultorio.Pacientes.Infrastructure;
 using DraSelina.Consultorio.UI;
 using DraSelina.Consultorio.UI.Pages;
 using DraSelina.Consultorio.UI.Pages.Reserva;
+using DraSelina.Consultorio.UI.Pages.Sitio;
 using DraSelina.Consultorio.Web;
 using DraSelina.Consultorio.Web.Identidad;
 using Microsoft.AspNetCore.Builder;
@@ -116,6 +117,7 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 app.MapAgenda(DemasiadosIntentos.Politica);
+app.MapArchivosParaBuscadores();
 app.MapIdentidad();
 app.MapDefaultEndpoints();
 

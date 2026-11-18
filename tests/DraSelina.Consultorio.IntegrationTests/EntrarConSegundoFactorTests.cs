@@ -68,8 +68,7 @@ public sealed partial class EntrarConSegundoFactorTests(Arnes arnes)
         using var inicio = await cliente.GetAsync("/", Cancelacion);
         var publico = await inicio.Content.ReadAsStringAsync(Cancelacion);
         Assert.Equal(HttpStatusCode.OK, inicio.StatusCode);
-        Assert.DoesNotContain("blazor.web.js", publico, StringComparison.Ordinal);
-        Assert.DoesNotContain("<script", publico, StringComparison.OrdinalIgnoreCase);
+        EncontrableTests.SinMasScriptQueElJsonLd(publico);
         Assert.False(inicio.Headers.Contains("X-Robots-Tag"));
     }
 

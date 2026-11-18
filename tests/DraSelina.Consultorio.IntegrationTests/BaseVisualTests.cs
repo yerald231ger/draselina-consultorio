@@ -5,7 +5,8 @@ namespace DraSelina.Consultorio.IntegrationTests;
 
 /// <summary>
 /// La base visual del sitio: Bootstrap, Montserrat y los tokens de DESIGN.md, servidos por la propia web, y una
-/// página en SSR estático sin ningún script (AD-11). Todo se pide a la web real del arnés.
+/// página en SSR estático sin más script que el JSON-LD para buscadores (AD-11; entrada 7.4). Todo se pide a la web
+/// real del arnés.
 /// </summary>
 public sealed partial class BaseVisualTests(Arnes arnes)
 {
@@ -37,13 +38,11 @@ public sealed partial class BaseVisualTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task Inicio_no_trae_ningun_script()
+    public async Task Inicio_no_trae_mas_script_que_el_JSON_LD()
     {
         var html = await PedirInicioAsync();
 
-        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("blazor.web.js", html, StringComparison.Ordinal);
-        Assert.DoesNotContain("_framework/", html, StringComparison.Ordinal);
+        EncontrableTests.SinMasScriptQueElJsonLd(html);
     }
 
     [Fact]

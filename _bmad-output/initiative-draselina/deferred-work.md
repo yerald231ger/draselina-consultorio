@@ -26,3 +26,6 @@ Deuda técnica que Gerardo decidió dejar para el final de todas las épicas.
 - source_plan: `_bmad-output/initiative-draselina/epic-administracion-de-citas/story-reloj-desplazado-y-recorrido-de-uj-4-y-uj-6-plan.md`
   summary: Los días del calendario de /reservar no tienen etiqueta accesible, o la tienen cortada.
   evidence: Visto en la segunda revisión del recorrido de la entrada 5.8 (2026-11-16) con el árbol de accesibilidad. Es de la épica 2.
+- source_plan: `_bmad-output/initiative-draselina/epic-sitio-del-consultorio/story-encontrable-titulo-description-physician-robots-txt-y-sitema-plan.md`
+  summary: Detrás de un proxy que termina TLS, el JSON-LD (`url`), la línea `Sitemap:` y los `<loc>` del sitemap saldrían con `http://` y con el host interno, porque se arman con `Request.Scheme` y `Request.Host` y `Program.cs` no procesa los encabezados reenviados.
+  evidence: Medio, sin verificar hasta elegir el hosting (App Service o Container Apps, Solution Plan). Lo resuelve `UseForwardedHeaders` con los proxies conocidos, y quizá `AllowedHosts` con el dominio público, al publicar. Revisión quick de la entrada 7.4 (2026-11-17).
