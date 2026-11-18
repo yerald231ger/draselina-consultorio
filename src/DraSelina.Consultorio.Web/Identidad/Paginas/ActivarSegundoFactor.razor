@@ -121,6 +121,10 @@ else if (_clave is not null)
             await Usuarios.ResetAuthenticatorKeyAsync(cuenta);
             clave = await Usuarios.GetAuthenticatorKeyAsync(cuenta)
                     ?? throw new InvalidOperationException("Identity no guardó la clave de la app autenticadora.");
+
+            // Crear la clave cambia el sello de seguridad de la cuenta, y la cookie parcial lleva el anterior: se
+            // guarda de nuevo, si no, el envío del código ya no encontraría la cuenta (Identity 11).
+            await CookieParcial.GuardarAsync(HttpContext, Entrada, cuenta);
         }
 
         var correo = await Usuarios.GetEmailAsync(cuenta) ?? cuenta.Id;

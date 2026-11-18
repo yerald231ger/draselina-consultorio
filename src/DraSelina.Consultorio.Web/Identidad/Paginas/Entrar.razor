@@ -88,7 +88,7 @@
             var comprobada = await Entrada.CheckPasswordSignInAsync(cuenta, datos.Contrasena, lockoutOnFailure: true);
             if (comprobada.Succeeded)
             {
-                await CookieParcial.GuardarAsync(HttpContext, cuenta);
+                await CookieParcial.GuardarAsync(HttpContext, Entrada, cuenta);
                 Navegacion.NavigateTo($"{Registro.RutaDeActivar}?ReturnUrl={regreso}");
                 return;
             }
