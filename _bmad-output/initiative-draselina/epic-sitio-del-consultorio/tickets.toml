@@ -1,0 +1,79 @@
+# Historias de epic-sitio-del-consultorio, en orden de construcción.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Ubicación y horarios desde la Agenda base"
+description = "Camino trazador: la consulta pública HorarioDeAtencion (IQuery<IReadOnlyList<DiaDeLaBase>>, sin IRequiereAdministrador, solo lee) con su handler en Features y un formateador que agrupa los días con los mismos Tramos (días seguidos como rango, \"Lunes a viernes · 3:30 a 6:00 pm, con cita\"; sueltos como lista, \"Lunes, miércoles y viernes\"; sin Agendas custom); Inicio.razor rehecho con el encabezado del sitio (logotipo, anclas a las secciones y \"Agendar cita\" a /reservar), una portada mínima y la sección Ubicación y horarios: lugar, dirección, horario agrupado, WhatsApp (nulo: \"escríbenos por WhatsApp\"), \"Cómo llegar\" con EnlaceDelMapa y el iframe de Google Maps sin clave con loading=\"lazy\" y title; [ASSUMPTION: el encabezado con anclas y botón va solo en / y en el Aviso de privacidad; la reserva y la gestión conservan su encabezado actual]. HorarioDeAtencion es el que la entrada 4 usa para el JSON-LD."
+verify = "Con el AppHost arriba, Gerardo abre el sábado 10:00–13:00 en Configuración y / muestra \"Sábado · 10:00 am a 1:00 pm\"; pruebas unitarias del agrupado (rango, lista, dos Tramos en un día, semana sin atención), de integración de HorarioDeAtencion sin sesión, y HTTP de / con \"Agendar cita\" en el encabezado hacia /reservar y sin blazor.web.js."
+covers = ["CAP-21"]
+after = ["2.2", "2.5", "6.4"]
+hitl = false
+risk = "medium"
+references = ["ux-appointment-booking/imports/mockup-canvas/SitioInicio.dc.html", "ux-appointment-booking/imports/mockup-canvas/SitioMovil.dc.html"]
+
+[[entry]]
+id = 2
+type = "story"
+title = "Portada, Sobre mí y Padecimientos con los datos de la doctora"
+description = "Contenido suma a IContenidoApi los datos de la doctora (nombre, especialidad, Céd. Prof. 12093135, Céd. Especialidad 14899218, Consejo de Ortopedia 24/8379/2, formación, semblanza, afiliaciones y los seis padecimientos: Rodilla, Hombro, Columna, Cadera, Fracturas, Lesiones deportivas), con lo pendiente de Selina como texto visible de pendiente y la universidad de la cédula sin decidir; con ellos se completan la portada (\"Agendar cita en línea\", WhatsApp, cédulas y certificación, recuadro con las iniciales \"SM\" en lugar del retrato) y las secciones Sobre mí y Padecimientos y tratamientos (\"¿En qué te puedo ayudar?\"), sin testimonios ni fotos de antes/después (FR-27). Estos datos los usan el pie de la entrada 3 y el JSON-LD de la entrada 4."
+verify = "Pruebas bUnit o HTTP: / muestra las cédulas y la certificación del mockup, las seis tarjetas de padecimientos, los pendientes marcados y el recuadro \"SM\"; sin WhatsApp aparece \"escríbenos por WhatsApp\"."
+covers = ["CAP-21"]
+after = [1]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Franja final, pie con cédulas y Aviso bajo el encabezado del sitio"
+description = "La franja \"Agenda tu consulta en menos de un minuto\" con \"Agendar cita\", el pie con nombre, especialidad y cédulas tomados de los datos de la doctora de la entrada 2 y el enlace al Aviso de privacidad, y el Aviso de privacidad bajo el encabezado del sitio de la entrada 1 con su botón \"Agendar cita\" (FR-28)."
+verify = "Pruebas HTTP: /aviso-de-privacidad trae \"Agendar cita\" hacia /reservar en el encabezado; el pie de / y del Aviso muestra las cédulas de Contenido; / termina con la franja y su botón."
+covers = ["CAP-21"]
+after = [2]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Encontrable: título, description, Physician, robots.txt y sitemap"
+description = "Título propio con especialidad y ciudad (\"Traumatóloga en San Luis Potosí · Dra. Selina Medina Castillo\") y meta description en / y en el Aviso de privacidad; schema.org Physician en JSON-LD con nombre y cédula de los datos de la doctora (entrada 2), dirección de DatosDelConsultorio y openingHoursSpecification desde los días de HorarioDeAtencion (entrada 1), no desde el texto agrupado; robots.txt que bloquea /admin y /c/ y apunta a sitemap.xml; y sitemap.xml con / y /aviso-de-privacidad [ASSUMPTION: sus URLs se arman con el host de la petición, no con UrlBase, que es la opción de Agenda para el Enlace de gestión]."
+verify = "Pruebas de integración: los títulos de / y del Aviso traen especialidad y ciudad; el JSON-LD es JSON válido de tipo Physician con los horarios de la base sembrada; ni / ni el Aviso traen otro script que el ld+json; robots.txt y sitemap.xml responden con lo dicho; /admin y /c/ siguen con meta robots y X-Robots-Tag noindex."
+covers = ["CAP-21"]
+after = [3]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Recorrido del sitio en teléfono y escritorio"
+description = "Gerardo recorre con el AppHost / y el Aviso de privacidad a 390 px y en escritorio contra los mockups SitioInicio y SitioMovil: \"Agendar cita\" visible sin desplazarse y llevando al primer paso de la reserva (FR-28), las anclas, el mapa y los horarios de la Agenda base; lo que no le guste va a la entrada 6."
+verify = "Gerardo completa el recorrido y anota en el plan lo que aprueba y lo que pide cambiar."
+covers = ["CAP-21"]
+after = [4]
+hitl = true
+risk = "low"
+
+[[entry]]
+id = 6
+type = "story"
+title = "Ajustes del recorrido del sitio"
+description = "Los cambios que Gerardo pida en el recorrido de la entrada 5, dentro de CAP-21."
+verify = "Cada cambio pedido en el plan de la entrada 5 queda hecho y con su prueba."
+covers = ["CAP-21"]
+after = [5]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 7
+type = "story"
+title = "Refactor sweep"
+description = "Limpieza de la épica, con alcance propuesto al arrancar desde los planes y los hallazgos de revisión diferidos; solo limpieza, sin alcance nuevo."
+verify = "Las pruebas de arquitectura, dominio, integración y UI siguen en verde tras la limpieza."
+covers = []
+after = [1, 2, 3, 4, 5, 6]
+hitl = false
+risk = "low"

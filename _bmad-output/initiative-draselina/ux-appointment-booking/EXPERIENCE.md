@@ -41,7 +41,7 @@ Los mockups están en [imports/mockup-canvas/](imports/mockup-canvas/) (fuente d
 | Enlace no válido | Enlace vencido o inexistente | Explicar y llevar a agendar | solo texto |
 | Aviso de privacidad | Pie del sitio, casilla de Consentimiento | Texto legal | solo texto |
 
-El sitio es **una sola página con secciones** (Inicio, Sobre mí, Padecimientos, Ubicación y horarios) y navegación por anclas, como en el mockup. `[ASSUMPTION: esto sustituye a las páginas separadas que describe FR-27; el Aviso de privacidad sí es una página aparte]`
+El sitio es **una sola página con secciones** (Inicio, Sobre mí, Padecimientos, Ubicación y horarios) y navegación por anclas, como en el mockup; el Aviso de privacidad es una página aparte (Gerardo, 2026-11-17).
 
 **Composición de Sitio · Inicio**, en orden, según el mockup:
 
@@ -280,7 +280,7 @@ Abierto al público:
 Ninguna impide pasar a arquitectura; se avanza con los supuestos indexados abajo. Responsable: Gerardo. Revisar antes de construir la superficie afectada.
 
 1. ¿"Tipo de consulta" (diseño) o "Tipo de visita" (PRD)? Hoy la interfaz dice consulta y el Glosario dice visita.
-2. ¿El sitio queda como una sola página con secciones, o FR-27 pide páginas separadas?
+2. ~~¿El sitio queda como una sola página con secciones, o FR-27 pide páginas separadas?~~ Resuelta: una sola página con secciones; FR-27 lo dice así (Gerardo, 2026-11-17).
 3. ¿Qué vino manda: el de los mockups (`#6B2A45`) o el de la papelería (`#6D2D45`)?
 4. El calendario de escritorio está dibujado con cinco columnas fijas de lunes a viernes. Debe poder mostrar cualquier día con Tramos: ¿siete columnas siempre, o solo los días que tengan atención en el mes?
 5. ¿Qué pantallas de administración necesitan mockup antes de construirse?
@@ -290,7 +290,7 @@ Ninguna impide pasar a arquitectura; se avanza con los supuestos indexados abajo
 ## Índice de supuestos
 
 - Foundation — el Administrador trabaja en escritorio.
-- IA — el sitio es una página con secciones; navegación de administración de cuatro entradas.
+- IA — navegación de administración de cuatro entradas.
 - Component Patterns — "Continuar" deshabilitado sin hora; validación al salir del campo.
 - State Patterns (Paciente) — sin horarios en la ventana; textos de error; tope semanal; variante sin correo; cancelación normal; enlace no válido.
 - State Patterns (Administrador) — todos los tratamientos.

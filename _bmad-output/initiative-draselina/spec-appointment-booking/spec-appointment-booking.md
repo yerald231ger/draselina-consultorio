@@ -146,7 +146,7 @@ Cada capacidad cita sus requisitos. Las consecuencias verificables de cada `FR-n
 
 - Las metas del Success signal y la definición del piloto (4 semanas) son supuestos del PRD (§9).
 - El resto de los supuestos no se copia aquí: vive indexado en su documento. PRD §11; `EXPERIENCE.md`, "Índice de supuestos"; dominio, sección 3 y "Supuestos de la Parte II"; arquitectura, AD-11, AD-13 y Stack.
-- Los que más pesan al construir: tope de 3 Citas por teléfono por semana, de lunes a domingo; sitio de una sola página con secciones en lugar de las páginas separadas de FR-27; toda la administración y todos los correos sin mockup; la agenda de administración se refresca cada 30 segundos; `TipoDeVisita` y `ReglasDeReserva` como agregados propios.
+- Los que más pesan al construir: tope de 3 Citas por teléfono por semana, de lunes a domingo; toda la administración y todos los correos sin mockup; la agenda de administración se refresca cada 30 segundos; `TipoDeVisita` y `ReglasDeReserva` como agregados propios.
 
 ## Open Questions
 
@@ -165,7 +165,7 @@ Ninguna impide dividir el trabajo. Responsable: Gerardo.
 
 **Antes de construir la superficie afectada**
 
-- ¿El sitio queda en una página con secciones o en páginas separadas (FR-27)? ¿Entra completo al piloto?
+- ¿El sitio entra completo al piloto? (La forma ya está: una sola página con secciones, según FR-27; Gerardo, 2026-11-17.)
 - ¿El calendario de escritorio del Paciente muestra siete columnas siempre o solo los días con atención?
 - ¿Qué pantallas de administración necesitan mockup? (Para la épica 5, ninguna: Agenda, Detalle de Cita, Agendar cita y Pacientes se construyen sin mockup y se revisan en un recorrido; Gerardo, 2026-11-09. Sigue abierta para el Calendario de atención y Configuración.)
 - ¿Qué vino manda: `#6B2A45` (mockups) o `#6D2D45` (papelería)? ¿Se oscurece el borde de los campos para llegar a 3:1?

@@ -350,7 +350,7 @@ El sistema entrega las notificaciones sin afectar la reserva.
 
 #### FR-27: Páginas del Consultorio
 
-El visitante puede consultar: Inicio, Sobre mí, Padecimientos y tratamientos, Ubicación y horarios, y Aviso de privacidad.
+El visitante puede consultar: Inicio, Sobre mí, Padecimientos y tratamientos, Ubicación y horarios, y Aviso de privacidad. Las cuatro primeras son secciones de una sola página con navegación por anclas; el Aviso de privacidad es una página aparte (Gerardo, 2026-11-17).
 
 **Consecuencias (verificables):**
 - Ubicación y horarios muestra dirección, mapa, los días y horas de la Agenda base y contacto de WhatsApp.
@@ -362,7 +362,7 @@ El visitante puede consultar: Inicio, Sobre mí, Padecimientos y tratamientos, U
 El visitante puede iniciar la reserva desde cualquier página con el botón "Agendar cita".
 
 **Consecuencias (verificables):**
-- El botón es visible sin desplazarse en la pantalla de un teléfono, en todas las páginas de FR-27.
+- El botón es visible sin desplazarse en la pantalla de un teléfono, en la página del sitio y en el Aviso de privacidad.
 - Un toque lleva al primer paso de la reserva (FR-1).
 
 #### FR-29: Ser encontrable

@@ -59,4 +59,4 @@ id = 7
 slug = "epic-sitio-del-consultorio"
 title = "El sitio presenta el consultorio y lleva a agendar"
 covers = ["CAP-21"]
-after = [{ epic = 2, needs = "Contenido con los datos del consultorio, la entrada a la reserva y la lectura de la Agenda base" }]
+after = [{ epic = 2, needs = "Contenido con los datos del consultorio, la entrada a la reserva y la Agenda base sembrada" }, { epic = 6, needs = "DiaDeLaBase y la semana tipo editable en Configuración" }]
