@@ -41,9 +41,13 @@ var web = builder.AddProject<Projects.DraSelina_Consultorio_Web>("web")
     .WithEnvironment("EnlaceDeGestion__Clave", claveDeEnlace)
     // El remitente de los correos en desarrollo. `[ASSUMPTION]` hasta que exista la dirección real.
     .WithEnvironment("Notificaciones__Remitente", "citas@consultorio.local");
-web.WithEnvironment("EnlaceDeGestion__UrlBase", web.GetEndpoint("http"));
+// Aspire toma de la web el perfil de launchSettings con el mismo nombre que el del AppHost: con "https" la web escucha
+// también por https y los enlaces de los correos usan esa dirección; con "http", la de http.
+var direccionDeLaWeb = web.GetEndpoint(
+    web.Resource.Annotations.OfType<EndpointAnnotation>().Any(e => e.Name == "https") ? "https" : "http");
+web.WithEnvironment("EnlaceDeGestion__UrlBase", direccionDeLaWeb);
 // La dirección del sitio a la que llevan los botones de los correos sin Enlace de gestión ("Agendar otra cita").
-web.WithEnvironment("Notificaciones__UrlDelSitio", web.GetEndpoint("http"));
+web.WithEnvironment("Notificaciones__UrlDelSitio", direccionDeLaWeb);
 
 // Al publicar (Azure Container Apps con azd, decisión de Gerardo, 2026-11-17) la web queda detrás del proxy de
 // entrada, que termina TLS. Con esta variable, ASP.NET Core toma X-Forwarded-Proto y X-Forwarded-For: el JSON-LD,

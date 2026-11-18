@@ -550,8 +550,10 @@ El panel de Aspire queda en <http://localhost:15080>; la dirección con el token
 (`Login to the dashboard at ...`). Ahí se ven los cuatro recursos con su estado, sus registros y las trazas: pide
 una página a la web y aparece su traza `GET /`.
 
-Todo corre por HTTP (`ASPIRE_ALLOW_UNSECURED_TRANSPORT` en el perfil del AppHost) porque el equipo no tiene un
-certificado de desarrollo de confianza. La CLI `aspire` no hace falta.
+El perfil `http` (el de omisión) corre todo por HTTP, con `ASPIRE_ALLOW_UNSECURED_TRANSPORT`. El perfil `https`
+(`--launch-profile https`) necesita el certificado de desarrollo de confianza (`dotnet dev-certs https --trust`): el
+panel queda en <https://localhost:17080>, la web en <https://localhost:7080> (y también en <http://localhost:5080>) y
+los enlaces de los correos usan la dirección https. La CLI `aspire` no hace falta.
 
 ## Verificar el arranque
 

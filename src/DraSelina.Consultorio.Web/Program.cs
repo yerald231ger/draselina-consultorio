@@ -89,6 +89,11 @@ builder.Host.UseServiceProviderFactory(contexto => DecoradoresDeHandlers.Fabrica
 
 var app = builder.Build();
 
+// Una petición por http se redirige a https solo si la web sabe su puerto https: en local con el perfil https del
+// AppHost (Aspire lo pasa). Con el perfil http y en las pruebas no hay puerto https y no redirige. Al publicar, el proxy
+// de entrada termina TLS y reenvía X-Forwarded-Proto (AppHost.cs): la petición ya llega como https y no redirige.
+app.UseHttpsRedirection();
+
 // Todo lo que cuelga del Enlace de gestión (/c/<token> y sus subrutas, el .ics incluido) lleva el token en la
 // dirección: ningún buscador lo indexa y ni el navegador ni un intermediario lo guardan (CAP-21, AD-19). La
 // administración (/admin y sus subrutas, inicio de sesión incluido) tampoco se indexa ni se guarda (CAP-21). Va antes
