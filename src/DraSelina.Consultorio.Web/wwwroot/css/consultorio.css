@@ -624,6 +624,71 @@ a:hover {
   background: var(--dsm-tint);
 }
 
+/* Franja final de Sitio · Inicio (mockup SitioInicio): banda vino de borde a borde con "Agendar cita" en blanco. El
+   pie que sigue no deja margen sobre ella. */
+.dsm-franja {
+  background: var(--dsm-primary);
+  color: var(--dsm-on-primary);
+}
+
+main:has(> .dsm-franja:last-child) + .dsm-pie {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.dsm-franja__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 56px;
+}
+
+.dsm-franja__texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-3);
+  max-width: 620px;
+}
+
+.dsm-franja__titulo {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.dsm-franja__frase {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--dsm-on-primary-muted);
+}
+
+.dsm-franja__agendar {
+  --bs-btn-color: var(--dsm-primary);
+  --bs-btn-bg: var(--dsm-surface);
+  --bs-btn-border-color: var(--dsm-surface);
+  --bs-btn-hover-color: var(--dsm-primary-hover);
+  --bs-btn-hover-bg: var(--dsm-tint);
+  --bs-btn-hover-border-color: var(--dsm-tint);
+  --bs-btn-active-color: var(--dsm-primary-hover);
+  --bs-btn-active-bg: var(--dsm-tint);
+  --bs-btn-active-border-color: var(--dsm-tint);
+  --bs-btn-focus-box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--dsm-on-primary) 50%, transparent);
+  --bs-btn-font-family: var(--dsm-font-family);
+  --bs-btn-font-size: var(--dsm-button-font-size);
+  --bs-btn-font-weight: var(--dsm-button-font-weight);
+  --bs-btn-border-radius: var(--dsm-rounded-lg);
+  --bs-btn-padding-x: 26px;
+  --bs-btn-padding-y: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+}
+
 /* Campo (UI/Componentes/Campo.razor): etiqueta en negritas arriba, control de 50 px, ayuda y errores debajo. */
 .dsm-campo {
   display: flex;

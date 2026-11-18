@@ -14,7 +14,8 @@ namespace DraSelina.Consultorio.IntegrationTests;
 /// sesión, Ubicación y horarios muestra la Agenda base y cambia con ella, y el encabezado del sitio trae las anclas y
 /// "Agendar cita" sin ningún script. La reserva conserva su encabezado. Base sembrada: lunes a viernes, 3:30 a 6:00 pm.
 /// Entrada 7.2: la portada, Sobre mí y Padecimientos con los datos de la doctora, lo pendiente marcado y sin
-/// testimonios ni imágenes.
+/// testimonios ni imágenes. Entrada 7.3: la franja final, el pie con las cédulas en todas las páginas públicas y el
+/// Aviso de privacidad bajo el encabezado del sitio.
 /// </summary>
 public sealed partial class SitioInicioTests(Arnes arnes)
 {
@@ -129,6 +130,69 @@ public sealed partial class SitioInicioTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task Inicio_termina_con_la_franja_y_su_boton_antes_del_pie()
+    {
+        await using var web = arnes.ArrancarWeb();
+        using var cliente = web.CreateClient();
+
+        var html = await cliente.GetStringAsync("/", Cancelacion);
+
+        var ubicacion = html.IndexOf("<section id=\"ubicacion\"", StringComparison.Ordinal);
+        var franja = html.IndexOf("<section class=\"dsm-franja\"", StringComparison.Ordinal);
+        var pie = html.IndexOf("<footer", StringComparison.Ordinal);
+        Assert.True(ubicacion >= 0 && ubicacion < franja && franja < pie, $"ubicación {ubicacion}, franja {franja}, pie {pie}");
+        var entreFranjaYPie = html[franja..pie];
+        Assert.Equal(1, Regex.Count(entreFranjaYPie, "<section"));
+        var textoDeLaFranja = WebUtility.HtmlDecode(entreFranjaYPie);
+        Assert.Contains("Agenda tu consulta en menos de un minuto", textoDeLaFranja, StringComparison.Ordinal);
+        Assert.Contains(
+            "Elige el día y la hora que te acomoden. Sin llamadas ni cuentas; tu cita queda confirmada al instante.",
+            textoDeLaFranja,
+            StringComparison.Ordinal);
+        Assert.Matches(FranjaAgendarAReservar(), entreFranjaYPie);
+    }
+
+    [Fact]
+    public async Task El_Aviso_va_bajo_el_encabezado_del_sitio_con_Agendar_cita_y_sin_scripts()
+    {
+        await using var web = arnes.ArrancarWeb();
+        using var cliente = web.CreateClient();
+
+        using var respuesta = await cliente.GetAsync("/aviso-de-privacidad", Cancelacion);
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        var html = await respuesta.Content.ReadAsStringAsync(Cancelacion);
+
+        var encabezado = Assert.Single(Encabezado().Matches(html)).Value;
+        Assert.Matches(AgendarCitaAReservar(), encabezado);
+        foreach (var ancla in new[] { "inicio", "sobre-mi", "padecimientos", "ubicacion" })
+        {
+            Assert.Contains($"href=\"/#{ancla}\"", encabezado, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("Versión ", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/aviso-de-privacidad")]
+    [InlineData("/reservar")]
+    public async Task El_pie_trae_nombre_especialidad_cedulas_y_el_Aviso(string ruta)
+    {
+        await using var web = arnes.ArrancarWeb();
+        using var cliente = web.CreateClient();
+
+        var html = await cliente.GetStringAsync(ruta, Cancelacion);
+
+        var pie = WebUtility.HtmlDecode(Assert.Single(Pie().Matches(html)).Value);
+        Assert.Contains(
+            "Dra. Selina Medina Castillo · Traumatología y Ortopedia · Céd. Prof. 12093135 · Céd. Esp. 14899218",
+            pie,
+            StringComparison.Ordinal);
+        Assert.Contains("href=\"/aviso-de-privacidad\"", pie, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task La_reserva_conserva_su_encabezado_sin_anclas()
     {
         await using var web = arnes.ArrancarWeb();
@@ -184,6 +248,12 @@ public sealed partial class SitioInicioTests(Arnes arnes)
 
     [GeneratedRegex("""<a(?=[^>]*href="/reservar")[^>]*class="[^"]*\bbtn-primary\b[^"]*"[^>]*>\s*Agendar cita en línea\s*<svg""")]
     private static partial Regex AgendarCitaEnLineaAReservar();
+
+    [GeneratedRegex("""<footer[^>]*>.*?</footer>""", RegexOptions.Singleline)]
+    private static partial Regex Pie();
+
+    [GeneratedRegex("""<a(?=[^>]*href="/reservar")[^>]*class="[^"]*\bdsm-franja__agendar\b[^"]*"[^>]*>\s*Agendar cita\s*</a>""")]
+    private static partial Regex FranjaAgendarAReservar();
 
     [GeneratedRegex("""<h3 class="dsm-padecimiento__nombre">([^<]+)</h3>""")]
     private static partial Regex NombreDePadecimiento();

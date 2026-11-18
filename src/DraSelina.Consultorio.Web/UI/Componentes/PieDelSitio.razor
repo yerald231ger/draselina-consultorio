@@ -1,7 +1,18 @@
-@* El pie de las páginas públicas: nombre, especialidad y el Aviso de privacidad. Lo usan LayoutPublico y LayoutSitio. *@
+@using DraSelina.Consultorio.Contenido.Contracts
+@inject IContenidoApi Contenido
+
+@*
+    El pie de las páginas públicas (mockup SitioInicio): nombre, especialidad y cédulas de la doctora, de Contenido
+    (AD-15; FR-27), y el Aviso de privacidad. Lo usan LayoutPublico y LayoutSitio: un solo pie en todas las páginas
+    públicas (Gerardo, 2026-11-17).
+*@
 <footer class="dsm-pie">
     <div class="dsm-contenedor dsm-pie__fila">
-        <span>Dra. Selina Medina Castillo · Traumatología y Ortopedia</span>
+        <span>@Doctora.Nombre · @Doctora.Especialidad · Céd. Prof. @Doctora.CedulaProfesional · Céd. Esp. @Doctora.CedulaDeEspecialidad</span>
         <a href="/aviso-de-privacidad" class="dsm-pie__enlace">Aviso de privacidad</a>
     </div>
 </footer>
+
+@code {
+    private DatosDeLaDoctora Doctora => Contenido.DatosDeLaDoctora;
+}

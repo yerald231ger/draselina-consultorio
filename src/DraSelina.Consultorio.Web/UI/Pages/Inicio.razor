@@ -14,7 +14,8 @@
     por HorarioAgrupado; lugar, dirección, mapa y WhatsApp, de Contenido (AD-15). SSR estático sin scripts (AD-11); el
     mapa es el iframe de Google Maps, la única excepción con nombre a "Nada de terceros" (README). La portada, Sobre mí
     y Padecimientos muestran los datos de la doctora de Contenido; lo que es nulo se ve como Pendiente (entrada 7.2).
-    Sin testimonios ni fotos de antes/después (FR-27): el retrato es un recuadro con las iniciales.
+    Sin testimonios ni fotos de antes/después (FR-27): el retrato es un recuadro con las iniciales. Termina con la
+    franja "Agenda tu consulta en menos de un minuto" (entrada 7.3).
 *@
 
 <PageTitle>Dra. Selina Medina Castillo · Traumatología y Ortopedia</PageTitle>
@@ -176,6 +177,18 @@
 
     <iframe class="dsm-ubicacion__mapa" src="@MapaIncrustado" loading="lazy" title="Mapa del consultorio"
             referrerpolicy="no-referrer-when-downgrade"></iframe>
+</section>
+
+<section class="dsm-franja" aria-labelledby="titulo-franja">
+    <div class="dsm-contenedor dsm-franja__fila">
+        <div class="dsm-franja__texto">
+            <h2 id="titulo-franja" class="dsm-franja__titulo">Agenda tu consulta en menos de un minuto</h2>
+            <p class="dsm-franja__frase">
+                Elige el día y la hora que te acomoden. Sin llamadas ni cuentas; tu cita queda confirmada al instante.
+            </p>
+        </div>
+        <a href="/reservar" class="btn dsm-franja__agendar">Agendar cita</a>
+    </div>
 </section>
 
 @code {
