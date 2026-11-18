@@ -580,9 +580,25 @@ a:hover {
   min-width: 0;
 }
 
+/* Cada dato con su ícono a la izquierda, como en el mockup (entrada 7.6). */
 .dsm-ubicacion__dato {
   display: flex;
+  align-items: flex-start;
+  gap: var(--dsm-spacing-5);
+}
+
+.dsm-ubicacion__icono {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  color: var(--dsm-primary);
+}
+
+.dsm-ubicacion__texto {
+  display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 2px;
   font-size: var(--dsm-body-font-size);
   line-height: var(--dsm-body-line-height);

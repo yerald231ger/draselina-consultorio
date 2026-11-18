@@ -8,8 +8,9 @@ namespace DraSelina.Consultorio.IntegrationTests;
 
 /// <summary>
 /// Lo que leen los buscadores (FR-29; entrada 7.4) contra la web real y PostgreSQL: títulos y descriptions de / y del
-/// Aviso, el JSON-LD Physician de / con el horario de la base sembrada (lunes a viernes, 3:30 a 6:00 pm), robots.txt y
-/// sitemap.xml. El meta robots y el X-Robots-Tag de /admin y /c/ los cubren CancelarCitaTests y EntrarConSegundoFactorTests.
+/// Aviso, el JSON-LD Physician de / con el horario de la base sembrada (lunes a viernes, 3:30 a 6:00 pm), robots.txt
+/// (sin Disallow desde la entrada 7.6) y sitemap.xml. El meta robots y el X-Robots-Tag de /admin y /c/ los cubren
+/// CancelarCitaTests y EntrarConSegundoFactorTests.
 /// </summary>
 public sealed partial class EncontrableTests(Arnes arnes)
 {
@@ -69,7 +70,7 @@ public sealed partial class EncontrableTests(Arnes arnes)
     }
 
     [Fact]
-    public async Task Robots_bloquea_administracion_y_enlaces_y_apunta_al_sitemap()
+    public async Task Robots_no_bloquea_nada_y_apunta_al_sitemap()
     {
         await using var web = arnes.ArrancarWeb();
         using var cliente = web.CreateClient();
@@ -79,7 +80,9 @@ public sealed partial class EncontrableTests(Arnes arnes)
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
         Assert.Equal("text/plain", respuesta.Content.Headers.ContentType?.MediaType);
         var lineas = (await respuesta.Content.ReadAsStringAsync(Cancelacion)).Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(["User-agent: *", "Disallow: /admin", "Disallow: /c/", "Sitemap: http://localhost/sitemap.xml"], lineas);
+        // Sin Disallow: /admin y /c/ salen del índice por su noindex, que el buscador solo ve si las rastrea (recorrido
+        // 7.5, Gerardo, 2026-11-17).
+        Assert.Equal(["User-agent: *", "Sitemap: http://localhost/sitemap.xml"], lineas);
     }
 
     [Fact]

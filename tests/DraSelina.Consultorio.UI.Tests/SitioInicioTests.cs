@@ -53,6 +53,30 @@ public sealed class SitioInicioTests : BunitContext
     }
 
     [Fact]
+    public void Ubicacion_trae_los_iconos_de_lugar_reloj_y_WhatsApp_ocultos_al_lector()
+    {
+        _horario.Semana = [new DiaDeLaBase(DayOfWeek.Monday, [new TramoDeLaAgenda(new(15, 30), new(18, 0))])];
+
+        var datos = Render<Inicio>().FindAll("#ubicacion .dsm-ubicacion__dato");
+
+        Assert.Equal(3, datos.Count);
+        var iconos = datos.Select(dato =>
+        {
+            var icono = Assert.Single(dato.Children, hijo => hijo.LocalName == "svg");
+            Assert.Same(dato.FirstElementChild, icono);
+            Assert.Equal("true", icono.GetAttribute("aria-hidden"));
+            Assert.Equal("false", icono.GetAttribute("focusable"));
+            return icono;
+        }).ToList();
+
+        // Los del mockup, en orden: el pin (círculo de radio 2.5), el reloj (círculo de radio 9) y el globo (sin círculo).
+        Assert.Equal(
+            ["2.5", "9", null],
+            iconos.Select(icono => icono.QuerySelector("circle")?.GetAttribute("r")));
+        Assert.StartsWith("M20 11.5", iconos[2].QuerySelector("path")!.GetAttribute("d"), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void La_portada_trae_cedulas_certificacion_Agendar_y_el_recuadro_SM()
     {
         var inicio = Render<Inicio>();

@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Routing;
 namespace DraSelina.Consultorio.UI.Pages.Sitio;
 
 /// <summary>
-/// <c>robots.txt</c> y <c>sitemap.xml</c> (FR-29; entrada 7.4). robots bloquea la administración y los Enlaces de
-/// gestión y apunta al sitemap; el sitemap lista las páginas públicas para buscadores: <c>/</c> y el Aviso de
-/// privacidad. Las URLs absolutas usan el esquema y el host de la petición (Gerardo, 2026-11-17).
+/// <c>robots.txt</c> y <c>sitemap.xml</c> (FR-29; entrada 7.4). robots solo apunta al sitemap: no bloquea la
+/// administración ni los Enlaces de gestión, porque un buscador que no los rastrea no ve su <c>noindex</c> (meta robots
+/// y <c>X-Robots-Tag</c>, Program.cs) y podría indexar la URL por enlaces externos (Gerardo, recorrido 7.5,
+/// 2026-11-17). El sitemap lista las páginas públicas para buscadores: <c>/</c> y el Aviso de privacidad. Las URLs
+/// absolutas usan el esquema y el host de la petición (Gerardo, 2026-11-17).
 /// </summary>
 public static class ArchivosParaBuscadores
 {
@@ -29,8 +31,6 @@ public static class ArchivosParaBuscadores
     public static string Robots(string urlBase) =>
         $"""
         User-agent: *
-        Disallow: /admin
-        Disallow: /c/
         Sitemap: {urlBase}/sitemap.xml
 
         """;
