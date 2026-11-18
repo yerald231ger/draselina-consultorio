@@ -40,6 +40,6 @@
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
     <!-- Solo en pruebas: pinta los componentes de UI/ sin navegador, en SSR estático y en interactivo
          (UI.Tests). Agregado con la historia de errores en el formulario (épica plataforma base, entrada 9). -->
-    <PackageVersion Include="bunit" Version="2.11.3" />
+    <PackageVersion Include="bunit" Version="2.15.2" />
   </ItemGroup>
 </Project>

@@ -310,7 +310,7 @@ Versiones verificadas en la web el 2026-10-04.
 | PostgreSQL con `btree_gist` | 18.x `[ASSUMPTION: disponible en Azure Flexible Server; si no, 17.x]` |
 | Bootstrap + CSS propio con los tokens de `DESIGN.md` | 5.3.8 |
 | xunit.v3 | 4.0.1 |
-| bUnit | 2.11.3 |
+| bUnit | 2.15.2 (de 2.11.3 al pasar a .NET 11) |
 | Testcontainers.PostgreSql | 4.15.0 |
 | Microsoft.AspNetCore.Mvc.Testing (solo en pruebas) | la misma que ASP.NET Core |
 | Scrutor | 6.1.0 (la versión de Cypma.Cop) |
