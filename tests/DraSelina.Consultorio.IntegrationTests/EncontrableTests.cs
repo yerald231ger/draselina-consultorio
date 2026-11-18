@@ -85,6 +85,24 @@ public sealed partial class EncontrableTests(Arnes arnes)
         Assert.Equal(["User-agent: *", "Sitemap: http://localhost/sitemap.xml"], lineas);
     }
 
+    [Theory]
+    [InlineData(true, "https")]
+    [InlineData(false, "http")]
+    public async Task Detras_del_proxy_robots_apunta_al_sitemap_con_el_esquema_reenviado_solo_si_se_activa(bool activado, string esquema)
+    {
+        // Lo que hace el AppHost al publicar (ASPNETCORE_FORWARDEDHEADERS_ENABLED): el proxy termina TLS y reenvía
+        // X-Forwarded-Proto; sin activarlo, la web lo ignora.
+        await using var web = arnes.ArrancarWeb()
+            .WithWebHostBuilder(b => b.UseSetting("FORWARDEDHEADERS_ENABLED", activado ? "true" : "false"));
+        using var cliente = web.CreateClient();
+        cliente.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+        cliente.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.7");
+
+        var robots = await cliente.GetStringAsync("/robots.txt", Cancelacion);
+
+        Assert.Contains($"Sitemap: {esquema}://localhost/sitemap.xml", robots, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task El_sitemap_lista_inicio_y_el_Aviso()
     {

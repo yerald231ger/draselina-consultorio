@@ -390,7 +390,7 @@ tests/
 ## Deferred
 
 - **Separar los módulos en proyectos o en servicios.** Hoy todo vive en `DraSelina.Consultorio.Web`, separado por carpeta y namespace. Se sacan a proyectos propios, o a servicios, cuando haya una necesidad concreta; la separación por namespaces y las pruebas de arquitectura existen para que ese paso sea mecánico.
-- **Aprovisionamiento de Azure y despliegue automático.** No se libera nada aún; se decide al preparar el piloto, incluido si Aspire publica a App Service o a Container Apps. Entra aquí todo lo operativo de producción: integración continua como puerta de las pruebas de arquitectura, secretos, HTTPS, chequeos de salud, alertas y respaldos.
+- **Aprovisionamiento de Azure y despliegue automático.** No se libera nada aún; se decide al preparar el piloto, incluido si Aspire publica a App Service o a Container Apps. Entra aquí todo lo operativo de producción: integración continua como puerta de las pruebas de arquitectura, secretos, HTTPS, chequeos de salud, alertas y respaldos. Decidido (Gerardo, 2026-11-17): Azure Container Apps, publicado desde el AppHost con `azd`, la web con una réplica mínima de 1; al publicar, el AppHost activa los encabezados reenviados. La integración continua ya corre en GitHub Actions. Lo que falta y sus decisiones pendientes están en `docs/despliegue.md`.
 - **Respaldo replicado a otra región.** Mexico Central no lo ofrece para PostgreSQL administrado; decidir la estrategia de respaldo antes de recibir pacientes reales.
 - **Entorno intermedio.** Sin él en el piloto; revisar antes de recibir pacientes reales.
 - **Varias sedes.** La Cita no lleva sede hasta que exista una segunda.

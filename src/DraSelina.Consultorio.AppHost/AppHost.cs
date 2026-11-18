@@ -45,4 +45,13 @@ web.WithEnvironment("EnlaceDeGestion__UrlBase", web.GetEndpoint("http"));
 // La dirección del sitio a la que llevan los botones de los correos sin Enlace de gestión ("Agendar otra cita").
 web.WithEnvironment("Notificaciones__UrlDelSitio", web.GetEndpoint("http"));
 
+// Al publicar (Azure Container Apps con azd, decisión de Gerardo, 2026-11-17) la web queda detrás del proxy de
+// entrada, que termina TLS. Con esta variable, ASP.NET Core toma X-Forwarded-Proto y X-Forwarded-For: el JSON-LD,
+// robots.txt y el sitemap salen con https, y el límite de frecuencia cuenta la IP del Paciente y no la del proxy. En
+// local no se activa: nadie reenvía nada. Lo cubre EncontrableTests.
+if (builder.ExecutionContext.IsPublishMode)
+{
+    web.WithEnvironment("ASPNETCORE_FORWARDEDHEADERS_ENABLED", "true");
+}
+
 builder.Build().Run();
