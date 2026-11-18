@@ -20,7 +20,7 @@ public sealed class SitioInicioTests : BunitContext
 
     public SitioInicioTests()
     {
-        Services.AddSingleton<IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>>>(_horario);
+        Services.AddSingleton<IQueryHandler<SemanaDeAtencion, IReadOnlyList<DiaDeLaBase>>>(_horario);
         Services.AddSingleton<IContenidoApi>(_contenido);
     }
 
@@ -48,7 +48,7 @@ public sealed class SitioInicioTests : BunitContext
         var inicio = Render<Inicio>();
 
         Assert.Empty(inicio.FindAll(".dsm-ubicacion__horario"));
-        Assert.Contains("Por ahora no hay horario de atención en línea.", inicio.Find("#ubicacion").TextContent, StringComparison.Ordinal);
+        Assert.Contains("Por ahora no hay horarios en línea.", inicio.Find("#ubicacion").TextContent, StringComparison.Ordinal);
         Assert.Contains("Escríbenos por WhatsApp", inicio.Find("#ubicacion").TextContent, StringComparison.Ordinal);
     }
 
@@ -170,11 +170,11 @@ public sealed class SitioInicioTests : BunitContext
             "[Pendiente: descripción breve escrita con Selina]", a.QuerySelector(".dsm-pendiente")!.TextContent));
     }
 
-    private sealed class HorarioFalso : IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>>
+    private sealed class HorarioFalso : IQueryHandler<SemanaDeAtencion, IReadOnlyList<DiaDeLaBase>>
     {
         public IReadOnlyList<DiaDeLaBase> Semana { get; set; } = [];
 
-        public Task<Resultado<IReadOnlyList<DiaDeLaBase>>> HandleAsync(HorarioDeAtencion consulta, CancellationToken cancellationToken) =>
+        public Task<Resultado<IReadOnlyList<DiaDeLaBase>>> HandleAsync(SemanaDeAtencion consulta, CancellationToken cancellationToken) =>
             Task.FromResult(Resultado.Exito(Semana));
     }
 }

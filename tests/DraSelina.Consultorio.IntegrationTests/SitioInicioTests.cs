@@ -10,7 +10,7 @@ using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
 namespace DraSelina.Consultorio.IntegrationTests;
 
 /// <summary>
-/// Sitio · Inicio (CAP-21; entrada 7.1) contra la web real y PostgreSQL: <see cref="HorarioDeAtencion"/> se lee sin
+/// Sitio · Inicio (CAP-21; entrada 7.1) contra la web real y PostgreSQL: <see cref="SemanaDeAtencion"/> se lee sin
 /// sesión, Ubicación y horarios muestra la Agenda base y cambia con ella, y el encabezado del sitio trae las anclas y
 /// "Agendar cita" sin ningún script. La reserva conserva su encabezado. Base sembrada: lunes a viernes, 3:30 a 6:00 pm.
 /// Entrada 7.2: la portada, Sobre mí y Padecimientos con los datos de la doctora, lo pendiente marcado y sin
@@ -28,14 +28,14 @@ public sealed partial class SitioInicioTests(Arnes arnes)
     private static CancellationToken Cancelacion => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task HorarioDeAtencion_se_lee_sin_sesion_con_la_base_sembrada()
+    public async Task SemanaDeAtencion_se_lee_sin_sesion_con_la_base_sembrada()
     {
         await using var escenario = await Escenario.CrearAsync(arnes);
         await using var ambito = escenario.Web.Services.CreateAsyncScope();
         SinSesion(ambito);
 
-        var resultado = await ambito.ServiceProvider.GetRequiredService<IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>>>()
-            .HandleAsync(new HorarioDeAtencion(), Cancelacion);
+        var resultado = await ambito.ServiceProvider.GetRequiredService<IQueryHandler<SemanaDeAtencion, IReadOnlyList<DiaDeLaBase>>>()
+            .HandleAsync(new SemanaDeAtencion(), Cancelacion);
 
         Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
         Assert.Equal(DeLunesADomingo, resultado.Valor.Select(d => d.Dia));

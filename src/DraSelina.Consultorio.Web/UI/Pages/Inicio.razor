@@ -5,12 +5,12 @@
 @using DraSelina.Consultorio.Contenido.Contracts
 @using DraSelina.Consultorio.UI.Pages.Sitio
 @using Microsoft.AspNetCore.Http
-@inject IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>> Horario
+@inject IQueryHandler<SemanaDeAtencion, IReadOnlyList<DiaDeLaBase>> Horario
 @inject IContenidoApi Contenido
 
 @*
     Sitio · Inicio (CAP-21; mockups SitioInicio y SitioMovil): una sola página con secciones y navegación por anclas
-    (Decision de la épica 7, 2026-11-17). Los días y horas salen de la Agenda base por HorarioDeAtencion, agrupados por
+    (Decision de la épica 7, 2026-11-17). Los días y horas salen de la Agenda base por SemanaDeAtencion, agrupados por
     HorarioAgrupado; lugar, dirección, mapa y WhatsApp, de Contenido (AD-15). SSR estático sin más script que el JSON-LD
     (AD-11); el mapa es el iframe de Google Maps, la única excepción con nombre a "Nada de terceros" (README). La
     portada, Sobre mí y Padecimientos muestran los datos de la doctora de Contenido; lo que es nulo se ve como Pendiente
@@ -158,7 +158,7 @@
             <div class="dsm-ubicacion__texto">
                 @if (_grupos.Count == 0)
                 {
-                    <span>Por ahora no hay horario de atención en línea.</span>
+                    <span>Por ahora no hay horarios en línea.</span>
                 }
                 else
                 {
@@ -232,7 +232,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var horario = await Horario.HandleAsync(new HorarioDeAtencion(), Cancelacion);
+        var horario = await Horario.HandleAsync(new SemanaDeAtencion(), Cancelacion);
         IReadOnlyList<DiaDeLaBase> dias = horario.EsExito ? horario.Valor : [];
         _grupos = HorarioAgrupado.Agrupar(dias);
         _ficha = FichaDelConsultorio.JsonLd(Doctora, Consultorio, Contenido.WhatsApp, dias, UrlDelSitio);

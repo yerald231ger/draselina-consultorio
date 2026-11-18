@@ -9,7 +9,7 @@ namespace DraSelina.Consultorio.UI.Pages.Sitio;
 /// <summary>
 /// Los datos estructurados del consultorio para buscadores (FR-29; entrada 7.4): un <c>Physician</c> de schema.org en
 /// JSON-LD con los datos de la doctora y del consultorio de Contenido (AD-15) y su horario de los días de
-/// <see cref="HorarioDeAtencion"/>, un elemento por Tramo. Lo nulo de Contenido (WhatsApp, pendientes) no aparece.
+/// <see cref="SemanaDeAtencion"/>, un elemento por Tramo. Lo nulo de Contenido (WhatsApp, pendientes) no aparece.
 /// </summary>
 public static class FichaDelConsultorio
 {
@@ -21,7 +21,7 @@ public static class FichaDelConsultorio
     /// <param name="doctora">Los datos de la doctora.</param>
     /// <param name="consultorio">Lugar, dirección y ciudad.</param>
     /// <param name="whatsApp">El WhatsApp de Contenido; nulo o vacío, sin <c>telephone</c>.</param>
-    /// <param name="dias">Los días de la Agenda base, de <see cref="HorarioDeAtencion"/>.</param>
+    /// <param name="dias">Los días de la Agenda base, de <see cref="SemanaDeAtencion"/>.</param>
     /// <param name="url">La dirección absoluta del sitio: "https://host/".</param>
     public static string JsonLd(
         DatosDeLaDoctora doctora,

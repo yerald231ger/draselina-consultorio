@@ -5,14 +5,14 @@ using DraSelina.Consultorio.Kernel;
 namespace DraSelina.Consultorio.Agenda.Features;
 
 /// <summary>
-/// El horario de atención del sitio: la misma semana tipo que <see cref="SemanaTipoHandler"/>, sin pedir sesión. Una
+/// La semana de atención del sitio: la misma semana tipo que <see cref="SemanaTipoHandler"/>, sin pedir sesión. Una
 /// consulta: no abre transacción ni cambia estado (T-14).
 /// </summary>
-public sealed class HorarioDeAtencionHandler(IAgendaDelRango agenda)
-    : IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>>
+public sealed class SemanaDeAtencionHandler(IAgendaDelRango agenda)
+    : IQueryHandler<SemanaDeAtencion, IReadOnlyList<DiaDeLaBase>>
 {
     public async Task<Resultado<IReadOnlyList<DiaDeLaBase>>> HandleAsync(
-        HorarioDeAtencion consulta,
+        SemanaDeAtencion consulta,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(consulta);

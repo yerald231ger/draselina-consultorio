@@ -83,7 +83,7 @@ public sealed class HorarioAgrupadoTests
         Assert.Equal([new GrupoDeHorario("Sábado y domingo", "10:00 am a 1:00 pm, con cita")], grupos);
     }
 
-    // Los siete días de lunes a domingo, como los devuelve HorarioDeAtencion; los que no se nombran, sin Tramos.
+    // Los siete días de lunes a domingo, como los devuelve SemanaDeAtencion; los que no se nombran, sin Tramos.
     private static List<DiaDeLaBase> Semana(params (DayOfWeek Dia, TramoDeLaAgenda[] Tramos)[] dias)
     {
         DayOfWeek[] deLunesADomingo =

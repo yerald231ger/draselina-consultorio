@@ -25,7 +25,7 @@ public sealed class SemanaTipoHandler(IAgendaDelRango agenda) : IQueryHandler<Se
 
     /// <summary>
     /// La semana tipo de lunes a domingo, sin custom: el rango es un solo día cualquiera. La comparte
-    /// <see cref="HorarioDeAtencionHandler"/>, la lectura pública del sitio.
+    /// <see cref="SemanaDeAtencionHandler"/>, la lectura pública del sitio.
     /// </summary>
     internal static async Task<IReadOnlyList<DiaDeLaBase>> LeerAsync(IAgendaDelRango agenda, CancellationToken cancellationToken)
     {
