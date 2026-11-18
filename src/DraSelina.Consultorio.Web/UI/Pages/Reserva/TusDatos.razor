@@ -34,7 +34,8 @@
     formulario: el mismo botón de envío en los dos anchos. En el teléfono no cambia nada.
 *@
 
-<PageTitle>Tus datos · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
+@* Tras confirmar, la misma dirección pinta Cita confirmada: la pestaña lo dice (cierre de la iniciativa, 2026-11-17). *@
+<PageTitle>@(_confirmada is null ? "Tus datos" : "Cita confirmada") · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
 
 @if (_confirmada is not null)
 {

@@ -53,6 +53,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
         Assert.Contains("Tu cita está confirmada", html, StringComparison.Ordinal);
         Assert.Contains("Martes", html, StringComparison.Ordinal);
+        Assert.Contains("<title>Cita confirmada · Dra. Selina Medina Castillo</title>", html, StringComparison.Ordinal);
         Assert.Contains("3 de noviembre, <span class=\"dsm-confirmada__hora\">4:00 pm</span>", html, StringComparison.Ordinal);
         Assert.Contains("Primera consulta · 30 min", html, StringComparison.Ordinal);
         Assert.Contains("Hospital Star Médica, consultorio 101", html, StringComparison.Ordinal);
