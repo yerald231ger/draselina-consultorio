@@ -26,7 +26,8 @@ public sealed partial class BaseVisualTests(Arnes arnes)
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
         var html = await respuesta.Content.ReadAsStringAsync(Cancelacion);
 
-        Assert.Matches(EncabezadoConNombre(), html);
+        // Nombre y especialidad salen de Contenido y Blazor codifica el texto dinámico ("Traumatolog&#xED;a").
+        Assert.Matches(EncabezadoConNombre(), WebUtility.HtmlDecode(html));
         Assert.Matches(H1ConNombre(), html);
         Assert.Matches(BotonAgendar(), html);
 

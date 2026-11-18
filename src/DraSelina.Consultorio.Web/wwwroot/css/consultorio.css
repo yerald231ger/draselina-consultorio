@@ -243,12 +243,123 @@ a:hover {
   color: var(--dsm-eyebrow);
 }
 
-/* Inicio. */
-.dsm-inicio {
+/* Portada de Sitio · Inicio (mockup SitioInicio): texto y retrato en dos columnas que se apilan en el teléfono, con
+   la ola decorativa al pie. */
+.dsm-portada {
+  position: relative;
+  overflow: hidden;
+  background: var(--dsm-surface);
+}
+
+.dsm-portada__ola {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  transform: scaleY(-1);
+}
+
+.dsm-portada__ola-clara {
+  fill: var(--dsm-tint);
+}
+
+.dsm-portada__ola-oscura {
+  fill: var(--dsm-wave);
+}
+
+.dsm-portada__fila {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 40px;
+  padding-block: 56px 96px;
+}
+
+.dsm-portada__texto {
+  display: flex;
+  flex: 999 1 460px;
   flex-direction: column;
   gap: var(--dsm-spacing-9);
-  padding-block: 56px;
+  min-width: 0;
+}
+
+.dsm-portada__frase {
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.dsm-portada__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dsm-spacing-5);
+}
+
+.dsm-portada__whatsapp {
+  width: 100%;
+}
+
+/* La flecha de "Agendar cita en línea" y el globo de "WhatsApp", como en el mockup. */
+.dsm-portada__accion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dsm-spacing-3);
+}
+
+.dsm-portada__icono {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 576px) {
+  .dsm-portada__whatsapp {
+    width: auto;
+  }
+}
+
+.dsm-portada__sin-whatsapp {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-ink-soft);
+}
+
+.dsm-portada__cedulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dsm-spacing-2) var(--dsm-spacing-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--dsm-help-font-size);
+  color: var(--dsm-muted);
+}
+
+.dsm-portada__retrato-marco {
+  display: flex;
+  flex: 1 1 320px;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* El retrato mientras no hay foto de Selina: el arco del mockup con las iniciales. */
+.dsm-portada__retrato {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--dsm-border);
+  border-radius: 200px 200px 24px 24px;
+  background: var(--dsm-tint);
+  font-size: 96px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--dsm-primary);
 }
 
 .dsm-display {
@@ -328,6 +439,130 @@ a:hover {
   font-weight: var(--dsm-page-title-font-weight);
   line-height: var(--dsm-page-title-line-height);
   color: var(--dsm-primary);
+}
+
+/* Sobre mí: rótulo y título a un lado, semblanza y tarjetas al otro; se apilan en el teléfono. */
+.dsm-sobre-mi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+.dsm-sobre-mi__encabezado {
+  display: flex;
+  flex: 1 1 300px;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  min-width: 0;
+}
+
+.dsm-sobre-mi__cuerpo {
+  display: flex;
+  flex: 999 1 520px;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.dsm-sobre-mi__semblanza {
+  margin: 0;
+  max-width: none;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.dsm-sobre-mi__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--dsm-spacing-7);
+  margin: 0;
+}
+
+.dsm-sobre-mi__dato {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-1);
+  padding: var(--dsm-spacing-8);
+  border: 1px solid var(--dsm-border);
+  border-radius: var(--dsm-rounded-xl);
+  background: var(--dsm-surface);
+}
+
+.dsm-sobre-mi__dato dt {
+  font-size: var(--dsm-eyebrow-font-size);
+  font-weight: var(--dsm-eyebrow-font-weight);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dsm-eyebrow);
+}
+
+.dsm-sobre-mi__dato dd {
+  margin: 0;
+  font-size: var(--dsm-body-font-size);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.dsm-sobre-mi__afiliaciones {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  color: var(--dsm-muted);
+}
+
+/* Padecimientos y tratamientos: banda blanca de borde a borde con la rejilla de tarjetas. */
+.dsm-padecimientos {
+  scroll-margin-top: var(--dsm-spacing-7);
+  border-block: 1px solid var(--dsm-border);
+  background: var(--dsm-surface);
+}
+
+.dsm-padecimientos__contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.dsm-padecimientos__encabezado {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+  max-width: 640px;
+}
+
+.dsm-padecimientos__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: var(--dsm-spacing-7);
+}
+
+.dsm-padecimiento {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-3);
+  padding: 22px;
+  border: 1px solid var(--dsm-border);
+  border-radius: var(--dsm-rounded-2xl);
+  background: var(--dsm-ground);
+}
+
+.dsm-padecimiento__nombre {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--dsm-ink);
+}
+
+.dsm-padecimiento__descripcion {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  line-height: 1.55;
+  color: var(--dsm-muted);
+}
+
+/* Contenido pendiente de Selina (Pendiente.razor): se ve, pero se distingue del dato. */
+.dsm-pendiente {
+  font-style: italic;
+  color: var(--dsm-muted);
 }
 
 /* Ubicación y horarios: datos y mapa lado a lado en escritorio, apilados en el teléfono. */

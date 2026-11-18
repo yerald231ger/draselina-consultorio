@@ -13,6 +13,8 @@ namespace DraSelina.Consultorio.IntegrationTests;
 /// Sitio · Inicio (CAP-21; entrada 7.1) contra la web real y PostgreSQL: <see cref="HorarioDeAtencion"/> se lee sin
 /// sesión, Ubicación y horarios muestra la Agenda base y cambia con ella, y el encabezado del sitio trae las anclas y
 /// "Agendar cita" sin ningún script. La reserva conserva su encabezado. Base sembrada: lunes a viernes, 3:30 a 6:00 pm.
+/// Entrada 7.2: la portada, Sobre mí y Padecimientos con los datos de la doctora, lo pendiente marcado y sin
+/// testimonios ni imágenes.
 /// </summary>
 public sealed partial class SitioInicioTests(Arnes arnes)
 {
@@ -88,6 +90,45 @@ public sealed partial class SitioInicioTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task Portada_Sobre_mi_y_Padecimientos_traen_los_datos_de_la_doctora()
+    {
+        await using var web = arnes.ArrancarWeb();
+        using var cliente = web.CreateClient();
+
+        using var respuesta = await cliente.GetAsync("/", Cancelacion);
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        var html = await respuesta.Content.ReadAsStringAsync(Cancelacion);
+
+        var portada = Seccion(html, "inicio");
+        Assert.Matches(AgendarCitaEnLineaAReservar(), portada);
+        foreach (var dato in new[] { "Traumatología y Ortopedia", "Dra. Selina Medina Castillo", "Céd. Prof. 12093135", "Céd. Especialidad 14899218", "Certificada por el Consejo de Ortopedia", ">SM<", "Escríbenos por WhatsApp" })
+        {
+            Assert.Contains(dato, portada, StringComparison.Ordinal);
+        }
+
+        var sobreMi = Seccion(html, "sobre-mi");
+        Assert.Contains("Consejo de Ortopedia, 24/8379/2", sobreMi, StringComparison.Ordinal);
+        foreach (var dato in new[] { "12093135", "14899218", "[Pendiente: universidad]", "[Pendiente: semblanza", "[Pendiente: afiliaciones" })
+        {
+            Assert.Contains(dato, sobreMi, StringComparison.Ordinal);
+        }
+
+        // La universidad no está decidida (UANL o UASLP): ninguna se nombra.
+        Assert.DoesNotContain("UANL", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Universidad", html, StringComparison.Ordinal);
+
+        var padecimientos = Seccion(html, "padecimientos");
+        Assert.Equal(
+            ["Rodilla", "Hombro", "Columna", "Cadera", "Fracturas", "Lesiones deportivas"],
+            NombreDePadecimiento().Matches(padecimientos).Select(m => m.Groups[1].Value));
+        Assert.Contains("class=\"dsm-pendiente\"", padecimientos, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("<img", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("testimonio", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task La_reserva_conserva_su_encabezado_sin_anclas()
     {
         await using var web = arnes.ArrancarWeb();
@@ -140,6 +181,12 @@ public sealed partial class SitioInicioTests(Arnes arnes)
             .HandleAsync(comando, Cancelacion);
         Assert.True(resultado.EsExito, $"{resultado.Forma} {resultado.Codigo}");
     }
+
+    [GeneratedRegex("""<a(?=[^>]*href="/reservar")[^>]*class="[^"]*\bbtn-primary\b[^"]*"[^>]*>\s*Agendar cita en línea\s*<svg""")]
+    private static partial Regex AgendarCitaEnLineaAReservar();
+
+    [GeneratedRegex("""<h3 class="dsm-padecimiento__nombre">([^<]+)</h3>""")]
+    private static partial Regex NombreDePadecimiento();
 
     [GeneratedRegex("""<header[^>]*>.*?</header>""", RegexOptions.Singleline)]
     private static partial Regex Encabezado();

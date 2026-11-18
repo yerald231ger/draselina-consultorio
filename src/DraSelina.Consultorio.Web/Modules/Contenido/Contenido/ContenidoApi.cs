@@ -43,7 +43,35 @@ public sealed class ContenidoApi : IContenidoApi
     /// <summary>Todavía no se conoce (Gerardo, 2026-11-02). Al tenerlo, basta con poner aquí sus 10 dígitos.</summary>
     public const string? WhatsAppDelConsultorio = null;
 
+    /// <summary>
+    /// Los datos firmes del mockup: nombre, especialidad, cédulas, certificación y los seis padecimientos. Formación,
+    /// semblanza, afiliaciones y la descripción de cada padecimiento son pendientes de Selina; la universidad queda sin
+    /// decidir entre la UANL y la UASLP, así que ni Formación ni la cédula la nombran (Gerardo, 2026-11-17). Al tener
+    /// cada dato, basta con ponerlo aquí.
+    /// </summary>
+    public static readonly DatosDeLaDoctora Doctora = new(
+        Nombre: "Dra. Selina Medina Castillo",
+        Especialidad: "Traumatología y Ortopedia",
+        CedulaProfesional: "12093135",
+        CedulaDeEspecialidad: "14899218",
+        ConsejoQueCertifica: "Consejo de Ortopedia",
+        RegistroDeCertificacion: "24/8379/2",
+        Formacion: null,
+        Semblanza: null,
+        Afiliaciones: null,
+        Padecimientos:
+        [
+            new("Rodilla"),
+            new("Hombro"),
+            new("Columna"),
+            new("Cadera"),
+            new("Fracturas"),
+            new("Lesiones deportivas"),
+        ]);
+
     public DatosDelConsultorio DatosDelConsultorio => Consultorio;
+
+    public DatosDeLaDoctora DatosDeLaDoctora => Doctora;
 
     /// <summary>
     /// Una búsqueda de Google Maps (<c>https://www.google.com/maps/search/?api=1&amp;query=...</c>) con lugar, dirección

@@ -1,16 +1,18 @@
 @inherits LayoutComponentBase
+@using DraSelina.Consultorio.Contenido.Contracts
+@inject IContenidoApi Contenido
 
 @*
     El layout del sitio del Consultorio (CAP-21; entrada 7.1): el encabezado con la marca, la navegación por anclas a
     las secciones de / y "Agendar cita" siempre a la mano (FR-28), el contenido y el pie. Con flex-wrap, como en el
     mockup SitioInicio: en el teléfono la navegación baja de renglón y el botón sigue a la vista sin desplazarse. La
-    reserva y la gestión conservan LayoutPublico.
+    reserva y la gestión conservan LayoutPublico. Nombre y especialidad, de Contenido (AD-15).
 *@
 <header class="dsm-encabezado">
     <div class="dsm-contenedor dsm-encabezado__fila dsm-encabezado__fila--sitio">
         <a class="dsm-marca" href="/#inicio">
-            <span class="dsm-marca__nombre">Dra. Selina Medina Castillo</span>
-            <span class="dsm-rotulo">Traumatología y Ortopedia</span>
+            <span class="dsm-marca__nombre">@Contenido.DatosDeLaDoctora.Nombre</span>
+            <span class="dsm-rotulo">@Contenido.DatosDeLaDoctora.Especialidad</span>
         </a>
         <nav aria-label="Principal" class="dsm-navegacion">
             <a href="/#inicio" class="dsm-navegacion__enlace">Inicio</a>

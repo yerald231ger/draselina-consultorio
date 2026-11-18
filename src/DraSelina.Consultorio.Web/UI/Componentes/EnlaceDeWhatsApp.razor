@@ -1,12 +1,12 @@
 @*
     El enlace a la conversación de WhatsApp del consultorio: "444 123 4567" hacia wa.me/52<10 dígitos>. Nada si
     Contenido no tiene un número de 10 dígitos: antes sin enlace que con uno roto (Gerardo, 2026-11-02). Es el único
-    lugar que arma el enlace; lo usan MensajeDeWhatsApp y Tu cita.
+    lugar que arma el enlace; lo usan MensajeDeWhatsApp, Tu cita y la portada del sitio, que pone su propio texto.
 *@
 
 @if (DigitosDe(WhatsApp) is { } digitos)
 {
-    <a href="https://wa.me/52@(digitos)" class="@Clase">@($"{digitos[..3]} {digitos[3..6]} {digitos[6..]}")</a>
+    <a href="https://wa.me/52@(digitos)" class="@Clase">@if (ChildContent is not null) { @ChildContent } else { @($"{digitos[..3]} {digitos[3..6]} {digitos[6..]}") }</a>
 }
 
 @code {
@@ -17,6 +17,10 @@
     /// <summary>La clase del enlace, según dónde va.</summary>
     [Parameter]
     public string? Clase { get; set; }
+
+    /// <summary>El texto del enlace; sin él, el número: "444 123 4567".</summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
 
     /// <summary>Si <paramref name="whatsApp"/> trae un número que se puede enlazar: 10 dígitos.</summary>
     public static bool HayNumero(string? whatsApp) => DigitosDe(whatsApp) is not null;

@@ -583,7 +583,7 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
     [GeneratedRegex("""<div class="dsm-tu-cita[^"]*">.*?Sin cuenta\. Tu cita queda confirmada al instante\.</p>""", RegexOptions.Singleline)]
     private static partial Regex TuCita();
 
-    [GeneratedRegex("""<a(?=[^>]*class="[^"]*\bbtn-primary\b)[^>]*href="(?<href>[^"]+)"[^>]*>\s*Agendar cita en línea\s*</a>""")]
+    [GeneratedRegex("""<a(?=[^>]*class="[^"]*\bbtn-primary\b)[^>]*href="(?<href>[^"]+)"[^>]*>\s*Agendar cita en línea\s*(?:<svg.*?</svg>\s*)?</a>""")]
     private static partial Regex EnlaceAgendar();
 
     [GeneratedRegex("""<form(?=[^>]*method="get")(?=[^>]*action="/reservar/horario")[^>]*>""")]

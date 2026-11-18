@@ -12,27 +12,123 @@
     Sitio · Inicio (CAP-21; mockups SitioInicio y SitioMovil): una sola página con secciones y navegación por anclas
     (Decision de la épica 7, 2026-11-17). Los días y horas salen de la Agenda base por HorarioDeAtencion, agrupados
     por HorarioAgrupado; lugar, dirección, mapa y WhatsApp, de Contenido (AD-15). SSR estático sin scripts (AD-11); el
-    mapa es el iframe de Google Maps, la única excepción con nombre a "Nada de terceros" (README). Sobre mí y
-    Padecimientos se llenan en la entrada 7.2.
+    mapa es el iframe de Google Maps, la única excepción con nombre a "Nada de terceros" (README). La portada, Sobre mí
+    y Padecimientos muestran los datos de la doctora de Contenido; lo que es nulo se ve como Pendiente (entrada 7.2).
+    Sin testimonios ni fotos de antes/después (FR-27): el retrato es un recuadro con las iniciales.
 *@
 
 <PageTitle>Dra. Selina Medina Castillo · Traumatología y Ortopedia</PageTitle>
 
-<section id="inicio" class="dsm-contenedor dsm-inicio">
-    <div class="dsm-rotulo">Traumatología y Ortopedia</div>
-    <h1 class="dsm-display">Dra. Selina Medina Castillo</h1>
-    <p class="dsm-cuerpo">
-        Diagnóstico y tratamiento de lesiones y enfermedades de huesos, articulaciones, músculos y ligamentos.
-    </p>
-    <a href="/reservar" class="btn btn-primary dsm-accion-principal">Agendar cita en línea</a>
+<section id="inicio" class="dsm-portada">
+    <svg class="dsm-portada__ola" viewBox="0 0 390 110" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path class="dsm-portada__ola-clara" d="M0 0 H390 V38 C320 70 250 18 170 40 C100 60 50 30 0 52 Z" />
+        <path class="dsm-portada__ola-oscura" d="M0 0 H390 V18 C330 46 260 6 190 22 C120 38 60 10 0 28 Z" />
+    </svg>
+    <div class="dsm-contenedor dsm-portada__fila">
+        <div class="dsm-portada__texto">
+            <div class="dsm-rotulo">@Doctora.Especialidad</div>
+            <h1 class="dsm-display">@Doctora.Nombre</h1>
+            <p class="dsm-cuerpo dsm-portada__frase">
+                Diagnóstico y tratamiento de lesiones y enfermedades de huesos, articulaciones, músculos y ligamentos.
+            </p>
+            <div class="dsm-portada__acciones">
+                <a href="/reservar" class="btn btn-primary dsm-accion-principal dsm-portada__accion">Agendar cita en línea<svg class="dsm-portada__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" /></svg></a>
+                @if (EnlaceDeWhatsApp.HayNumero(Contenido.WhatsApp))
+                {
+                    <EnlaceDeWhatsApp WhatsApp="@Contenido.WhatsApp" Clase="btn dsm-boton-secundario dsm-portada__whatsapp"><svg class="dsm-portada__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.2A8.5 8.5 0 1 1 20 11.5z" /></svg>WhatsApp</EnlaceDeWhatsApp>
+                }
+                else
+                {
+                    <p class="dsm-portada__sin-whatsapp"><MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" /></p>
+                }
+            </div>
+            <ul class="dsm-portada__cedulas">
+                <li>Céd. Prof. @Doctora.CedulaProfesional</li>
+                <li>Céd. Especialidad @Doctora.CedulaDeEspecialidad</li>
+                <li>Certificada por el @Doctora.ConsejoQueCertifica</li>
+            </ul>
+        </div>
+        <div class="dsm-portada__retrato-marco">
+            <div class="dsm-portada__retrato" aria-hidden="true">SM</div>
+        </div>
+    </div>
 </section>
 
-<section id="sobre-mi" class="dsm-contenedor dsm-seccion-del-sitio" aria-labelledby="titulo-sobre-mi">
-    <h2 id="titulo-sobre-mi" class="dsm-seccion-del-sitio__titulo">Sobre mí</h2>
+<section id="sobre-mi" class="dsm-contenedor dsm-seccion-del-sitio dsm-sobre-mi" aria-labelledby="titulo-sobre-mi">
+    <div class="dsm-sobre-mi__encabezado">
+        <div class="dsm-rotulo">Sobre mí</div>
+        <h2 id="titulo-sobre-mi" class="dsm-seccion-del-sitio__titulo">Formación y certificaciones</h2>
+    </div>
+    <div class="dsm-sobre-mi__cuerpo">
+        @if (Doctora.Semblanza is { } semblanza)
+        {
+            <p class="dsm-cuerpo dsm-sobre-mi__semblanza">@semblanza</p>
+        }
+        else
+        {
+            <p class="dsm-sobre-mi__semblanza"><Pendiente Que="semblanza breve escrita con Selina: trayectoria, experiencia y cómo atiende a sus pacientes" /></p>
+        }
+        <dl class="dsm-sobre-mi__datos">
+            <div class="dsm-sobre-mi__dato">
+                <dt>Formación</dt>
+                <dd>
+                    @if (Doctora.Formacion is { } formacion)
+                    {
+                        @formacion
+                    }
+                    else
+                    {
+                        <Pendiente Que="universidad" />
+                    }
+                </dd>
+            </div>
+            <div class="dsm-sobre-mi__dato">
+                <dt>Certificación</dt>
+                <dd>@Doctora.ConsejoQueCertifica, @Doctora.RegistroDeCertificacion</dd>
+            </div>
+            <div class="dsm-sobre-mi__dato">
+                <dt>Cédula profesional</dt>
+                <dd>@Doctora.CedulaProfesional</dd>
+            </div>
+            <div class="dsm-sobre-mi__dato">
+                <dt>Cédula de especialidad</dt>
+                <dd>@Doctora.CedulaDeEspecialidad</dd>
+            </div>
+        </dl>
+        @if (Doctora.Afiliaciones is { } afiliaciones)
+        {
+            <p class="dsm-sobre-mi__afiliaciones">@afiliaciones</p>
+        }
+        else
+        {
+            <p class="dsm-sobre-mi__afiliaciones"><Pendiente Que="afiliaciones hospitalarias" /></p>
+        }
+    </div>
 </section>
 
-<section id="padecimientos" class="dsm-contenedor dsm-seccion-del-sitio" aria-labelledby="titulo-padecimientos">
-    <h2 id="titulo-padecimientos" class="dsm-seccion-del-sitio__titulo">Padecimientos y tratamientos</h2>
+<section id="padecimientos" class="dsm-padecimientos" aria-labelledby="titulo-padecimientos">
+    <div class="dsm-contenedor dsm-seccion-del-sitio dsm-padecimientos__contenido">
+        <div class="dsm-padecimientos__encabezado">
+            <div class="dsm-rotulo">Padecimientos y tratamientos</div>
+            <h2 id="titulo-padecimientos" class="dsm-seccion-del-sitio__titulo">¿En qué te puedo ayudar?</h2>
+        </div>
+        <div class="dsm-padecimientos__rejilla">
+            @foreach (var padecimiento in Doctora.Padecimientos)
+            {
+                <article class="dsm-padecimiento">
+                    <h3 class="dsm-padecimiento__nombre">@padecimiento.Nombre</h3>
+                    @if (padecimiento.Descripcion is { } descripcion)
+                    {
+                        <p class="dsm-padecimiento__descripcion">@descripcion</p>
+                    }
+                    else
+                    {
+                        <p class="dsm-padecimiento__descripcion"><Pendiente Que="descripción breve escrita con Selina" /></p>
+                    }
+                </article>
+            }
+        </div>
+    </div>
 </section>
 
 <section id="ubicacion" class="dsm-contenedor dsm-seccion-del-sitio dsm-ubicacion" aria-labelledby="titulo-ubicacion">
@@ -91,6 +187,8 @@
     private CancellationToken Cancelacion => HttpContext?.RequestAborted ?? CancellationToken.None;
 
     private DatosDelConsultorio Consultorio => Contenido.DatosDelConsultorio;
+
+    private DatosDeLaDoctora Doctora => Contenido.DatosDeLaDoctora;
 
     /// <summary>
     /// El mapa incrustado de Google Maps, sin clave: la misma búsqueda de lugar, dirección y ciudad que

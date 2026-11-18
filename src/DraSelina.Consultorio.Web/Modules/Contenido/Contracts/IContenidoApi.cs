@@ -26,7 +26,44 @@ public interface IContenidoApi
     /// "escríbenos por WhatsApp" sin número (Gerardo, 2026-11-02).
     /// </summary>
     string? WhatsApp { get; }
+
+    /// <summary>
+    /// Quién atiende: lo que muestran la portada, Sobre mí y Padecimientos del sitio (FR-27), el pie y los datos
+    /// estructurados para buscadores.
+    /// </summary>
+    DatosDeLaDoctora DatosDeLaDoctora { get; }
 }
+
+/// <summary>
+/// Los datos de la doctora. Lo que es nulo es contenido pendiente de Selina: quien lo muestra lo marca como pendiente y
+/// quien lo publica para buscadores lo omite (Gerardo, 2026-11-17).
+/// </summary>
+/// <param name="Nombre">"Dra. Selina Medina Castillo".</param>
+/// <param name="Especialidad">"Traumatología y Ortopedia".</param>
+/// <param name="CedulaProfesional">El número de la cédula profesional, sin universidad.</param>
+/// <param name="CedulaDeEspecialidad">El número de la cédula de especialidad.</param>
+/// <param name="ConsejoQueCertifica">El consejo que la certifica: "Consejo de Ortopedia".</param>
+/// <param name="RegistroDeCertificacion">El registro de la certificación ante ese consejo.</param>
+/// <param name="Formacion">La universidad donde se formó; nula mientras no se decida.</param>
+/// <param name="Semblanza">Semblanza breve escrita con Selina; nula mientras no se tenga.</param>
+/// <param name="Afiliaciones">Afiliaciones hospitalarias; nulas mientras no se tengan.</param>
+/// <param name="Padecimientos">Los padecimientos que atiende, en el orden en que se muestran.</param>
+public sealed record DatosDeLaDoctora(
+    string Nombre,
+    string Especialidad,
+    string CedulaProfesional,
+    string CedulaDeEspecialidad,
+    string ConsejoQueCertifica,
+    string RegistroDeCertificacion,
+    string? Formacion,
+    string? Semblanza,
+    string? Afiliaciones,
+    IReadOnlyList<Padecimiento> Padecimientos);
+
+/// <summary>Un padecimiento que atiende la doctora: una tarjeta de "¿En qué te puedo ayudar?".</summary>
+/// <param name="Nombre">"Rodilla", "Hombro"…</param>
+/// <param name="Descripcion">Descripción breve escrita con Selina; nula mientras no se tenga.</param>
+public sealed record Padecimiento(string Nombre, string? Descripcion = null);
 
 /// <summary>Los datos del consultorio.</summary>
 /// <param name="Lugar">Hospital y consultorio: "Hospital Star Médica, consultorio 101".</param>
