@@ -1,12 +1,14 @@
 @inherits LayoutComponentBase
+@using DraSelina.Consultorio.Contenido.Contracts
+@inject IContenidoApi Contenido
 
 @* El layout de la reserva y la gestión: encabezado con la marca sobre la superficie, el contenido de la página y el
    pie con el Aviso de privacidad. El sitio (/) usa LayoutSitio, con anclas y "Agendar cita" en el encabezado. *@
 <header class="dsm-encabezado">
     <div class="dsm-contenedor dsm-encabezado__fila">
         <a class="dsm-marca" href="/">
-            <span class="dsm-marca__nombre">Dra. Selina Medina Castillo</span>
-            <span class="dsm-rotulo">Traumatología y Ortopedia</span>
+            <span class="dsm-marca__nombre">@Contenido.DatosDeLaDoctora.Nombre</span>
+            <span class="dsm-rotulo">@Contenido.DatosDeLaDoctora.Especialidad</span>
         </a>
     </div>
 </header>

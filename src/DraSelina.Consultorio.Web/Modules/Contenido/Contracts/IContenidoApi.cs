@@ -73,4 +73,13 @@ public sealed record Padecimiento(string Nombre, string? Descripcion = null);
 /// Una búsqueda de Google Maps del lugar, la dirección y la ciudad: "Abrir en el mapa". Nulo si no hay enlace; quien lo
 /// muestra lo omite entonces (Gerardo, 2026-11-08).
 /// </param>
-public sealed record DatosDelConsultorio(string Lugar, string Direccion, string Ciudad, string? EnlaceDelMapa = null);
+/// <param name="MapaIncrustado">
+/// El mapa de Google Maps para un iframe, de la misma búsqueda que <paramref name="EnlaceDelMapa"/>. Nulo si no hay
+/// mapa; el sitio lo omite entonces.
+/// </param>
+public sealed record DatosDelConsultorio(
+    string Lugar,
+    string Direccion,
+    string Ciudad,
+    string? EnlaceDelMapa = null,
+    string? MapaIncrustado = null);

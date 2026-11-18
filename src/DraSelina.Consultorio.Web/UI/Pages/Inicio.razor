@@ -193,8 +193,11 @@
         }
     </div>
 
-    <iframe class="dsm-ubicacion__mapa" src="@MapaIncrustado" loading="lazy" title="Mapa del consultorio"
-            referrerpolicy="no-referrer-when-downgrade"></iframe>
+    @if (Consultorio.MapaIncrustado is { } mapa)
+    {
+        <iframe class="dsm-ubicacion__mapa" src="@mapa" loading="lazy" title="Mapa del consultorio"
+                referrerpolicy="no-referrer-when-downgrade"></iframe>
+    }
 </section>
 
 <section class="dsm-franja" aria-labelledby="titulo-franja">
@@ -222,13 +225,6 @@
     private DatosDelConsultorio Consultorio => Contenido.DatosDelConsultorio;
 
     private DatosDeLaDoctora Doctora => Contenido.DatosDeLaDoctora;
-
-    /// <summary>
-    /// El mapa incrustado de Google Maps, sin clave: la misma búsqueda de lugar, dirección y ciudad que
-    /// <see cref="DatosDelConsultorio.EnlaceDelMapa"/>, con <c>output=embed</c>.
-    /// </summary>
-    private string MapaIncrustado =>
-        $"https://www.google.com/maps?q={Uri.EscapeDataString($"{Consultorio.Lugar}, {Consultorio.Direccion}, {Consultorio.Ciudad}")}&output=embed";
 
     // La dirección del sitio con el esquema y el host de la petición (Gerardo, 2026-11-17).
     private string UrlDelSitio =>

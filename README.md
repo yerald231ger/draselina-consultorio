@@ -6,7 +6,7 @@ Monolito modular sobre .NET 10. La arquitectura está en
 ## Requisito: el SDK de .NET 10
 
 `global.json` pide el SDK 10.0.402 o una banda posterior de .NET 10 (`rollForward: latestFeature`), instalado en el
-sistema. No hace falta un SDK local.
+sistema o en `~/.dotnet` (`./dotnet.sh` usa ese si el del PATH no lo resuelve).
 
 ## Compilar y probar
 
@@ -16,7 +16,8 @@ sistema. No hace falta un SDK local.
 ./dotnet.sh test        # todas las pruebas; necesita Docker en ejecución
 ```
 
-`./dotnet.sh` es el `dotnet` del sistema; se conserva para que los comandos de este documento sigan funcionando.
+`./dotnet.sh` es el `dotnet` del sistema. Si ese no resuelve el SDK de `global.json` y existe `~/.dotnet/dotnet`, usa
+ese (por ejemplo, cuando el PATH trae un dotnetup sin la banda 10.0.4xx).
 
 ## Pruebas
 

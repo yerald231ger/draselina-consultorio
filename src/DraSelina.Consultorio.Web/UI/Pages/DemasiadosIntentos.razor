@@ -1,10 +1,12 @@
+@using DraSelina.Consultorio.Contenido.Contracts
+@inject IContenidoApi Contenido
 @*
     Demasiados intentos (FR-7, CAP-5): lo que ve quien pasa el límite de frecuencia de las páginas de reserva. No es
     una ruta: el host la pinta con App y el layout del sitio, con estado 429, en lugar de la página pedida. Un mensaje
     amable, nunca un error técnico.
 *@
 
-<PageTitle>Demasiados intentos · Dra. Selina Medina Castillo</PageTitle>
+<PageTitle>Demasiados intentos · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
 
 <section class="dsm-contenedor dsm-reserva">
     <h1 class="dsm-titulo-de-paso">Demasiados intentos</h1>

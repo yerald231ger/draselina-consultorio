@@ -77,6 +77,19 @@ public sealed class SitioInicioTests : BunitContext
     }
 
     [Fact]
+    public void El_mapa_es_el_de_Contenido_y_sin_el_no_hay_iframe()
+    {
+        var mapa = Render<Inicio>().Find("#ubicacion iframe");
+        Assert.Equal(
+            "https://www.google.com/maps?q=Hospital%20Star%20M%C3%A9dica%2C%20consultorio%20101%2C%20Mariano%20Arista%20No.%20735%2C%20Col.%20Barrio%20de%20Tequisquiapan%2C%20San%20Luis%20Potos%C3%AD&output=embed",
+            mapa.GetAttribute("src"));
+
+        _contenido.ConsultorioDePrueba = Contenido.ContenidoApi.Consultorio with { MapaIncrustado = null };
+
+        Assert.Empty(Render<Inicio>().FindAll("#ubicacion iframe"));
+    }
+
+    [Fact]
     public void La_portada_trae_cedulas_certificacion_Agendar_y_el_recuadro_SM()
     {
         var inicio = Render<Inicio>();
@@ -155,26 +168,6 @@ public sealed class SitioInicioTests : BunitContext
             tarjetas.Select(a => a.QuerySelector("h3")!.TextContent));
         Assert.All(tarjetas, a => Assert.Equal(
             "[Pendiente: descripción breve escrita con Selina]", a.QuerySelector(".dsm-pendiente")!.TextContent));
-    }
-
-    // ContenidoApi con el WhatsApp o los datos de la doctora que pida la prueba.
-    private sealed class ContenidoDePrueba : IContenidoApi
-    {
-        private readonly Contenido.ContenidoApi _real = new();
-
-        public string? WhatsAppDePrueba { get; set; }
-
-        public DatosDeLaDoctora? DoctoraDePrueba { get; set; }
-
-        public DatosDelConsultorio DatosDelConsultorio => _real.DatosDelConsultorio;
-
-        public string VersionDelAvisoDePrivacidad => _real.VersionDelAvisoDePrivacidad;
-
-        public IReadOnlyList<string> TextoDelAvisoDePrivacidad => _real.TextoDelAvisoDePrivacidad;
-
-        public string? WhatsApp => WhatsAppDePrueba ?? _real.WhatsApp;
-
-        public DatosDeLaDoctora DatosDeLaDoctora => DoctoraDePrueba ?? _real.DatosDeLaDoctora;
     }
 
     private sealed class HorarioFalso : IQueryHandler<HorarioDeAtencion, IReadOnlyList<DiaDeLaBase>>
