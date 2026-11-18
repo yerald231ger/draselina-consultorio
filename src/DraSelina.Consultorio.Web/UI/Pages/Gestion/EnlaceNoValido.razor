@@ -1,11 +1,13 @@
+@using DraSelina.Consultorio.Contenido.Contracts
 @using Microsoft.AspNetCore.Http
+@inject IContenidoApi Contenido
 @*
     Enlace no válido: lo que ve quien abre un Enlace de gestión que no lleva a una Cita que se pueda ver. No dice por
     qué (RN-22): un enlace inexistente, alterado, mal formado o de una Cita que ya empezó se ven igual. Pone él mismo el
     404; el meta robots lo pone la página que lo pinta, con SinIndice. Lo usan Tu cita, Reprogramar y Cancelar.
 *@
 
-<PageTitle>Enlace no válido · Dra. Selina Medina Castillo</PageTitle>
+<PageTitle>Enlace no válido · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
 
 <section class="dsm-contenedor dsm-gestion" aria-labelledby="enlace-no-valido">
     <h1 id="enlace-no-valido" class="dsm-titulo-de-estado">@Titulo</h1>

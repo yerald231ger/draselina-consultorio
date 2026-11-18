@@ -51,6 +51,7 @@ public sealed class AvisoAlReprogramar(
                 : new AdjuntoDeCorreo(
                     ArchivoDeCalendario.NombreDeArchivo,
                     ArchivoDeCalendario.TipoDeContenido,
-                    Encoding.UTF8.GetBytes(archivo.Contenido))));
+                    Encoding.UTF8.GetBytes(archivo.Contenido))),
+            contenido.DatosDeLaDoctora);
     }
 }

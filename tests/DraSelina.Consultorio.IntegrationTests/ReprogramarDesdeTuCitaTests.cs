@@ -251,7 +251,7 @@ public sealed partial class ReprogramarDesdeTuCitaTests(Arnes arnes)
         Assert.Contains(Robots, html, StringComparison.Ordinal);
         Assert.Contains($">{UI.Pages.Gestion.ConfirmacionDeReprogramacion.Titulo}</h1>", html, StringComparison.Ordinal);
         Assert.Contains("<div class=\"dsm-confirmada__dia\">Jueves</div>", html, StringComparison.Ordinal);
-        Assert.Contains("<div class=\"dsm-confirmada__fecha\">5 de noviembre, 5:00 pm</div>", html, StringComparison.Ordinal);
+        Assert.Contains("<div class=\"dsm-confirmada__fecha\">5 de noviembre, <span class=\"dsm-confirmada__hora\">5:00 pm</span></div>", html, StringComparison.Ordinal);
         Assert.Contains("Primera consulta · 30 min", html, StringComparison.Ordinal);
         Assert.Contains("Hospital Star Médica, consultorio 101", html, StringComparison.Ordinal);
         Assert.Matches($"""<a href="{Regex.Escape(TuCita(cita))}/calendario.ics"[^>]*>[\s\S]*?Agregar a mi calendario\s*</a>""", html);

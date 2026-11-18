@@ -1,3 +1,5 @@
+using DraSelina.Consultorio.Contenido.Contracts;
+
 namespace DraSelina.Consultorio.Notificaciones.Features;
 
 /// <summary>
@@ -31,9 +33,9 @@ public static class PlantillaDeAlertaTardia
     /// <summary>"Ana Sofía López canceló su cita tarde." `[ASSUMPTION: texto]`</summary>
     public static string Frase(string paciente) => $"{paciente} canceló su cita tarde.";
 
-    public static MensajeDeCorreo Armar(Datos datos)
+    public static MensajeDeCorreo Armar(Datos datos, DatosDeLaDoctora doctora)
     {
-        var texto = MarcoDeCorreo.Texto(nombre: null, Titulo);
+        var texto = MarcoDeCorreo.Texto(doctora, nombre: null, Titulo);
         texto.AppendLine(Frase(datos.Paciente));
         texto.AppendLine();
         texto.AppendLine(FormatoDeFechaEnCorreo.Largo(datos.Fecha));
@@ -48,6 +50,6 @@ public static class PlantillaDeAlertaTardia
             """;
 
         return new MensajeDeCorreo(
-            datos.Destinatario, Asunto(datos), MarcoDeCorreo.Html(Asunto(datos), nombre: null, Titulo, cuerpo), texto.ToString(), []);
+            datos.Destinatario, Asunto(datos), MarcoDeCorreo.Html(doctora, Asunto(datos), nombre: null, Titulo, cuerpo), texto.ToString(), []);
     }
 }

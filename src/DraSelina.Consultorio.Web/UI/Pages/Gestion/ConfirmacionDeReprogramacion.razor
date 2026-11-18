@@ -24,8 +24,8 @@
         <div class="dsm-tarjeta">
             <div class="dsm-tarjeta__seccion dsm-confirmada__cuando">
                 <div class="dsm-confirmada__dia">@FormatoDeCita.Dia(Fecha)</div>
-                <div class="dsm-confirmada__fecha">@FormatoDeCita.FechaYHora(Fecha, Hora)</div>
-                <div class="dsm-confirmada__tipo">@TipoDeVisita · @DuracionMin min · Dra. Selina Medina Castillo</div>
+                <div class="dsm-confirmada__fecha">@FormatoDeCita.DiaYMes(Fecha), <span class="dsm-confirmada__hora">@FormatoDeCita.Hora(Hora)</span></div>
+                <div class="dsm-confirmada__tipo">@TipoDeVisita · @DuracionMin min · @Contenido.DatosDeLaDoctora.Nombre</div>
             </div>
             <div class="dsm-tarjeta__seccion dsm-lugar">
                 <svg class="dsm-lugar__icono" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"

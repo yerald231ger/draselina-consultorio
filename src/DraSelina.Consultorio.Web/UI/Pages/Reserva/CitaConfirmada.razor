@@ -1,8 +1,10 @@
 @using DraSelina.Consultorio.Agenda.Contracts
 @using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
 @using DraSelina.Consultorio.Notificaciones.Contracts
 @using Microsoft.AspNetCore.Http
 @inject IQueryHandler<RecordatorioPrevisto, Recordatorio> Recordatorios
+@inject IContenidoApi Contenido
 
 @*
     Cita confirmada (mockup Confirmada): fecha y hora en grande, tipo y duración, lugar y dirección, el Enlace de
@@ -51,8 +53,8 @@
             <div class="dsm-tarjeta">
                 <div class="dsm-tarjeta__seccion dsm-confirmada__cuando">
                     <div class="dsm-confirmada__dia">@FormatoDeCita.Dia(Cita.Fecha)</div>
-                    <div class="dsm-confirmada__fecha">@FormatoDeCita.FechaYHora(Cita.Fecha, Cita.Hora)</div>
-                    <div class="dsm-confirmada__tipo">@Cita.TipoDeVisita · @Cita.DuracionMin min · Dra. Selina Medina Castillo</div>
+                    <div class="dsm-confirmada__fecha">@FormatoDeCita.DiaYMes(Cita.Fecha), <span class="dsm-confirmada__hora">@FormatoDeCita.Hora(Cita.Hora)</span></div>
+                    <div class="dsm-confirmada__tipo">@Cita.TipoDeVisita · @Cita.DuracionMin min · @Contenido.DatosDeLaDoctora.Nombre</div>
                 </div>
                 <div class="dsm-tarjeta__seccion dsm-lugar">
                     <svg class="dsm-lugar__icono" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"

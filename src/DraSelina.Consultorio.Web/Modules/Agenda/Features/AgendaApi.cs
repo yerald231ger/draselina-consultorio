@@ -60,6 +60,7 @@ public sealed class AgendaApi(
             cita.Fin,
             cita.TipoDeVisita,
             contenido.DatosDelConsultorio,
+            contenido.DatosDeLaDoctora.Nombre,
             ObtenerEnlaceDeGestion(cita.Id),
             new Uri(_urlBase).Host,
             ahora);

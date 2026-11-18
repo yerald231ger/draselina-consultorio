@@ -34,7 +34,7 @@
     formulario: el mismo botón de envío en los dos anchos. En el teléfono no cambia nada.
 *@
 
-<PageTitle>Tus datos · Dra. Selina Medina Castillo</PageTitle>
+<PageTitle>Tus datos · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
 
 @if (_confirmada is not null)
 {
@@ -104,11 +104,11 @@ else
                 <ErroresDelResultado Resultado="_resultado">
                     <Campo Para="() => Comando!.Nombre" Etiqueta="Nombre completo"
                            Ayuda="Si agendas para otra persona, escribe el nombre del paciente."
-                           autocomplete="name" placeholder="Como aparece en tu identificación" />
+                           autocomplete="name" placeholder="Como aparece en tu identificación" aria-required="true" />
 
                     <Campo Para="() => Comando!.Telefono" Etiqueta="Celular" Tipo="tel"
                            Ayuda="Tu celular de México, 10 dígitos."
-                           inputmode="tel" autocomplete="tel-national" placeholder="10 dígitos" />
+                           inputmode="tel" autocomplete="tel-national" placeholder="10 dígitos" aria-required="true" />
 
                     <Campo Para="() => Comando!.Correo" Etiqueta="Correo (opcional)" Tipo="email"
                            Ayuda="Ahí te llegan la confirmación, el recordatorio y el enlace para cambiar tu cita."
@@ -117,7 +117,7 @@ else
                     @* El área del motivo: el Campo solo hace texto de una línea. *@
                     <div class="dsm-campo">
                         <label for="Motivo" class="dsm-campo__etiqueta">Motivo de la consulta</label>
-                        <InputTextArea id="Motivo" @bind-Value="Comando!.Motivo" rows="3"
+                        <InputTextArea id="Motivo" @bind-Value="Comando!.Motivo" rows="3" aria-required="true"
                                        class="dsm-campo__control dsm-campo__control--area"
                                        placeholder="Ej. dolor de rodilla derecha desde hace dos semanas"
                                        aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.Motivo), conAyuda: true)"

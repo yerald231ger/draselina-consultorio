@@ -1,5 +1,6 @@
 using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Contenido.Contracts;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
 
@@ -17,7 +18,8 @@ public sealed class AlertaDeCancelacionTardia(
     EnvioUnico envio,
     IPacientesApi pacientes,
     IConfiguracionDeEnvio configuracion,
-    IDireccionDelSitio sitio) : IEventHandler<CitaCancelada>
+    IDireccionDelSitio sitio,
+    IContenidoApi contenido) : IEventHandler<CitaCancelada>
 {
     public Task HandleAsync(CitaCancelada evento, CancellationToken cancellationToken) =>
         evento.Motivo != CitaCancelada.MotivoTarde
@@ -37,6 +39,7 @@ public sealed class AlertaDeCancelacionTardia(
             Paciente: contactos.Nombre,
             Fecha: fecha,
             Hora: TimeOnly.FromDateTime(inicio.DateTime),
-            UrlDeLaAgenda: sitio.Agenda(fecha)));
+            UrlDeLaAgenda: sitio.Agenda(fecha)),
+            contenido.DatosDeLaDoctora);
     }
 }

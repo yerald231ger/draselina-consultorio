@@ -1,3 +1,5 @@
+using DraSelina.Consultorio.Contenido.Contracts;
+
 namespace DraSelina.Consultorio.Notificaciones.Features;
 
 /// <summary>
@@ -41,11 +43,11 @@ public static class PlantillaDeAgendaDelDia
         ? $"{FormatoDeFechaEnCorreo.Hora(cita.Hora)} · {cita.Paciente} · {motivo}"
         : $"{FormatoDeFechaEnCorreo.Hora(cita.Hora)} · {cita.Paciente}";
 
-    public static MensajeDeCorreo Armar(Datos datos)
+    public static MensajeDeCorreo Armar(Datos datos, DatosDeLaDoctora doctora)
     {
         var lineas = datos.Citas.Count == 0 ? [SinCitas] : datos.Citas.Select(Linea).ToList();
 
-        var texto = MarcoDeCorreo.Texto(Saludo, Titulo);
+        var texto = MarcoDeCorreo.Texto(doctora, Saludo, Titulo);
         foreach (var linea in lineas)
         {
             texto.AppendLine(linea);
@@ -54,6 +56,6 @@ public static class PlantillaDeAgendaDelDia
         var cuerpo = string.Join('\n', lineas.Select(MarcoDeCorreo.Parrafo));
         var asunto = Asunto(datos.Fecha);
 
-        return new MensajeDeCorreo(datos.Destinatario, asunto, MarcoDeCorreo.Html(asunto, Saludo, Titulo, cuerpo), texto.ToString(), []);
+        return new MensajeDeCorreo(datos.Destinatario, asunto, MarcoDeCorreo.Html(doctora, asunto, Saludo, Titulo, cuerpo), texto.ToString(), []);
     }
 }

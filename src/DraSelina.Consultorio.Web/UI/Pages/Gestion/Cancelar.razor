@@ -3,11 +3,13 @@
 @using Microsoft.AspNetCore.RateLimiting
 @using DraSelina.Consultorio.Agenda.Contracts
 @using DraSelina.Consultorio.BuildingBlocks.Contracts
+@using DraSelina.Consultorio.Contenido.Contracts
 @using DraSelina.Consultorio.Kernel
 @using DraSelina.Consultorio.UI.Pages.Reserva
 @using Microsoft.AspNetCore.Http
 @inject IQueryHandler<CitaPorEnlace, CitaDelEnlace> Consulta
 @inject ICommandHandler<CancelarCitaPorEnlace, CitaCanceladaPorEnlace> Cancelacion
+@inject IContenidoApi Contenido
 
 @*
     Cancelar cita (mockup Cancelar; CAP-8, FR-10, UJ-2 pasos 4 a 7; entrada 3.4). El Paciente llega desde Tu cita con su
@@ -39,13 +41,13 @@
         break;
 
     case Vista.Cancelada when _cancelada is { } cancelada:
-        <PageTitle>Cita cancelada · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Cita cancelada · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <ConfirmacionDeCancelacion Fecha="cancelada.Fecha" Hora="cancelada.Hora" TipoDeVisita="@cancelada.TipoDeVisita"
                                    Tardia="cancelada.Tardia" PorElConsultorio="cancelada.PorElConsultorio" />
         break;
 
     case Vista.YaCancelada:
-        <PageTitle>Cancelar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Cancelar tu cita · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <section class="dsm-contenedor dsm-gestion" aria-labelledby="cancelar">
             <h1 id="cancelar" class="dsm-titulo-de-estado">@YaCancelada</h1>
             <a href="@RutaDeTuCita" class="btn dsm-boton-secundario dsm-gestion__accion">Ver mi cita</a>
@@ -53,7 +55,7 @@
         break;
 
     case Vista.Pregunta when _cita is { } cita:
-        <PageTitle>Cancelar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Cancelar tu cita · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <section class="dsm-contenedor dsm-gestion dsm-cancelar" aria-labelledby="cancelar">
             <div class="dsm-regreso">
                 <a href="@RutaDeTuCita" class="dsm-regreso__enlace" aria-label="Regresar a tu cita">

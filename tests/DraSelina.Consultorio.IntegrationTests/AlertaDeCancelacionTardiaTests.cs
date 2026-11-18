@@ -1,6 +1,7 @@
 using System.Net;
 using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Contenido;
 using DraSelina.Consultorio.Notificaciones.Features;
 using Microsoft.Extensions.DependencyInjection;
 using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
@@ -144,7 +145,7 @@ public sealed class AlertaDeCancelacionTardiaTests(Arnes arnes)
 
         Assert.DoesNotContain("Ana", datos.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain(Administrador, datos.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain("Ana", PlantillaDeAlertaTardia.Armar(datos).ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Ana", PlantillaDeAlertaTardia.Armar(datos, ContenidoApi.Doctora).ToString(), StringComparison.Ordinal);
     }
 
     // Agenda la Cita y entrega su CitaAgendada: la confirmación (si hay correo) ya salió.

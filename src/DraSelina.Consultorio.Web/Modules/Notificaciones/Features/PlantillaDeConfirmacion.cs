@@ -16,12 +16,6 @@ namespace DraSelina.Consultorio.Notificaciones.Features;
 /// </summary>
 public static class PlantillaDeConfirmacion
 {
-    /// <summary>Como en el encabezado del sitio (<c>UI/Layout/LayoutPublico.razor</c>).</summary>
-    public const string Doctora = "Dra. Selina Medina Castillo";
-
-    /// <summary>Como en el encabezado del sitio.</summary>
-    public const string Especialidad = "Traumatología y Ortopedia";
-
     public const string Titulo = "Tu cita está confirmada";
 
     public const string Boton = "Ver o cambiar mi cita";
@@ -55,16 +49,16 @@ public static class PlantillaDeConfirmacion
     public static string Asunto(DateOnly fecha, TimeOnly hora) =>
         $"{Titulo}: {FormatoDeFechaEnCorreo.Largo(fecha)}, {FormatoDeFechaEnCorreo.Hora(hora)}";
 
-    public static MensajeDeCorreo Armar(Datos datos) => new(
+    public static MensajeDeCorreo Armar(Datos datos, DatosDeLaDoctora doctora) => new(
         datos.Destinatario,
         Asunto(datos.Fecha, datos.Hora),
-        Html(datos),
-        Texto(datos),
+        Html(datos, doctora),
+        Texto(datos, doctora),
         datos.Calendario is { } calendario ? [calendario] : []);
 
-    private static string Texto(Datos datos)
+    private static string Texto(Datos datos, DatosDeLaDoctora doctora)
     {
-        var texto = MarcoDeCorreo.Texto(datos.Nombre, Titulo);
+        var texto = MarcoDeCorreo.Texto(doctora, datos.Nombre, Titulo);
         texto.AppendLine(FormatoDeFechaEnCorreo.Largo(datos.Fecha));
         texto.AppendLine(FormatoDeFechaEnCorreo.Hora(datos.Hora));
         if (datos.TipoDeVisita is { } tipo)
@@ -78,7 +72,7 @@ public static class PlantillaDeConfirmacion
         return texto.ToString();
     }
 
-    private static string Html(Datos datos)
+    private static string Html(Datos datos, DatosDeLaDoctora doctora)
     {
         var cuerpo = $"""
             {MarcoDeCorreo.FechaYHora(datos.Fecha, datos.Hora)}
@@ -87,6 +81,6 @@ public static class PlantillaDeConfirmacion
             {MarcoDeCorreo.Boton(datos.EnlaceDeGestion, Boton)}
             """;
 
-        return MarcoDeCorreo.Html(Asunto(datos.Fecha, datos.Hora), datos.Nombre, Titulo, cuerpo);
+        return MarcoDeCorreo.Html(doctora, Asunto(datos.Fecha, datos.Hora), datos.Nombre, Titulo, cuerpo);
     }
 }

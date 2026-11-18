@@ -44,16 +44,16 @@ public static class PlantillaDeReprogramacion
     public static string Asunto(DateOnly fecha, TimeOnly hora) =>
         $"{Titulo}: {FormatoDeFechaEnCorreo.Largo(fecha)}, {FormatoDeFechaEnCorreo.Hora(hora)}";
 
-    public static MensajeDeCorreo Armar(Datos datos) => new(
+    public static MensajeDeCorreo Armar(Datos datos, DatosDeLaDoctora doctora) => new(
         datos.Destinatario,
         Asunto(datos.Fecha, datos.Hora),
-        Html(datos),
-        Texto(datos),
+        Html(datos, doctora),
+        Texto(datos, doctora),
         datos.Calendario is { } calendario ? [calendario] : []);
 
-    private static string Texto(Datos datos)
+    private static string Texto(Datos datos, DatosDeLaDoctora doctora)
     {
-        var texto = MarcoDeCorreo.Texto(datos.Nombre, Titulo);
+        var texto = MarcoDeCorreo.Texto(doctora, datos.Nombre, Titulo);
         texto.AppendLine(FormatoDeFechaEnCorreo.Largo(datos.Fecha));
         texto.AppendLine(FormatoDeFechaEnCorreo.Hora(datos.Hora));
         if (datos.TipoDeVisita is { } tipo)
@@ -67,7 +67,7 @@ public static class PlantillaDeReprogramacion
         return texto.ToString();
     }
 
-    private static string Html(Datos datos)
+    private static string Html(Datos datos, DatosDeLaDoctora doctora)
     {
         var cuerpo = $"""
             {MarcoDeCorreo.FechaYHora(datos.Fecha, datos.Hora)}
@@ -76,6 +76,6 @@ public static class PlantillaDeReprogramacion
             {MarcoDeCorreo.Boton(datos.EnlaceDeGestion, PlantillaDeConfirmacion.Boton)}
             """;
 
-        return MarcoDeCorreo.Html(Asunto(datos.Fecha, datos.Hora), datos.Nombre, Titulo, cuerpo);
+        return MarcoDeCorreo.Html(doctora, Asunto(datos.Fecha, datos.Hora), datos.Nombre, Titulo, cuerpo);
     }
 }

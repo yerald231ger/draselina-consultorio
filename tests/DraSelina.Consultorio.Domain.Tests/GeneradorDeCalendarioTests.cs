@@ -72,7 +72,7 @@ public class GeneradorDeCalendarioTests
 
     private static Agenda.Contracts.ArchivoDeCalendario Generar(string tipo = "Primera consulta") =>
         GeneradorDeCalendario.Generar(
-            Cita, Inicio, Inicio.AddMinutes(30), tipo, Consultorio, Enlace, "citas.prueba.mx",
+            Cita, Inicio, Inicio.AddMinutes(30), tipo, Consultorio, "Dra. Selina Medina Castillo", Enlace, "citas.prueba.mx",
             new DateTimeOffset(2026, 11, 2, 12, 0, 0, TimeSpan.FromHours(-6)));
 
     // Las líneas lógicas: una continuación (CRLF y un espacio) se une a la anterior (RFC 5545, 3.1).

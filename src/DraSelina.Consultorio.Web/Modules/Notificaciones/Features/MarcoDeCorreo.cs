@@ -26,11 +26,11 @@ internal static class MarcoDeCorreo
     /// El encabezado, el saludo y el título del texto plano, con una línea en blanco al final. Sin
     /// <paramref name="nombre"/>, el saludo es "Hola:" (los correos internos).
     /// </summary>
-    public static StringBuilder Texto(string? nombre, string titulo)
+    public static StringBuilder Texto(DatosDeLaDoctora doctora, string? nombre, string titulo)
     {
         var texto = new StringBuilder();
-        texto.AppendLine(PlantillaDeConfirmacion.Doctora);
-        texto.AppendLine(PlantillaDeConfirmacion.Especialidad);
+        texto.AppendLine(doctora.Nombre);
+        texto.AppendLine(doctora.Especialidad);
         texto.AppendLine();
         texto.AppendLine(Saludo(nombre));
         texto.AppendLine();
@@ -95,7 +95,7 @@ internal static class MarcoDeCorreo
         $"""<p style="margin:28px 0 0;"><a href="{H(enlace)}" style="display:inline-block;padding:14px 24px;background:#6B2A45;color:#ffffff;text-decoration:none;font-weight:700;border-radius:8px;font-size:16px;">{H(texto)}</a></p>""";
 
     /// <summary>El documento completo: encabezado, saludo, título y <paramref name="cuerpo"/>, ya en HTML.</summary>
-    public static string Html(string asunto, string? nombre, string titulo, string cuerpo) => $"""
+    public static string Html(DatosDeLaDoctora doctora, string asunto, string? nombre, string titulo, string cuerpo) => $"""
         <!doctype html>
         <html lang="es-MX">
         <head>
@@ -108,8 +108,8 @@ internal static class MarcoDeCorreo
         <tr><td align="center" style="padding:24px 16px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;">
         <tr><td style="padding:24px 24px 16px;border-bottom:1px solid #EADBD9;">
-        <p style="margin:0;font-size:18px;font-weight:700;">{H(PlantillaDeConfirmacion.Doctora)}</p>
-        <p style="margin:4px 0 0;font-size:14px;color:#6E5560;">{H(PlantillaDeConfirmacion.Especialidad)}</p>
+        <p style="margin:0;font-size:18px;font-weight:700;">{H(doctora.Nombre)}</p>
+        <p style="margin:4px 0 0;font-size:14px;color:#6E5560;">{H(doctora.Especialidad)}</p>
         </td></tr>
         <tr><td style="padding:24px;">
         <p style="margin:0 0 8px;font-size:16px;">{H(Saludo(nombre))}</p>

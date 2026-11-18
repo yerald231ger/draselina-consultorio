@@ -40,16 +40,16 @@ public static class PlantillaDeRecordatorio
     /// <summary>"Mañana tienes cita: 4:00 pm" `[ASSUMPTION]`.</summary>
     public static string Asunto(TimeOnly hora) => $"{Titulo}: {FormatoDeFechaEnCorreo.Hora(hora)}";
 
-    public static MensajeDeCorreo Armar(Datos datos) => new(
+    public static MensajeDeCorreo Armar(Datos datos, DatosDeLaDoctora doctora) => new(
         datos.Destinatario,
         Asunto(datos.Hora),
-        Html(datos),
-        Texto(datos),
+        Html(datos, doctora),
+        Texto(datos, doctora),
         []);
 
-    private static string Texto(Datos datos)
+    private static string Texto(Datos datos, DatosDeLaDoctora doctora)
     {
-        var texto = MarcoDeCorreo.Texto(datos.Nombre, Titulo);
+        var texto = MarcoDeCorreo.Texto(doctora, datos.Nombre, Titulo);
         texto.AppendLine(FormatoDeFechaEnCorreo.Largo(datos.Fecha));
         texto.AppendLine(FormatoDeFechaEnCorreo.Hora(datos.Hora));
         if (datos.TipoDeVisita is { } tipo)
@@ -63,7 +63,7 @@ public static class PlantillaDeRecordatorio
         return texto.ToString();
     }
 
-    private static string Html(Datos datos)
+    private static string Html(Datos datos, DatosDeLaDoctora doctora)
     {
         var cuerpo = $"""
             {MarcoDeCorreo.FechaYHora(datos.Fecha, datos.Hora)}
@@ -72,6 +72,6 @@ public static class PlantillaDeRecordatorio
             {MarcoDeCorreo.Boton(datos.EnlaceDeGestion, PlantillaDeConfirmacion.Boton)}
             """;
 
-        return MarcoDeCorreo.Html(Asunto(datos.Hora), datos.Nombre, Titulo, cuerpo);
+        return MarcoDeCorreo.Html(doctora, Asunto(datos.Hora), datos.Nombre, Titulo, cuerpo);
     }
 }

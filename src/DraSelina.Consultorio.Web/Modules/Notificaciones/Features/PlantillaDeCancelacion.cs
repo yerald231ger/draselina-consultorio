@@ -1,3 +1,5 @@
+using DraSelina.Consultorio.Contenido.Contracts;
+
 namespace DraSelina.Consultorio.Notificaciones.Features;
 
 /// <summary>
@@ -73,16 +75,16 @@ public static class PlantillaDeCancelacion
             + "Elige otro horario cuando te acomode.";
     }
 
-    public static MensajeDeCorreo Armar(Datos datos) => new(
+    public static MensajeDeCorreo Armar(Datos datos, DatosDeLaDoctora doctora) => new(
         datos.Destinatario,
         Asunto(datos.Clase),
-        Html(datos),
-        Texto(datos),
+        Html(datos, doctora),
+        Texto(datos, doctora),
         []);
 
-    private static string Texto(Datos datos)
+    private static string Texto(Datos datos, DatosDeLaDoctora doctora)
     {
-        var texto = MarcoDeCorreo.Texto(datos.Nombre, Asunto(datos.Clase));
+        var texto = MarcoDeCorreo.Texto(doctora, datos.Nombre, Asunto(datos.Clase));
         if (datos.Clase == Clase.PorElConsultorio)
         {
             texto.AppendLine(Disculpa(datos.Fecha, datos.Hora));
@@ -109,7 +111,7 @@ public static class PlantillaDeCancelacion
         return texto.ToString();
     }
 
-    private static string Html(Datos datos)
+    private static string Html(Datos datos, DatosDeLaDoctora doctora)
     {
         var cuerpo = datos.Clase == Clase.PorElConsultorio
             ? $"""
@@ -123,6 +125,6 @@ public static class PlantillaDeCancelacion
                 {MarcoDeCorreo.Boton(datos.UrlDeReservar, AgendarOtraCita)}
                 """;
 
-        return MarcoDeCorreo.Html(Asunto(datos.Clase), datos.Nombre, Asunto(datos.Clase), cuerpo);
+        return MarcoDeCorreo.Html(doctora, Asunto(datos.Clase), datos.Nombre, Asunto(datos.Clase), cuerpo);
     }
 }

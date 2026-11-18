@@ -1,5 +1,6 @@
 using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Contenido.Contracts;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
 
@@ -23,7 +24,8 @@ public sealed class AvisoAlCancelar(
     EnvioUnico envio,
     IPacientesApi pacientes,
     IAgendaApi agenda,
-    IDireccionDelSitio sitio) : IEventHandler<CitaCancelada>
+    IDireccionDelSitio sitio,
+    IContenidoApi contenido) : IEventHandler<CitaCancelada>
 {
     public async Task HandleAsync(CitaCancelada evento, CancellationToken cancellationToken)
     {
@@ -53,6 +55,7 @@ public sealed class AvisoAlCancelar(
             Hora: TimeOnly.FromDateTime(inicio.DateTime),
             TipoDeVisita: await agenda.ObtenerTipoDeVisitaAsync(evento.CitaId, cancellationToken),
             UrlDeReservar: sitio.Reservar(),
-            Clase: clase));
+            Clase: clase),
+            contenido.DatosDeLaDoctora);
     }
 }

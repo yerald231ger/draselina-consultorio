@@ -1,6 +1,7 @@
 using System.Net;
 using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.Agenda.Domain;
+using DraSelina.Consultorio.Contenido;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Notificaciones.Features;
 using DraSelina.Consultorio.Pacientes.Contracts;
@@ -261,7 +262,7 @@ public sealed class AgendaDelDiaTests(Arnes arnes)
         foreach (var texto in new[]
         {
             cita.ToString(), new AgendaDelDia(true, [cita]).ToString(), datos.ToString(), datos.Citas[0].ToString(),
-            PlantillaDeAgendaDelDia.Armar(datos).ToString(),
+            PlantillaDeAgendaDelDia.Armar(datos, ContenidoApi.Doctora).ToString(),
         })
         {
             Assert.DoesNotContain("rodilla", texto, StringComparison.Ordinal);

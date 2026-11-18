@@ -972,6 +972,11 @@ main:has(> .dsm-franja:last-child) + .dsm-pie {
   letter-spacing: -0.02em;
 }
 
+/* La hora no se parte: "pm" no queda sola en otro renglón en el teléfono. */
+.dsm-confirmada__hora {
+  white-space: nowrap;
+}
+
 .dsm-confirmada__tipo {
   font-size: var(--dsm-body-small-font-size);
   color: var(--dsm-muted);
@@ -1303,6 +1308,15 @@ main:has(> .dsm-franja:last-child) + .dsm-pie {
   padding: 0 var(--dsm-spacing-margin-mobile) var(--dsm-spacing-1);
   overflow-x: auto;
   list-style: none;
+}
+
+/* Con la columna centrada (más de 560 px, antes de los 992 del calendario), la fila ya no llega al borde de la
+   pantalla: se queda dentro de la columna y se desliza ahí, sin salirse de ella. */
+@media (min-width: 576px) {
+  .dsm-dias {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
 }
 
 .dsm-dia {

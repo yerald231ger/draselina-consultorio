@@ -46,13 +46,13 @@
         break;
 
     case Vista.Reprogramada when _cita is { } cita && _nuevo is { } nuevo:
-        <PageTitle>Cita reprogramada · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Cita reprogramada · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <ConfirmacionDeReprogramacion Token="@Token" Fecha="nuevo.Fecha" Hora="nuevo.Hora" TipoDeVisita="@cita.TipoDeVisita"
                                       DuracionMin="cita.DuracionMin" Lugar="@cita.Lugar" />
         break;
 
     case Vista.Cancelada:
-        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Reprogramar tu cita · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <section class="dsm-contenedor dsm-gestion" aria-labelledby="reprogramar">
             <h1 id="reprogramar" class="dsm-titulo-de-estado">@Cancelada</h1>
             @VerMiCita
@@ -60,7 +60,7 @@
         break;
 
     case Vista.Cerrada when _cita is { } cita:
-        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Reprogramar tu cita · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <section class="dsm-contenedor dsm-gestion" aria-labelledby="reprogramar">
             <h1 id="reprogramar" class="dsm-titulo-de-estado">@Titulo</h1>
             <div class="dsm-gestion__umbral">
@@ -71,7 +71,7 @@
         break;
 
     case Vista.NoEnLinea:
-        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Reprogramar tu cita · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <section class="dsm-contenedor dsm-gestion" aria-labelledby="reprogramar">
             <h1 id="reprogramar" class="dsm-titulo-de-estado">@Titulo</h1>
             <div class="dsm-aviso" role="status">
@@ -82,7 +82,7 @@
         break;
 
     case Vista.Selector when _cita is { } cita:
-        <PageTitle>Reprogramar tu cita · Dra. Selina Medina Castillo</PageTitle>
+        <PageTitle>Reprogramar tu cita · @Contenido.DatosDeLaDoctora.Nombre</PageTitle>
         <section class="dsm-contenedor dsm-reserva dsm-reserva--ancha dsm-horario">
             <div class="dsm-regreso">
                 <a href="@RutaDeTuCita" class="dsm-regreso__enlace" aria-label="Regresar a tu cita">

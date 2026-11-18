@@ -148,7 +148,8 @@ public sealed class EnviosProgramados(IServiceScopeFactory ambitos, IClock reloj
             Hora: TimeOnly.FromDateTime(inicio.DateTime),
             TipoDeVisita: await agenda.ObtenerTipoDeVisitaAsync(recordatorio.CitaId, cancellationToken),
             Consultorio: servicios.GetRequiredService<IContenidoApi>().DatosDelConsultorio,
-            EnlaceDeGestion: agenda.ObtenerEnlaceDeGestion(recordatorio.CitaId)));
+            EnlaceDeGestion: agenda.ObtenerEnlaceDeGestion(recordatorio.CitaId)),
+            servicios.GetRequiredService<IContenidoApi>().DatosDeLaDoctora);
 
         await servicios.GetRequiredService<IMensajes>().RegistrarAsync(
             new MensajeRegistrado(
@@ -207,7 +208,8 @@ public sealed class EnviosProgramados(IServiceScopeFactory ambitos, IClock reloj
         }
 
         var mensaje = PlantillaDeAgendaDelDia.Armar(new PlantillaDeAgendaDelDia.Datos(
-            await configuracion.CorreoDeLaDoctoraAsync(cancellationToken), hoy, citas));
+            await configuracion.CorreoDeLaDoctoraAsync(cancellationToken), hoy, citas),
+            servicios.GetRequiredService<IContenidoApi>().DatosDeLaDoctora);
 
         await mensajes.RegistrarAsync(MensajeDeLaFecha(hoy, EstadoDeMensaje.Enviado, ahora), cancellationToken);
         await servicios.GetRequiredService<INotificationChannel>().EnviarAsync(mensaje, cancellationToken);

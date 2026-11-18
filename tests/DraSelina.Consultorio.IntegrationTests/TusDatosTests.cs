@@ -53,7 +53,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
         Assert.Contains("Tu cita está confirmada", html, StringComparison.Ordinal);
         Assert.Contains("Martes", html, StringComparison.Ordinal);
-        Assert.Contains("3 de noviembre, 4:00 pm", html, StringComparison.Ordinal);
+        Assert.Contains("3 de noviembre, <span class=\"dsm-confirmada__hora\">4:00 pm</span>", html, StringComparison.Ordinal);
         Assert.Contains("Primera consulta · 30 min", html, StringComparison.Ordinal);
         Assert.Contains("Hospital Star Médica, consultorio 101", html, StringComparison.Ordinal);
         Assert.Contains("Mariano Arista No. 735, Col. Barrio de Tequisquiapan, San Luis Potosí", html, StringComparison.Ordinal);
@@ -412,7 +412,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
         var confirmada = await PostAsync(cliente, otraHora, CamposDelFormulario(formulario));
 
         Assert.Contains("Tu cita está confirmada", confirmada, StringComparison.Ordinal);
-        Assert.Contains("3 de noviembre, 4:30 pm", confirmada, StringComparison.Ordinal);
+        Assert.Contains("3 de noviembre, <span class=\"dsm-confirmada__hora\">4:30 pm</span>", confirmada, StringComparison.Ordinal);
         Assert.Equal(2, (await escenario.CitasAsync()).Count);
         Assert.Equal(
             solicitud,

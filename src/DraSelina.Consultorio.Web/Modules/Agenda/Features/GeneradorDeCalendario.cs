@@ -9,16 +9,12 @@ namespace DraSelina.Consultorio.Agenda.Features;
 /// <summary>
 /// El único generador del archivo de calendario (Consistency Conventions, "Archivo de calendario"): un VEVENT de
 /// iCalendar (RFC 5545). Inicio y fin en UTC (el teléfono lo muestra en su hora local); título con el tipo de visita y
-/// la doctora; lugar y dirección de <see cref="IContenidoApi"/> (AD-15); el Enlace de gestión en la descripción (FR-5).
+/// la doctora; la doctora, el lugar y la dirección salen de <see cref="IContenidoApi"/> (AD-15); el Enlace de gestión en
+/// la descripción (FR-5).
 /// El <c>UID</c> sale del id de la Cita: el mismo en cada descarga. Nada del Paciente ni el motivo (AD-23).
 /// </summary>
 public static class GeneradorDeCalendario
 {
-    /// <summary>Quién atiende, como lo dice la confirmación.</summary>
-    public const string Doctora = "Dra. Selina Medina Castillo";
-
-    private const string Producto = "-//Dra. Selina Medina Castillo//Citas//ES";
-
     /// <summary>
     /// El archivo del evento.
     /// </summary>
@@ -27,6 +23,7 @@ public static class GeneradorDeCalendario
     /// <param name="fin">Fin de la Cita.</param>
     /// <param name="tipoDeVisita">Nombre del tipo de visita, para el título.</param>
     /// <param name="consultorio">Lugar, dirección y ciudad.</param>
+    /// <param name="doctora">Quién atiende, de <see cref="IContenidoApi.DatosDeLaDoctora"/>: el título y el <c>PRODID</c>.</param>
     /// <param name="enlaceDeGestion">El Enlace de gestión completo, para la descripción.</param>
     /// <param name="dominio">El dominio del sitio, para que el <c>UID</c> sea único fuera de él.</param>
     /// <param name="ahora">El <c>DTSTAMP</c> del evento.</param>
@@ -36,19 +33,21 @@ public static class GeneradorDeCalendario
         DateTimeOffset fin,
         string tipoDeVisita,
         DatosDelConsultorio consultorio,
+        string doctora,
         string enlaceDeGestion,
         string dominio,
         DateTimeOffset ahora)
     {
         ArgumentNullException.ThrowIfNull(consultorio);
         ArgumentException.ThrowIfNullOrWhiteSpace(tipoDeVisita);
+        ArgumentException.ThrowIfNullOrWhiteSpace(doctora);
         ArgumentException.ThrowIfNullOrWhiteSpace(enlaceDeGestion);
         ArgumentException.ThrowIfNullOrWhiteSpace(dominio);
 
         var archivo = new StringBuilder();
         Linea(archivo, "BEGIN:VCALENDAR");
         Linea(archivo, "VERSION:2.0");
-        Linea(archivo, $"PRODID:{Producto}");
+        Linea(archivo, $"PRODID:-//{doctora}//Citas//ES");
         Linea(archivo, "CALSCALE:GREGORIAN");
         Linea(archivo, "METHOD:PUBLISH");
         Linea(archivo, "BEGIN:VEVENT");
@@ -56,7 +55,7 @@ public static class GeneradorDeCalendario
         Linea(archivo, $"DTSTAMP:{Utc(ahora)}");
         Linea(archivo, $"DTSTART:{Utc(inicio)}");
         Linea(archivo, $"DTEND:{Utc(fin)}");
-        Linea(archivo, $"SUMMARY:{Texto($"{tipoDeVisita} con la {Doctora}")}");
+        Linea(archivo, $"SUMMARY:{Texto($"{tipoDeVisita} con la {doctora}")}");
         Linea(archivo, $"LOCATION:{Texto($"{consultorio.Lugar}, {consultorio.Direccion}, {consultorio.Ciudad}")}");
         Linea(archivo, $"DESCRIPTION:{Texto($"Para ver, reprogramar o cancelar tu cita: {enlaceDeGestion}")}");
         Linea(archivo, $"URL:{enlaceDeGestion}");
