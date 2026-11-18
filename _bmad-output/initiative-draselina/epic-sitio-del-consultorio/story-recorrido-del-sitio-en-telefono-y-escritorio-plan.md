@@ -3,7 +3,7 @@ title: 'Recorrido del sitio en teléfono y escritorio'
 type: 'chore'
 ticket: '5'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '6094d7399657ee57114ca33053bb69dfabb6915a'
 route: 'oneshot'
 route_source: 'auto'

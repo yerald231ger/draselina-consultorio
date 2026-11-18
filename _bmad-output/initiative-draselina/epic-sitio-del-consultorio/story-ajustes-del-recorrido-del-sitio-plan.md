@@ -3,7 +3,7 @@ title: 'Ajustes del recorrido del sitio'
 type: 'feature'
 ticket: '6'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '5a077daaeb15d7c436d2f104b2c55c0976ea304b'
 route: 'oneshot'
 route_source: 'auto'

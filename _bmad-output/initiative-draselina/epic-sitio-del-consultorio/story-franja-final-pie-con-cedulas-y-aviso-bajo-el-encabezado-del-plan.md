@@ -3,7 +3,7 @@ title: 'Franja final, pie con cédulas y Aviso bajo el encabezado del sitio'
 type: 'feature'
 ticket: '3'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '8e6ed5febe95c14d21052e0161881d1d20744990'
 route: 'full'
 route_source: 'auto'

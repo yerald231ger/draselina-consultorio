@@ -3,7 +3,7 @@ title: 'Encontrable: título, description, Physician, robots.txt y sitemap'
 type: 'feature'
 ticket: '4'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '822512d4fad9ba9659f3c440db86fc747eac40bf'
 route: 'full'
 route_source: 'auto'

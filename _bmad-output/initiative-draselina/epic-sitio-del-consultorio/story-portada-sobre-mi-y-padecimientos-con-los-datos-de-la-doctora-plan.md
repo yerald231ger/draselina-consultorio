@@ -3,7 +3,7 @@ title: 'Portada, Sobre mí y Padecimientos con los datos de la doctora'
 type: 'feature'
 ticket: '2'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '48c6fa0924f3b1ebd719e22214491e1677755260'
 route: 'full'
 route_source: 'auto'

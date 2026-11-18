@@ -3,7 +3,7 @@ title: 'Ubicación y horarios desde la Agenda base'
 type: 'feature'
 ticket: '1'
 created: '2026-11-17'
-status: 'built'
+status: done
 baseline_revision: '6467c2cc114d7797b1b472a5d4dd56e0da8e3739'
 route: 'full'
 route_source: 'auto'
