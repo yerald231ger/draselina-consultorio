@@ -303,10 +303,10 @@ Versiones verificadas en la web el 2026-10-04.
 
 | Name | Version |
 | --- | --- |
-| .NET / ASP.NET Core / Blazor Web App | 10.0 (SDK 10.0.402 o una banda posterior de .NET 10; se pasó de 11.0 RC el 2026-10-23) |
+| .NET / ASP.NET Core / Blazor Web App | 11.0 (SDK 11.0.100 o una banda posterior de .NET 11; de 10.0 el 2026-11-18, ya con la 11.0 definitiva) |
 | Aspire (AppHost, ServiceDefaults) | 13.6.5 (de 13.6.0 por avisos de seguridad, 2026-11-17) |
-| EF Core | 10.0.12 |
-| Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
+| EF Core | 11.0.0 |
+| Npgsql.EntityFrameworkCore.PostgreSQL | 11.0.0-rc.3 (el único paquete preliminar, con NU1608 apagado; se cambia en cuanto salga la 11.0 definitiva, Gerardo, 2026-11-18) |
 | PostgreSQL con `btree_gist` | 18.x `[ASSUMPTION: disponible en Azure Flexible Server; si no, 17.x]` |
 | Bootstrap + CSS propio con los tokens de `DESIGN.md` | 5.3.8 |
 | xunit.v3 | 4.0.1 |
@@ -403,7 +403,7 @@ tests/
 
 ## Open Questions
 
-1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Resuelta el 2026-10-05: arrancan juntos sobre .NET 11.0.0-rc.1 y se sigue con .NET 11. Wolverine 6 necesita el paquete `WolverineFx.RuntimeCompilation` para arrancar en modo dinámico. Registro: `spikes/arranque/REGISTRO.md`, borrado el 2026-10-24; se lee en el historial de git (`git show b7160fb:spikes/arranque/REGISTRO.md`). Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12. El 2026-10-23 se pasó a .NET 10 por problemas para ejecutar .NET 11 RC (épica Plataforma base, Notes).
+1. **.NET 11 con Wolverine 6 y con el AppHost de Aspire.** Resuelta el 2026-10-05: arrancan juntos sobre .NET 11.0.0-rc.1 y se sigue con .NET 11. Wolverine 6 necesita el paquete `WolverineFx.RuntimeCompilation` para arrancar en modo dinámico. Registro: `spikes/arranque/REGISTRO.md`, borrado el 2026-10-24; se lee en el historial de git (`git show b7160fb:spikes/arranque/REGISTRO.md`). Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12. El 2026-10-23 se pasó a .NET 10 por problemas para ejecutar .NET 11 RC (épica Plataforma base, Notes); el 2026-11-18 se volvió a .NET 11, ya en su versión definitiva (iniciativa, Notes).
 2. **Fallo de validación como resultado.** Resuelta el 2026-10-05: el middleware de DataAnnotations de Wolverine, con su configuración por defecto, lanza `ValidationException`; se usa un middleware propio (AD-12). Registro: `spikes/arranque/REGISTRO.md`, borrado el 2026-10-24; se lee en el historial de git (`git show b7160fb:spikes/arranque/REGISTRO.md`). Wolverine se quitó el 2026-10-06; ver AD-10 y AD-12.
 3. **Formulario ligado al comando.** Resuelta el 2026-10-05: un `EditForm` se liga directo al comando con `[SupplyParameterFromForm]`; los comandos son clases con propiedades `set` (Consistency Conventions). Registro: `spikes/arranque/REGISTRO.md`, borrado el 2026-10-24; se lee en el historial de git (`git show b7160fb:spikes/arranque/REGISTRO.md`).
 4. **Hora de la Agenda del día** cuando hay citas por la mañana.

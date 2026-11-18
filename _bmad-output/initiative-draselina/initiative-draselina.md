@@ -46,7 +46,8 @@ Corte por resultado, no por módulo. Fuera: todo lo de la sección Non-goals del
 - Decision: "terminado" significa que corre en local con el AppHost y pasan sus pruebas de integración contra PostgreSQL real; no hay producción todavía (Gerardo, 2026-10-05).
 - Decision: la primera historia es la prueba de arranque de .NET 11 con Wolverine 6 y el AppHost de Aspire; si falla, se retrocede a .NET 10 (Gerardo).
 - Reemplazada (2026-10-23, se pasa a .NET 10): la prueba de arranque pasó; la solución se crea sobre .NET 11 (Gerardo, 2026-10-05).
-- Decision: se pasa a .NET 10 (`net10.0`, SDK 10.0.402 del sistema). Razón: .NET 11 RC dio muchos problemas para ejecutar el proyecto. Reemplaza la decisión del 2026-10-05 de crear la solución sobre .NET 11 (Gerardo, 2026-10-23).
+- Reemplazada (2026-11-18, se pasa a .NET 11): se pasa a .NET 10 (`net10.0`, SDK 10.0.402 del sistema). Razón: .NET 11 RC dio muchos problemas para ejecutar el proyecto. Reemplaza la decisión del 2026-10-05 de crear la solución sobre .NET 11 (Gerardo, 2026-10-23).
+- Decision: se pasa a .NET 11 (`net11.0`, SDK 11.0.100, la versión definitiva del 2026-11-10), con EF Core, Identity y Mvc.Testing 11.0.0. Npgsql.EntityFrameworkCore.PostgreSQL queda en 11.0.0-rc.3, el único paquete preliminar, hasta que salga su 11.0 definitiva; .NET 11 es de soporte corto (STS) y .NET 10, de soporte largo (Gerardo, 2026-11-18).
 - Decision: las decisiones que más de una épica adopta ya viven en la arquitectura (AD-3 eventos, AD-10 `Resultado`, AD-19 enlace de gestión, AD-22 actor); no hay historias de decisión.
 - Propiedad compartida — Bitácora (CAP-17): la épica 2 construye el mecanismo; cada épica escribe las entradas de sus cambios; la épica 5 la muestra.
 - Propiedad compartida — Configuración (CAP-16): la épica 2 crea y siembra `ReglasDeReserva` y `TipoDeVisita`; la épica 4, las horas de envío; la épica 6 entrega la pantalla y la edición.

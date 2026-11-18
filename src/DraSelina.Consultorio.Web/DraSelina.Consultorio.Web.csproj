@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <!-- El SDK Razor de .NET 10 agrega `global using Microsoft.Extensions.Validation.Embedded` dentro de un target,
+    <!-- El SDK Razor (desde .NET 10) agrega `global using Microsoft.Extensions.Validation.Embedded` dentro de un target,
          después del Remove de arriba, así que el Remove no lo alcanza. Se apaga con su propiedad. -->
     <IncludeEmbeddedValidationGlobalUsing>false</IncludeEmbeddedValidationGlobalUsing>
   </PropertyGroup>

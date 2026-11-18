@@ -108,7 +108,8 @@ Cada capacidad cita sus requisitos. Las consecuencias verificables de cada `FR-n
 - Las reglas `E-n`, `T-n`, `INV-n`, `RN-n` (dominio, Parte I) y `AD-1` a `AD-28` (arquitectura) son invariantes del diseño. Una historia las cita; no las reescribe ni las contradice. Solo Gerardo las cambia, primero en el documento.
 - Lo marcado `[ASSUMPTION]` en cualquier documento se construye así, pero no es invariante.
 - Se pasa a .NET 10 el 2026-10-23 por problemas para ejecutar .NET 11 RC; reemplaza la elección de .NET 11 que confirmó la prueba de arranque del 2026-10-05 (Gerardo).
-- Stack fijo: .NET 10, Blazor Web App, PostgreSQL, Aspire 13, DataAnnotations, OpenTelemetry (versiones en la arquitectura, sección Stack). Sin librería de mensajería ni de despacho: handlers propios, outbox propio y servicios en segundo plano.
+- Se pasa a .NET 11 definitivo el 2026-11-18; reemplaza la de .NET 10 (Gerardo).
+- Stack fijo: .NET 11, Blazor Web App, PostgreSQL, Aspire 13, DataAnnotations, OpenTelemetry (versiones en la arquitectura, sección Stack). Sin librería de mensajería ni de despacho: handlers propios, outbox propio y servicios en segundo plano.
 - Quedan fuera: MediatR, MassTransit, Hangfire, FluentAssertions, FluentValidation, Serilog y Blazor WebAssembly standalone.
 - Monolito modular: Agenda, Pacientes, Notificaciones y Contenido solo se hablan por `I<Módulo>Api` o por eventos de integración; viven como namespaces dentro de un solo proyecto, `DraSelina.Consultorio.Web`; las dependencias entre namespaces son las de la tabla de la arquitectura y se verifican con pruebas de arquitectura (AD-1 a AD-3).
 - La disponibilidad se calcula al vuelo; nada guarda slots. Un solo agregado, `AgendaAtencion`, resuelve los tramos vigentes y una sola `CalculadoraDeDisponibilidad` los convierte en horarios libres (AD-5).

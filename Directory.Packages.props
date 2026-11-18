@@ -6,21 +6,22 @@
     <!-- Mailpit en el AppHost: atrapa los correos en local y los muestra desde el dashboard (épica 4, Gerardo,
          2026-11-08). La del Community Toolkit que pide Aspire.Hosting 13.6.0. -->
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.MailPit" Version="13.6.0" />
-    <!-- Paquetes de la plantilla ServiceDefaults de Aspire 13.6.0, con las versiones que trae la plantilla. -->
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.10.0" />
+    <!-- Paquetes de la plantilla ServiceDefaults de Aspire 13.6.0; los de Microsoft.Extensions, en la línea de .NET 11. -->
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="11.0.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
-    <!-- EF Core 10.0.12 y Npgsql 10.0.3, en línea con .NET 10. -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <!-- EF Core 11.0.0, en línea con .NET 11. Npgsql en 11.0.0-rc.3 mientras no salga su 11.0 definitiva (Gerardo,
+         2026-11-18): es el único paquete preliminar; se cambia en cuanto salga. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0-rc.3" />
     <!-- Identity en el host (AD-22, AD-25): cuentas en el esquema identidad, segundo factor TOTP. La misma línea que
-         ASP.NET Core 10 (épica 5, entrada 1). -->
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
+         ASP.NET Core 11 (épica 5, entrada 1). -->
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="11.0.0" />
     <!-- El QR del enrolamiento del segundo factor, como SVG generado en el servidor, sin scripts. MIT (Gerardo,
          2026-11-09). -->
     <PackageVersion Include="QRCoder" Version="1.7.0" />
@@ -35,8 +36,8 @@
     <PackageVersion Include="MailKit" Version="4.18.2" />
     <PackageVersion Include="xunit.v3" Version="4.0.1" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
-    <!-- Solo en pruebas. La misma línea que ASP.NET Core 10. -->
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <!-- Solo en pruebas. La misma línea que ASP.NET Core 11. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
     <!-- Solo en pruebas: pinta los componentes de UI/ sin navegador, en SSR estático y en interactivo
          (UI.Tests). Agregado con la historia de errores en el formulario (épica plataforma base, entrada 9). -->
     <PackageVersion Include="bunit" Version="2.11.3" />

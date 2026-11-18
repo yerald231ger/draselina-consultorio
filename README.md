@@ -1,23 +1,23 @@
 # Sistema de citas — Dra. Selina Medina
 
-Monolito modular sobre .NET 10. La arquitectura está en
+Monolito modular sobre .NET 11. La arquitectura está en
 `_bmad-output/initiative-draselina/architecture-appointment-booking/architecture-appointment-booking.md`.
 
-## Requisito: el SDK de .NET 10
+## Requisito: el SDK de .NET 11
 
-`global.json` pide el SDK 10.0.402 o una banda posterior de .NET 10 (`rollForward: latestFeature`), instalado en el
+`global.json` pide el SDK 11.0.100 o una banda posterior de .NET 11 (`rollForward: latestFeature`), instalado en el
 sistema o en `~/.dotnet` (`./dotnet.sh` usa ese si el del PATH no lo resuelve).
 
 ## Compilar y probar
 
 ```bash
-./dotnet.sh --version   # 10.0.402 o posterior
+./dotnet.sh --version   # 11.0.100 o posterior
 ./dotnet.sh build       # 0 errores, 0 advertencias (las advertencias son errores)
 ./dotnet.sh test        # todas las pruebas; necesita Docker en ejecución
 ```
 
 `./dotnet.sh` es el `dotnet` del sistema. Si ese no resuelve el SDK de `global.json` y existe `~/.dotnet/dotnet`, usa
-ese (por ejemplo, cuando el PATH trae un dotnetup sin la banda 10.0.4xx).
+ese (por ejemplo, cuando el PATH trae un dotnetup sin el SDK de .NET 11).
 
 ## Pruebas
 

@@ -1,11 +1,15 @@
 <Project>
   <!-- Configuración común a todos los proyectos de src/ y tests/. -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Versiones centralizadas en Directory.Packages.props. -->
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Temporal: Npgsql 11.0.0-rc.3 pide EF Core exactamente 11.0.0-rc.3, e Identity 11.0.0 pide EF Core 11.0.0 o mayor.
+         Se usa EF Core 11.0.0 y se apaga NU1608 hasta que salga Npgsql 11.0 definitivo; entonces se quita (Gerardo,
+         2026-11-18). Las pruebas de integración contra PostgreSQL verifican que funcionan juntos. -->
+    <NoWarn>$(NoWarn);NU1608</NoWarn>
   </PropertyGroup>
 </Project>

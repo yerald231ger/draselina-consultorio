@@ -77,7 +77,9 @@ public sealed class ActorDelHost(
         {
             // BL0013 avisa de un estado viejo cuando se guarda; aquí no se guarda: se pide de nuevo en cada llamada,
             // así que siempre es el vigente del ámbito y no hace falta escuchar AuthenticationStateChanged.
+#pragma warning disable BL0013
             return (await autenticacion.GetAuthenticationStateAsync()).User;
+#pragma warning restore BL0013
         }
         catch (InvalidOperationException error)
         {
