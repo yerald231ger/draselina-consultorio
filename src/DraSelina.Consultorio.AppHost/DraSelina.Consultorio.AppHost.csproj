@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
 
   <!-- AppHost de Aspire: un solo comando levanta PostgreSQL, corre el MigrationService y después la web. -->
   <PropertyGroup>

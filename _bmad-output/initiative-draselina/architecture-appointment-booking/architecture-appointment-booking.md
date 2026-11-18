@@ -304,7 +304,7 @@ Versiones verificadas en la web el 2026-10-04.
 | Name | Version |
 | --- | --- |
 | .NET / ASP.NET Core / Blazor Web App | 10.0 (SDK 10.0.402 o una banda posterior de .NET 10; se pasó de 11.0 RC el 2026-10-23) |
-| Aspire (AppHost, ServiceDefaults) | 13.6.0 |
+| Aspire (AppHost, ServiceDefaults) | 13.6.5 (de 13.6.0 por avisos de seguridad, 2026-11-17) |
 | EF Core | 10.0.12 |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 10.0.3 |
 | PostgreSQL con `btree_gist` | 18.x `[ASSUMPTION: disponible en Azure Flexible Server; si no, 17.x]` |

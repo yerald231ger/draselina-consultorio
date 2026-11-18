@@ -8,7 +8,7 @@ Estado al 2026-10-18, en `main` (commit `8e51f39`), al cerrar la épica 1, **Pla
 |---|---|
 | Qué es | El sistema de citas del consultorio de la Dra. Selina Medina Castillo (Traumatología y Ortopedia) |
 | Forma | Monolito modular: una sola web (`DraSelina.Consultorio.Web`) con los módulos separados por namespace |
-| Stack | .NET 10 (SDK 10.0.402 del sistema), Blazor (SSR estático), Aspire 13.6.0, EF Core 10, PostgreSQL 18, Scrutor 6.1 |
+| Stack | .NET 10 (SDK 10.0.402 del sistema), Blazor (SSR estático), Aspire 13.6.5, EF Core 10, PostgreSQL 18, Scrutor 6.1 |
 | Pruebas | xunit.v3, Testcontainers, `WebApplicationFactory`, bUnit. 128 pruebas en 4 proyectos |
 | Lo que se ve hoy | Solo la página Inicio. La reserva, la administración y el login todavía no existen |
 

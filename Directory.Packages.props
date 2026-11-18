@@ -1,8 +1,8 @@
 <Project>
   <!-- Solo paquetes de la tabla Stack de la arquitectura. La gestión central se activa en Directory.Build.props. -->
   <ItemGroup>
-    <!-- Aspire 13.6.0. El SDK del AppHost fija su propia versión en el .csproj (Aspire.AppHost.Sdk/13.6.0). -->
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.6.0" />
+    <!-- Aspire 13.6.5 (de 13.6.0 por los avisos de seguridad GHSA-f7vh-h5g3-7jrh y GHSA-4g86-54fm-h9h8, 2026-11-17). El SDK del AppHost fija su propia versión en el .csproj (Aspire.AppHost.Sdk/13.6.5). -->
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.6.5" />
     <!-- Mailpit en el AppHost: atrapa los correos en local y los muestra desde el dashboard (épica 4, Gerardo,
          2026-11-08). La del Community Toolkit que pide Aspire.Hosting 13.6.0. -->
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.MailPit" Version="13.6.0" />
