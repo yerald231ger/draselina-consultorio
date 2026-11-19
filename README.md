@@ -524,7 +524,9 @@ Hace falta Docker en ejecución. Un solo comando levanta todo:
 El AppHost de Aspire arranca, en este orden:
 
 1. `postgres`: PostgreSQL en un contenedor, con la base `consultorio`. Sin volumen: cada arranque parte de una
-   base vacía. La contraseña la genera Aspire en cada arranque; no hay secretos en el repositorio.
+   base vacía. La contraseña la genera Aspire en cada arranque; no hay secretos en el repositorio. Junto a él
+   arranca `postgres-pgadmin`: pgAdmin en un contenedor, con el servidor ya registrado y conectado. Se abre desde
+   su enlace en el panel de Aspire; las tablas están en Databases → `consultorio` → Schemas, un esquema por módulo.
 2. `mailpit`: Mailpit en un contenedor. Atrapa los correos que la web envía por SMTP (la confirmación de cada
    Cita, épica 4) y los muestra, con sus adjuntos, en su página, que se abre desde el panel de Aspire. Sin volumen:
    cada arranque parte sin correos. La web recibe el servidor por la cadena de conexión `mailpit` y el remitente por
@@ -547,7 +549,7 @@ user-secrets: la primera vez `./dotnet.sh user-secrets init --project src/DraSel
 La clave nunca va en el repositorio.
 
 El panel de Aspire queda en <http://localhost:15080>; la dirección con el token de entrada sale en la consola
-(`Login to the dashboard at ...`). Ahí se ven los cuatro recursos con su estado, sus registros y las trazas: pide
+(`Login to the dashboard at ...`). Ahí se ven los recursos con su estado, sus registros y las trazas: pide
 una página a la web y aparece su traza `GET /`.
 
 El perfil `http` (el de omisión) corre todo por HTTP, con `ASPIRE_ALLOW_UNSECURED_TRANSPORT`. El perfil `https`

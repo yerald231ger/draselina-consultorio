@@ -2,7 +2,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 // La contraseña la genera Aspire en cada arranque; no hay secretos en el repositorio.
 // Sin volumen: cada arranque parte de una base vacía.
-var postgres = builder.AddPostgres("postgres");
+// pgAdmin corre como un recurso más del dashboard, ya conectado al servidor: no hay puerto ni contraseña que copiar.
+var postgres = builder.AddPostgres("postgres")
+    .WithPgAdmin();
 var consultorio = postgres.AddDatabase("consultorio");
 
 // Mailpit atrapa los correos que envía la web por SMTP y los muestra, con sus adjuntos, desde el dashboard (épica 4).
