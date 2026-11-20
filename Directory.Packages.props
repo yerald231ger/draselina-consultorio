@@ -1,10 +1,11 @@
 <Project>
   <!-- Solo paquetes de la tabla Stack de la arquitectura. La gestión central se activa en Directory.Build.props. -->
   <ItemGroup>
-    <!-- Aspire 13.6.5 (de 13.6.0 por los avisos de seguridad GHSA-f7vh-h5g3-7jrh y GHSA-4g86-54fm-h9h8, 2026-11-17). El SDK del AppHost fija su propia versión en el .csproj (Aspire.AppHost.Sdk/13.6.5). -->
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.6.5" />
+    <!-- Aspire 17.0.0 (de 13.6.5, Gerardo, 2026-11-19). El SDK del AppHost fija su propia versión en el .csproj (Aspire.AppHost.Sdk/17.0.0). -->
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="17.0.0" />
     <!-- Mailpit en el AppHost: atrapa los correos en local y los muestra desde el dashboard (épica 4, Gerardo,
-         2026-11-08). La del Community Toolkit que pide Aspire.Hosting 13.6.0. -->
+         2026-11-08). Se queda en 13.6.0 (pide Aspire.Hosting 13.6.0) mientras el Community Toolkit no saque una 17
+         estable; con Aspire.Hosting 17.0.0 compila y entrega los correos de la web (probado el 2026-11-19). -->
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.MailPit" Version="13.6.0" />
     <!-- Paquetes de la plantilla ServiceDefaults de Aspire 13.6.0; los de Microsoft.Extensions, en la línea de .NET 11. -->
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
