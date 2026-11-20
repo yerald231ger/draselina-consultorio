@@ -295,7 +295,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 | Transacciones | Un comando, una transacción, un módulo: cambio, bitácora y outbox juntos. El handler del comando abre la transacción de su módulo por un puerto, guarda de forma explícita y la confirma. Toda salida con un `Resultado` no exitoso deshace la transacción antes de devolver; una excepción también la deshace. Quien llama al handler nunca abre, confirma ni guarda. |
 | Lecturas | `AsNoTracking()` y proyección; nunca `SaveChanges` en una consulta. Las consultas corren sin transacción. |
 | Archivo de calendario | Un solo generador, en Agenda, usado por la pantalla de confirmación y por Notificaciones. El lugar lo pide a Contenido por `IContenidoApi`. `[ASSUMPTION]` |
-| Pruebas | Dominio y handlers sin base de datos; integración contra PostgreSQL real, levantado con Testcontainers y migrado ejecutando el `MigrationService`; reglas de referencia como pruebas de arquitectura. |
+| Pruebas | Dominio y handlers sin base de datos; integración contra PostgreSQL real, levantado con Testcontainers y migrado ejecutando el `MigrationService`; reglas de referencia como pruebas de arquitectura. Recorridos de extremo a extremo con Playwright, **solo en local** (nunca en la integración continua) y solo caminos felices, en vista de celular: agendar con correo, agendar sin correo y cancelar con el Enlace de gestión tomado del correo; cada prueba agenda su propia Cita. Arrancan el AppHost completo con `Aspire.Hosting.Testing` (PostgreSQL, migraciones, Mailpit y la web) y leen el correo de la API de Mailpit (Gerardo, 2026-11-20). |
 
 ## Stack
 
@@ -304,7 +304,7 @@ Versiones verificadas en la web el 2026-10-04.
 | Name | Version |
 | --- | --- |
 | .NET / ASP.NET Core / Blazor Web App | 11.0 (SDK 11.0.100 o una banda posterior de .NET 11; de 10.0 el 2026-11-18, ya con la 11.0 definitiva) |
-| Aspire (AppHost, ServiceDefaults) | 13.6.5 (de 13.6.0 por avisos de seguridad, 2026-11-17) |
+| Aspire (AppHost, ServiceDefaults) | 17.0.0 (de 13.6.5, 2026-11-19; Aspire.AppHost.Sdk y AddProject<T> obsoletos, con su aviso apagado hasta migrar a Microsoft.NET.Sdk con AddDotnetProject). Mailpit del Community Toolkit sigue en 13.6.0 mientras no haya una 17 estable |
 | EF Core | 11.0.0 |
 | Npgsql.EntityFrameworkCore.PostgreSQL | 11.0.0-rc.3 (el único paquete preliminar, con NU1608 apagado; se cambia en cuanto salga la 11.0 definitiva, Gerardo, 2026-11-18) |
 | PostgreSQL con `btree_gist` | 18.x `[ASSUMPTION: disponible en Azure Flexible Server; si no, 17.x]` |
@@ -313,6 +313,8 @@ Versiones verificadas en la web el 2026-10-04.
 | bUnit | 2.15.2 (de 2.11.3 al pasar a .NET 11) |
 | Testcontainers.PostgreSql | 4.15.0 |
 | Microsoft.AspNetCore.Mvc.Testing (solo en pruebas) | la misma que ASP.NET Core |
+| Microsoft.Playwright (solo en los recorridos locales) | 1.65.1 |
+| Aspire.Hosting.Testing (solo en los recorridos locales) | la misma que Aspire |
 | Scrutor | 6.1.0 (la versión de Cypma.Cop) |
 | libphonenumber-csharp | última estable al crear la solución |
 | Correo: Azure Communication Services Email | servicio |
