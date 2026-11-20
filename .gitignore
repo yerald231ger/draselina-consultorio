@@ -23,6 +23,8 @@ secrets.json
 
 # Aspire
 .aspire/
+# Lo genera Aspire 17 para la CLI `aspire`, que no se usa (se arranca con dotnet run).
+aspire.config.json
 
 # BMad: flujos renderizados (temporales)
 _bmad/render/
