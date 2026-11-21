@@ -21,6 +21,14 @@ La base parte vacía, como con `dotnet run`. El alcance está en la fila Pruebas
 ./dotnet.sh test --project tests/DraSelina.Consultorio.E2ETests
 ```
 
+Para verlas en vivo, con la ventana de Chromium y medio segundo entre acciones:
+
+```
+RECORRIDOS_VISIBLES=1 ./dotnet.sh test --project tests/DraSelina.Consultorio.E2ETests
+```
+
+Para avanzar paso a paso con el Playwright Inspector: `PWDEBUG=1` en lugar de `RECORRIDOS_VISIBLES=1`.
+
 La primera vez descarga Chromium (en la caché de Playwright del usuario) y las imágenes de los contenedores, y tarda
 más. `./dotnet.sh test` de toda la solución también los corre.
 

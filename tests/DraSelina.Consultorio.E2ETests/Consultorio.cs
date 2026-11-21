@@ -55,7 +55,14 @@ public sealed class Consultorio : IAsyncLifetime
         // Las expectativas esperan hasta 15 segundos (5 por omisión): con la máquina cargada la web responde más lento.
         Assertions.SetDefaultExpectTimeout(15_000);
         _playwright = await Playwright.CreateAsync();
-        _navegador = await _playwright.Chromium.LaunchAsync();
+        // Con RECORRIDOS_VISIBLES=1 Chromium abre con ventana y hace una pausa entre acciones, para seguir las pruebas
+        // a ojo. Sin la variable, corre sin ventana y a toda velocidad.
+        var visibles = Environment.GetEnvironmentVariable("RECORRIDOS_VISIBLES") == "1";
+        _navegador = await _playwright.Chromium.LaunchAsync(new()
+        {
+            Headless = !visibles,
+            SlowMo = visibles ? 500 : 0,
+        });
     }
 
     /// <summary>Un navegador nuevo en vista de celular, sin cookies de otra prueba.</summary>
