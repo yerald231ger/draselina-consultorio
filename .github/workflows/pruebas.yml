@@ -35,5 +35,7 @@ jobs:
         run: ./dotnet.sh build
 
       # IntegrationTests levanta PostgreSQL con Testcontainers: el Docker del runner de Ubuntu basta.
+      # Los recorridos con Playwright (E2ETests) son solo locales: compilan aquí, pero con CI=true, que GitHub define,
+      # su .csproj deja de ser proyecto de pruebas y `dotnet test` no los ejecuta.
       - name: Probar
         run: ./dotnet.sh test --no-build

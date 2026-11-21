@@ -39,6 +39,10 @@
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <!-- Solo en pruebas. La misma línea que ASP.NET Core 11. -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0" />
+    <!-- Solo en los recorridos locales con Playwright (E2ETests): Playwright maneja Chromium en vista de celular y
+         Aspire.Hosting.Testing arranca el AppHost completo, en la versión de Aspire (Gerardo, 2026-11-20). -->
+    <PackageVersion Include="Microsoft.Playwright" Version="1.65.1" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="17.0.0" />
     <!-- Solo en pruebas: pinta los componentes de UI/ sin navegador, en SSR estático y en interactivo
          (UI.Tests). Agregado con la historia de errores en el formulario (épica plataforma base, entrada 9). -->
     <PackageVersion Include="bunit" Version="2.15.2" />

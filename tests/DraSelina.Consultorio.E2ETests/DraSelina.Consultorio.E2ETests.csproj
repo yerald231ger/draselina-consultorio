@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Recorridos de extremo a extremo con Playwright, solo en local (fila Pruebas de la arquitectura, Gerardo,
+       2026-11-20). Arrancan el AppHost completo con Aspire.Hosting.Testing: PostgreSQL, migraciones, Mailpit y la web.
+       Necesitan Docker en ejecución. Cómo correrlos: README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- En GitHub Actions (CI=true) el proyecto compila, para enterarse si algo lo rompe, pero `dotnet test` no lo
+         ejecuta: los recorridos son solo locales. Con Microsoft.Testing.Platform, `dotnet test` corre los proyectos
+         que se declaran aplicación de pruebas; IsTestProject solo no basta. -->
+    <IsTestProject Condition="'$(CI)' == 'true'">false</IsTestProject>
+    <IsTestingPlatformApplication Condition="'$(CI)' == 'true'">false</IsTestingPlatformApplication>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="Aspire.Hosting.Testing" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DraSelina.Consultorio.AppHost\DraSelina.Consultorio.AppHost.csproj" />
+  </ItemGroup>
+
+</Project>
