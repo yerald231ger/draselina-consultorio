@@ -406,7 +406,7 @@ Por cada fecha de la ventana de reserva:
 
 #### Políticas
 
-Una política es una reacción a un evento: "cuando ocurre X, hacer Y". Vive en `Features`, como handler del evento, y modifica un solo agregado por transacción (T-5).
+Una política es una reacción a un evento: "cuando ocurre X, hacer Y". Vive en `Features`, como handler del evento en su propia carpeta, y modifica un solo agregado por transacción (T-5).
 
 | Política | Cuando | Entonces |
 | --- | --- | --- |
@@ -576,7 +576,7 @@ classDiagram
 | Pieza | Namespace (carpeta dentro de `DraSelina.Consultorio.Web`) |
 | --- | --- |
 | Agregados, objetos de valor, servicio de dominio, eventos de dominio, puertos de escritura | `<Contexto>.Domain` |
-| Handlers, puertos de lectura | `<Contexto>.Features` |
+| Handlers, puertos de lectura | `<Contexto>.Features`: una carpeta por caso de uso, y `Compartido/` para lo que usan dos o más; un caso de uso no llama código de la carpeta de otro; el namespace no cambia con la subcarpeta |
 | Comandos, consultas, DTOs, eventos de integración, `I<Contexto>Api` | `<Contexto>.Contracts` |
 | Implementación de puertos, persistencia | `<Contexto>.Infrastructure` |
 | Ids tipados, `IClock`, `Resultado`, `Actor`, `IActorActual` | `Kernel` |
@@ -1086,3 +1086,4 @@ El recordatorio pendiente de una cita (AD-20). El servicio en segundo plano de N
 | 2026-10-05 | "Ya pasó" se mide desde el inicio de la cita (RN-31). Motivo de consulta obligatorio en línea (INV-C11). Precisiones sin cambio de comportamiento: ids en el Kernel, `ReglasDeAgenda` frente a `ReglasDeReserva`, entradas de la calculadora, Contenido → Agenda para el archivo de calendario. El documento pasa a final, sin revisión independiente | Gerardo |
 | 2026-10-05 | Las capas de cada contexto (`Contracts`, `Domain`, `Features`, `Infrastructure`), el Kernel y la interfaz dejan de ser proyectos: son namespaces y carpetas dentro de `DraSelina.Consultorio.Web` (2.6, T-28, 2.7). Las reglas de dependencia no cambian; ahora las verifican las pruebas, no el compilador. Separarlas en proyectos queda diferido | Gerardo |
 | 2026-10-06 | Se quita Wolverine de la solución. T-24: "mensajes programados" pasa a "envíos programados (Recordatorio y Agenda del día)", que Notificaciones envía cuando les llega su hora. T-28: sale la palabra "Wolverine" de lo que el dominio no conoce. Ninguna de las dos reglas cambia de fondo. En la Parte II: sale el esquema `wolverine`, `recordatorio_programado` pierde `version` y se agrega `agenda.outbox` | Gerardo |
+| 2026-11-21 | `Features` se ordena en vertical slices: una carpeta por caso de uso con lo que solo él usa, y `Features/Compartido/` para lo que usan dos o más y los puertos transversales. El namespace sigue plano (`<Contexto>.Features`), porque uno por carpeta choca con el comando del mismo nombre (2.6). Las reglas de dependencia no cambian | Gerardo |

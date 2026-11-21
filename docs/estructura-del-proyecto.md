@@ -75,9 +75,10 @@ draselina/
 │       │   ├── Agenda/                           Esquema agenda. El único que hoy publica eventos
 │       │   │   ├── Contracts/                    (vacío: .gitkeep)
 │       │   │   ├── Domain/                       (vacío: .gitkeep)
-│       │   │   ├── Features/
-│       │   │   │   ├── ITransaccionDeAgenda.cs   Puerto: el handler abre, confirma o deshace su transacción
-│       │   │   │   └── IOutboxDeAgenda.cs        Puerto: publicar un evento dentro de esa transacción
+│       │   │   ├── Features/                 Una carpeta por caso de uso (<CasoDeUso>/) y Compartido/
+│       │   │   │   └── Compartido/
+│       │   │   │       ├── ITransaccionDeAgenda.cs Puerto: el handler abre, confirma o deshace su transacción
+│       │   │   │       └── IOutboxDeAgenda.cs    Puerto: publicar un evento dentro de esa transacción
 │       │   │   └── Infrastructure/
 │       │   │       ├── AgendaDbContext.cs
 │       │   │       ├── AgendaDbContextFactory.cs Para dotnet-ef en tiempo de diseño
@@ -90,12 +91,12 @@ draselina/
 │       │   ├── Pacientes/                        Esquema pacientes
 │       │   │   ├── Contracts/                    (vacío)
 │       │   │   ├── Domain/                       (vacío)
-│       │   │   ├── Features/ITransaccionDePacientes.cs
+│       │   │   ├── Features/Compartido/ITransaccionDePacientes.cs
 │       │   │   └── Infrastructure/               DbContext, Factory, Transaccion, Registro, Migrations/ (Inicial)
 │       │   │
 │       │   ├── Notificaciones/                   Esquema notificaciones. Sin Domain (no tiene reglas propias)
 │       │   │   ├── Contracts/                    (vacío)
-│       │   │   ├── Features/ITransaccionDeNotificaciones.cs
+│       │   │   ├── Features/Compartido/ITransaccionDeNotificaciones.cs
 │       │   │   └── Infrastructure/               DbContext, Factory, Transaccion, Registro, Migrations/ (Inicial)
 │       │   │
 │       │   └── Contenido/                        Textos del sitio. Sin base de datos
@@ -187,7 +188,7 @@ Esto lo hacen cumplir las pruebas de arquitectura: leen los `using` de cada arch
 | `BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | Kernel |
 | `<Módulo>.Contracts` | `Modules/<M>/Contracts/` | Kernel, BuildingBlocks.Contracts |
 | `<Módulo>.Domain` | `Modules/<M>/Domain/` | Kernel |
-| `<Módulo>.Features` | `Modules/<M>/Features/` | Su Domain, los Contracts de cualquier módulo, Kernel, BuildingBlocks.Contracts |
+| `<Módulo>.Features` | `Modules/<M>/Features/<CasoDeUso>/` y `Modules/<M>/Features/Compartido/` (mismo namespace en todas) | Su Domain, los Contracts de cualquier módulo, Kernel, BuildingBlocks.Contracts |
 | `<Módulo>.Infrastructure` | `Modules/<M>/Infrastructure/` | Lo suyo, más EF Core |
 | `UI` | `UI/` | Los Contracts de los módulos, BuildingBlocks.Contracts, Kernel |
 | Host (raíz de Web) | `*.cs` sueltos | Todo: es quien compone |

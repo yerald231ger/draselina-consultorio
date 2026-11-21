@@ -118,8 +118,8 @@ public sealed class GuardarAgendaCustomHandler(
                 antes is null ? AccionDeBitacora.Registrada : AccionDeBitacora.Cambiada,
                 new
                 {
-                    antes = antes is null ? null : Detalle(antes),
-                    despues = Detalle(despues),
+                    antes = antes is null ? null : RastroDeAgendaCustom.Detalle(antes),
+                    despues = RastroDeAgendaCustom.Detalle(despues),
                     citasACancelar = aCancelar.Select(c => c.Valor),
                 }),
             cancellationToken);
@@ -131,7 +131,7 @@ public sealed class GuardarAgendaCustomHandler(
             IEventoDeAgendaCustom evento = antes is null
                 ? new AgendaCustomFueRegistrada(eventoId, ahora, fecha, aCancelar, actor, actorId)
                 : new AgendaCustomFueCambiada(eventoId, ahora, fecha, aCancelar, actor, actorId);
-            await PublicarAsync(outbox, evento, cancellationToken);
+            await RastroDeAgendaCustom.PublicarAsync(outbox, evento, cancellationToken);
         }
 
         await tx.ConfirmarAsync(cancellationToken);
@@ -139,28 +139,8 @@ public sealed class GuardarAgendaCustomHandler(
         return Resultado.Exito(new AgendaCustomGuardada(fecha, Registrada: antes is null, SinCambios: false));
     }
 
-    /// <summary>Guarda el evento interno en el outbox con su tipo concreto: el nombre del tipo es su columna <c>tipo</c>.</summary>
-    internal static Task PublicarAsync(IOutboxDeAgenda outbox, IEventoDeAgendaCustom evento, CancellationToken cancellationToken) =>
-        evento switch
-        {
-            AgendaCustomFueRegistrada e => outbox.PublicarAsync(e, e.EventoId, e.EventoId, e.OcurridoEn, cancellationToken),
-            AgendaCustomFueCambiada e => outbox.PublicarAsync(e, e.EventoId, e.EventoId, e.OcurridoEn, cancellationToken),
-            AgendaCustomFueBorrada e => outbox.PublicarAsync(e, e.EventoId, e.EventoId, e.OcurridoEn, cancellationToken),
-            _ => throw new ArgumentOutOfRangeException(nameof(evento), evento.GetType().Name, "Evento de Agenda custom desconocido."),
-        };
-
     private static bool MismosTramos(IReadOnlyList<Tramo> guardados, IEnumerable<Tramo> nuevos) =>
         guardados.SequenceEqual(nuevos.OrderBy(t => t.Inicio));
-
-    internal static object Detalle(AgendaCustom custom) => new
-    {
-        motivo = custom.Motivo,
-        tramos = custom.Tramos.Select(t => new
-        {
-            inicio = t.Inicio.ToString("HH:mm", CultureInfo.InvariantCulture),
-            fin = t.Fin.ToString("HH:mm", CultureInfo.InvariantCulture),
-        }),
-    };
 
     private static string Codigo(RechazoDeAgendaAtencion rechazo) => rechazo switch
     {

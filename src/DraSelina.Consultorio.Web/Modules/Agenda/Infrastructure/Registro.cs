@@ -51,6 +51,7 @@ public static class Registro
             .AddScoped<CancelacionPorConsultorio>()
             .AddScoped<DuracionMinima>()
             .AddScoped<ITiposDeVisitaEditables, TiposDeVisitaEditables>()
+            .AddScoped<CalendarioDeLaCita>()
             .AddScoped<AgendaApi>()
             .AddScoped<IAgendaApi>(proveedor => proveedor.GetRequiredService<AgendaApi>())
             .AddScoped<ICommandHandler<AgendarCitaEnLinea, CitaAgendadaEnLinea>, AgendarCitaEnLineaHandler>()

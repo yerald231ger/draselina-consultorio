@@ -36,7 +36,7 @@ Todo el código de la aplicación vive en un solo proyecto, `DraSelina.Consultor
 | Contratos base | `DraSelina.Consultorio.BuildingBlocks.Contracts` | `BuildingBlocks/Contracts/` | `ICommand<T>`, `IQuery<T>`, `ICommandHandler<TComando, T>`, `IQueryHandler<TConsulta, T>`, `IEventHandler<TEvento>`, marcadores de autorización |
 | Contratos | `DraSelina.Consultorio.<Módulo>.Contracts` | `Modules/<Módulo>/Contracts/` | Comandos, consultas, DTOs, eventos de integración, API entre módulos |
 | Dominio | `DraSelina.Consultorio.<Módulo>.Domain` | `Modules/<Módulo>/Domain/` | Agregados, objetos de valor, servicios de dominio, puertos de escritura |
-| Casos de uso | `DraSelina.Consultorio.<Módulo>.Features` | `Modules/<Módulo>/Features/` | Un handler por comando o consulta; puertos de lectura |
+| Casos de uso | `DraSelina.Consultorio.<Módulo>.Features` | `Modules/<Módulo>/Features/<CasoDeUso>/` y `Modules/<Módulo>/Features/Compartido/` | Una carpeta por caso de uso con su handler y lo que solo él usa (puerto de lectura, records, helpers); en `Compartido/`, lo que usan dos o más y los puertos transversales (transacción, outbox, candados, bitácora). Un caso de uso no llama código de la carpeta de otro. El namespace es el mismo en todas las subcarpetas (Gerardo, 2026-11-21) |
 | Infraestructura | `DraSelina.Consultorio.<Módulo>.Infrastructure` | `Modules/<Módulo>/Infrastructure/` | DbContext, migraciones, implementación de puertos |
 | Interfaz | `DraSelina.Consultorio.UI` | `UI/` | Páginas y componentes Blazor |
 | Host | `DraSelina.Consultorio.Web` | raíz del proyecto | Composición, identidad, decoradores de los handlers y entrega de eventos del outbox |
@@ -114,7 +114,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** Agenda, Pacientes
 - **Prevents:** actualizaciones que se saltan las reglas de negocio.
-- **Rule:** setters privados. Los handlers llegan a la persistencia solo por puertos: de escritura por agregado en `Domain`, de lectura por slice en `Features`. Prohibido `ExecuteUpdate` y `ExecuteDelete` sobre agregados. La reconstitución desde la base no valida ni levanta eventos.
+- **Rule:** setters privados. Los handlers llegan a la persistencia solo por puertos: de escritura por agregado en `Domain`, de lectura por slice en `Features` (en la carpeta de su caso de uso, o en `Features/Compartido/` si lo usan dos o más). Prohibido `ExecuteUpdate` y `ExecuteDelete` sobre agregados. La reconstitución desde la base no valida ni levanta eventos.
 
 ### AD-5 — La disponibilidad se calcula; los slots no existen
 
@@ -366,6 +366,7 @@ src/
     Modules/Agenda/{Contracts,Domain,Features,Infrastructure}/
     Modules/Pacientes/{Contracts,Domain,Features,Infrastructure}/
     Modules/Notificaciones/{Contracts,Features,Infrastructure}/
+      # Features/<CasoDeUso>/ por caso de uso y Features/Compartido/; namespace <Módulo>.Features en todas
     Modules/Contenido/{Contracts,Contenido}/
     UI/                                     # páginas y componentes
 tests/

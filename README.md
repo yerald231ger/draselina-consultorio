@@ -144,7 +144,12 @@ Un fallo esperado se devuelve como `Resultado.Fallo(codigo)`, con un código del
 ni se comunica con texto. El handler llega a la base solo por puertos (AD-4): no recibe un `DbContext`.
 
 **En un módulo:** el comando, la consulta y los códigos viven en `Modules/<Módulo>/Contracts/`, y el handler en
-`Modules/<Módulo>/Features/`.
+`Modules/<Módulo>/Features/<CasoDeUso>/`, una carpeta que se llama como el comando o la consulta. Ahí va también lo
+que solo ese caso de uso usa (su puerto de lectura, records, helpers). Lo que usan dos o más casos de uso, y los
+puertos de transacción, outbox, candados y bitácora, va en `Features/Compartido/`. Un caso de uso nunca llama código
+de la carpeta de otro: si dos lo necesitan, sale a `Compartido/`. En la raíz de `Features/` no hay
+archivos (lo verifica una prueba de arquitectura). El namespace es `DraSelina.Consultorio.<Módulo>.Features` en todas
+las subcarpetas: uno por carpeta chocaría con el comando del mismo nombre (CS0118).
 
 ### Cómo se pide un handler
 
@@ -354,7 +359,7 @@ public sealed class AnotarHandler(ITransaccionDePruebas transaccion, IAnotacione
 ```
 
 **En un módulo** cambian dos cosas. El handler usa el puerto de transacción de su módulo
-(`ITransaccionDeAgenda`, `ITransaccionDePacientes` o `ITransaccionDeNotificaciones`, declarados en `Features` e
+(`ITransaccionDeAgenda`, `ITransaccionDePacientes` o `ITransaccionDeNotificaciones`, declarados en `Features/Compartido/` e
 implementados en `Infrastructure` sobre su `DbContext`; no hay un tipo compartido entre módulos). Y llega a la
 base por el puerto de escritura de su agregado, declarado en `Domain` (AD-4), no por un puerto de prueba como
 `IAnotaciones`: el agregado tiene setters privados y se crea y cambia por sus propios métodos, no con un
@@ -396,7 +401,7 @@ el código real de los tipos de prueba, en `tests/DraSelina.Consultorio.Integrat
 
 ### Publicar desde un handler
 
-El handler del comando publica por el puerto de outbox de su módulo (`IOutboxDeAgenda`, en `Features`), con la
+El handler del comando publica por el puerto de outbox de su módulo (`IOutboxDeAgenda`, en `Features/Compartido/`), con la
 transacción ya abierta y antes de confirmar. El evento y el cambio quedan juntos, o ninguno: si el handler
 deshace, lanza o no confirma, el evento no queda. Publicar sin una transacción abierta lanza.
 
@@ -426,8 +431,8 @@ registra para el mismo tipo concreto que se publica. Por eso los eventos son `se
 
 ### Escribir y registrar un handler de evento
 
-El módulo que escucha implementa `IEventHandler<TEvento>` (en `BuildingBlocks/Contracts/`) en su carpeta
-`Features`, y lo registra en su `Registro.cs`, uno por línea y por su interfaz:
+El módulo que escucha implementa `IEventHandler<TEvento>` (en `BuildingBlocks/Contracts/`) en una carpeta
+propia dentro de `Features`, y lo registra en su `Registro.cs`, uno por línea y por su interfaz:
 
 ```csharp
 public sealed class AlHacerseUnaAnotacion(IAnotaciones anotaciones, IEntregasRecibidas entregas) : IEventHandler<AnotacionHecha>
@@ -461,7 +466,7 @@ public sealed class AlHacerseUnaAnotacion(IAnotaciones anotaciones, IEntregasRec
 
 Para que un módulo nuevo publique hacen falta cuatro cosas, las mismas que tiene Agenda:
 
-1. El puerto en `Features` (`IOutboxDe<Módulo>`) y su implementación en `Infrastructure`, sobre el contexto del
+1. El puerto en `Features/Compartido/` (`IOutboxDe<Módulo>`) y su implementación en `Infrastructure`, sobre el contexto del
    módulo. No hay un tipo compartido entre módulos: cada uno declara lo suyo, como con la transacción.
 2. La fila (`FilaDeOutbox`) mapeada en su `DbContext` a la tabla `outbox`, con las nueve columnas de
    `agenda.outbox`, y una migración del módulo que la crea ("Crear una migración").
@@ -720,6 +725,7 @@ src/
     Modules/Agenda/{Contracts,Domain,Features,Infrastructure}/         # DraSelina.Consultorio.Agenda.<Capa>
     Modules/Pacientes/{Contracts,Domain,Features,Infrastructure}/
     Modules/Notificaciones/{Contracts,Features,Infrastructure}/
+                                  # Features/<CasoDeUso>/ y Features/Compartido/, namespace <Módulo>.Features
     Modules/Contenido/{Contracts,Contenido}/
     UI/                           # DraSelina.Consultorio.UI
 tests/

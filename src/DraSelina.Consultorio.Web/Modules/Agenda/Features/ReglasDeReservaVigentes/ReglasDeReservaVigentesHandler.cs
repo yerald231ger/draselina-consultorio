@@ -11,10 +11,6 @@ public sealed class ReglasDeReservaVigentesHandler(IReglasDeReserva reglas) : IQ
     public async Task<Resultado<ReglasDeReservaValores>> HandleAsync(ReglasDeReservaVigentes consulta, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(consulta);
-        return Resultado.Exito(Valores(await reglas.ObtenerAsync(cancellationToken)));
+        return Resultado.Exito(ValoresDeReglasDeReserva.De(await reglas.ObtenerAsync(cancellationToken)));
     }
-
-    /// <summary>Los cuatro valores de unas reglas.</summary>
-    public static ReglasDeReservaValores Valores(ReglasDeReserva reglas) =>
-        new(reglas.AnticipacionMinimaDias, reglas.VentanaMeses, reglas.UmbralCancelacionTardiaMin, reglas.TopeSemanalPorTelefono);
 }

@@ -5,7 +5,7 @@ using DraSelina.Consultorio.Kernel;
 namespace DraSelina.Consultorio.Agenda.Features;
 
 /// <summary>
-/// La semana de atención del sitio: la misma semana tipo que <see cref="SemanaTipoHandler"/>, sin pedir sesión. Una
+/// La semana de atención del sitio: la misma semana tipo que <see cref="SemanaTipoHandler"/>, con <see cref="SemanaTipoGuardada"/>, sin pedir sesión. Una
 /// consulta: no abre transacción ni cambia estado (T-14).
 /// </summary>
 public sealed class SemanaDeAtencionHandler(IAgendaDelRango agenda)
@@ -16,6 +16,6 @@ public sealed class SemanaDeAtencionHandler(IAgendaDelRango agenda)
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(consulta);
-        return Resultado.Exito(await SemanaTipoHandler.LeerAsync(agenda, cancellationToken));
+        return Resultado.Exito(await SemanaTipoGuardada.LeerAsync(agenda, cancellationToken));
     }
 }

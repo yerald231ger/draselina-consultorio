@@ -38,6 +38,20 @@ public class SolucionEntregadaTests
     }
 
     [Fact]
+    public void Features_solo_tiene_carpetas_de_caso_de_uso_y_Compartido()
+    {
+        // Modules/<Módulo>/Features/<Archivo>.cs: un archivo suelto en la raíz de Features, fuera de todo slice.
+        var enFeatures = Lector.Fuentes(Web)
+            .Select(fuente => fuente.Ruta.Split('/'))
+            .Where(partes => partes is ["Modules", _, "Features", ..])
+            .ToList();
+
+        // Si la regla no viera los slices, no estaría verificando nada.
+        Assert.Contains(enFeatures, partes => partes is ["Modules", "Agenda", "Features", "Compartido", _]);
+        Assert.Empty(enFeatures.Where(partes => partes.Length == 4).Select(partes => string.Join('/', partes)));
+    }
+
+    [Fact]
     public void Toda_pagina_de_administracion_salvo_entrar_lleva_Authorize()
     {
         var componentes = Lector.Componentes(Web);

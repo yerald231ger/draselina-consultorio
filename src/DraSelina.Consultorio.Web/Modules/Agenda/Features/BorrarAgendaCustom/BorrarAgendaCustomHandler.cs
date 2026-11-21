@@ -80,7 +80,7 @@ public sealed class BorrarAgendaCustomHandler(
                 AccionDeBitacora.Borrada,
                 new
                 {
-                    antes = GuardarAgendaCustomHandler.Detalle(antes),
+                    antes = RastroDeAgendaCustom.Detalle(antes),
                     despues = (object?)null,
                     citasACancelar = aCancelar.Select(c => c.Valor),
                 }),
@@ -90,7 +90,7 @@ public sealed class BorrarAgendaCustomHandler(
         if (aCancelar.Count > 0)
         {
             var eventoId = Guid.CreateVersion7();
-            await GuardarAgendaCustomHandler.PublicarAsync(
+            await RastroDeAgendaCustom.PublicarAsync(
                 outbox, new AgendaCustomFueBorrada(eventoId, ahora, fecha, aCancelar, actor, actorId), cancellationToken);
         }
 

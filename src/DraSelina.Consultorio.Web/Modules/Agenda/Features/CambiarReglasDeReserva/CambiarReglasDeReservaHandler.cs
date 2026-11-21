@@ -36,7 +36,7 @@ public sealed class CambiarReglasDeReservaHandler(
         await using var tx = await transaccion.AbrirAsync(cancellationToken);
 
         var reglas = await reglasDeReserva.ObtenerAsync(cancellationToken);
-        var antes = ReglasDeReservaVigentesHandler.Valores(reglas);
+        var antes = ValoresDeReglasDeReserva.De(reglas);
         if (antes == nuevos)
         {
             await tx.DeshacerAsync(cancellationToken);
