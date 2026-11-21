@@ -3,7 +3,7 @@
 Objetivo de Gerardo: entender el sistema, su arquitectura y la calidad del código, módulo por módulo, de forma muy
 estructurada. Se empieza por Agenda. Cada bloque queda revisado solo cuando Gerardo lo dice.
 
-**Bloque actual:** Parte A cerrada; sigue la Parte B
+**Bloque actual:** D–H (presentadas juntas)
 
 ---
 
@@ -164,12 +164,188 @@ paralelo (`Task.WhenAll`).
 
 ---
 
-## Partes siguientes (se detallan al llegar)
+## Parte B — El camino de un comando
 
-- B — El camino de un comando en la web (Kernel, Resultado, decoradores, outbox y entrega de eventos)
-- C — Pacientes
-- D — Notificaciones
-- E — Contenido
-- F — Interfaz pública y de administración, Identity
-- G — Hosting: AppHost, MigrationService, ServiceDefaults
-- H — Pruebas de toda la solución
+### [x] B1. Intención — revisado (sin cambios)
+
+Todo caso de uso, de cualquier módulo, viaja igual: la página pide un `ICommandHandler`/`IQueryHandler`, el contenedor
+le entrega el handler envuelto en decoradores (turno, rechazo sin Administrador, validación de forma) y el resultado
+siempre es un `Resultado`, nunca una excepción esperada. Lo que cambia algo deja un evento en el outbox de su módulo;
+un servicio de la web lo entrega después a los handlers de otros módulos, con reintentos.
+
+### [x] B2. Grandes trazos — revisado (sin cambios)
+
+1. [ICommandHandler.cs](../../../src/DraSelina.Consultorio.Web/BuildingBlocks/Contracts/ICommandHandler.cs) — el contrato de todo caso de uso.
+2. [Resultado.cs](../../../src/DraSelina.Consultorio.Web/Kernel/Resultado.cs) — éxito, inválido (por campo), no autorizado o fallo con código.
+3. [DecoradoresDeHandlers.cs:17](../../../src/DraSelina.Consultorio.Web/DecoradoresDeHandlers.cs#L17) — los decoradores, en orden, en un solo lugar.
+4. [ActorDelHost.cs](../../../src/DraSelina.Consultorio.Web/ActorDelHost.cs) — quién actúa: Paciente, Administrador o Sistema.
+5. [EntregaDeEventos.cs:35](../../../src/DraSelina.Consultorio.Web/EntregaDeEventos.cs#L35) — la vuelta que entrega los eventos de todos los outbox.
+
+### [x] B3. Resultado: cuatro formas de terminar — revisado (sin cambios)
+
+Todo handler devuelve `Resultado<T>` con una de cuatro formas: Éxito (con su valor), Inválido (errores por propiedad
+del comando), NoAutorizado o Fallo (con un código de un conjunto cerrado por módulo). El dominio devuelve códigos; los
+textos viven en la página que los muestra.
+
+- [Resultado.cs](../../../src/DraSelina.Consultorio.Web/Kernel/Resultado.cs) — las formas y sus fábricas.
+- [AgendarCitaEnLinea.cs:102](../../../src/DraSelina.Consultorio.Web/Modules/Agenda/Contracts/AgendarCitaEnLinea.cs#L102) — `CodigosDeAgenda`.
+- [TusDatos.razor:310](../../../src/DraSelina.Consultorio.Web/UI/Pages/Reserva/TusDatos.razor#L310) — una página que reacciona a cada forma.
+### [x] B4. Los decoradores e IRequiereAdministrador — revisado (decisión abierta en deferred-work)
+
+Al construir el contenedor, `DecoradoresDeHandlers` envuelve todo handler registrado (con Scrutor). Una llamada pasa
+por: turno del ámbito → rechazo sin Administrador (si el comando o la consulta lleva la marca `IRequiereAdministrador`)
+→ validación de forma (solo comandos, DataAnnotations) → handler. Es la segunda capa: las páginas de administración
+ya llevan `[Authorize]`, vigilado por una prueba de arquitectura. Hoy 23 comandos y consultas llevan la marca y 10 no.
+
+- [DecoradoresDeHandlers.cs:17](../../../src/DraSelina.Consultorio.Web/DecoradoresDeHandlers.cs#L17) — el orden de los decoradores.
+- [RechazoSinAdministrador.cs](../../../src/DraSelina.Consultorio.Web/RechazoSinAdministrador.cs) — lee la marca y pide el actor.
+- [ValidacionDeComandos.cs](../../../src/DraSelina.Consultorio.Web/ValidacionDeComandos.cs) — DataAnnotations → `Resultado` inválido por propiedad.
+- [IRequiereAdministrador.cs](../../../src/DraSelina.Consultorio.Web/BuildingBlocks/Contracts/IRequiereAdministrador.cs) — la marca.
+- [TurnoDelAmbito.cs](../../../src/DraSelina.Consultorio.Web/TurnoDelAmbito.cs) — un handler a la vez por circuito.
+### [x] B5. Quién actúa: IActorActual — revisado (sin cambios)
+
+Un solo servicio por ámbito dice quién actúa: Paciente, Administrador o Sistema. Administrador = autenticado con la
+cookie completa (después del segundo factor) y en el área de administración: una petición bajo `/admin` o el circuito
+de Interactive Server, que solo abre la administración. Sistema no se deduce: lo declara el host para los trabajos en
+segundo plano, y un handler no puede declararse Sistema.
+
+- [Actor.cs](../../../src/DraSelina.Consultorio.Web/Kernel/Actor.cs) e [IActorActual.cs](../../../src/DraSelina.Consultorio.Web/Kernel/IActorActual.cs) — lo que ven los módulos.
+- [ActorDelHost.cs](../../../src/DraSelina.Consultorio.Web/ActorDelHost.cs) — la implementación: `ObtenerAsync`, `EnElAreaDeAdministracion`, `DeclararSistema`.
+### [x] B6. Outbox, entrega y reintentos — revisado (sin cambios)
+
+Cada módulo tiene su tabla `outbox` en su esquema. Un servicio de la web da una vuelta cada 5 s: por cada outbox
+aparta el evento pendiente más antiguo con `FOR UPDATE SKIP LOCKED`, respetando el orden por clave (la Cita), llama a
+todos sus handlers (cada uno en su ámbito, con 30 s de límite) y lo marca Entregado, o programa el siguiente intento
+(1 min, 5 min, 15 min, 1 h, 4 h, 12 h) hasta quedar Fallido con un error en el registro. Entrega al menos una vez: un
+reintento vuelve a llamar a todos los handlers, así que cada uno debe ser idempotente.
+
+- [Outbox.cs](../../../src/DraSelina.Consultorio.Web/Outbox.cs) — alta de outbox por módulo y el catálogo de eventos por nombre de tipo.
+- [EntregaDeEventos.cs:63](../../../src/DraSelina.Consultorio.Web/EntregaDeEventos.cs#L63) — apartar, entregar, marcar.
+- [EntregaDeEventos.cs:129](../../../src/DraSelina.Consultorio.Web/EntregaDeEventos.cs#L129) — la consulta con orden por clave y `SKIP LOCKED`.
+- [CalendarioDeReintentos.cs](../../../src/DraSelina.Consultorio.Web/CalendarioDeReintentos.cs) — las esperas.
+- [ServicioDeEntregaDeEventos.cs](../../../src/DraSelina.Consultorio.Web/ServicioDeEntregaDeEventos.cs) — la vuelta cada 5 s.
+### [x] B7. Periferia — revisado (sin cambios)
+
+- [ICommand.cs](../../../src/DraSelina.Consultorio.Web/BuildingBlocks/Contracts/ICommand.cs), [IQuery.cs](../../../src/DraSelina.Consultorio.Web/BuildingBlocks/Contracts/IQuery.cs), [IQueryHandler.cs](../../../src/DraSelina.Consultorio.Web/BuildingBlocks/Contracts/IQueryHandler.cs), [IEventHandler.cs](../../../src/DraSelina.Consultorio.Web/BuildingBlocks/Contracts/IEventHandler.cs) — los contratos base.
+- [CitaId.cs](../../../src/DraSelina.Consultorio.Web/Kernel/CitaId.cs), [PatientId.cs](../../../src/DraSelina.Consultorio.Web/Kernel/PatientId.cs), [TipoDeVisitaId.cs](../../../src/DraSelina.Consultorio.Web/Kernel/TipoDeVisitaId.cs) — ids tipados sobre Guid v7.
+- [IClock.cs](../../../src/DraSelina.Consultorio.Web/Kernel/IClock.cs) y [RelojDelSistema.cs](../../../src/DraSelina.Consultorio.Web/RelojDelSistema.cs) — el reloj inyectable.
+- [ZonaDelConsultorio.cs](../../../src/DraSelina.Consultorio.Web/Kernel/ZonaDelConsultorio.cs) — America/Mexico_City.
+- [TurnoDelAmbito.cs](../../../src/DraSelina.Consultorio.Web/TurnoDelAmbito.cs) — el turno que usa el decorador.
+- [Program.cs:88](../../../src/DraSelina.Consultorio.Web/Program.cs#L88) — donde se enchufan los decoradores.
+
+---
+
+## Parte C — Pacientes
+
+### [x] C1. Intención y grandes trazos — revisado (sin cambios)
+
+Pacientes es dueño de quién es cada Paciente y cómo contactarlo: nombre, celular en E.164 y correo opcional. No hay
+cuentas: un Paciente se reconoce por su celular más su nombre normalizado (sin distinguir mayúsculas ni acentos), y si
+no existe se registra en el momento de reservar. Los demás módulos solo lo ven por `IPacientesApi`, y ningún dato
+personal sale a registros (`ToString` oculto).
+
+1. [IPacientesApi.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Contracts/IPacientesApi.cs) — lo que ofrece: buscar o crear, contactos, teléfono compartido.
+2. [Paciente.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Domain/Paciente.cs) — el agregado, versión simple.
+3. [PacientesApi.cs:21](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Features/PacientesApi.cs#L21) — `BuscarOCrearAsync`, con su propia transacción y reintento.
+4. [PacientesDbContext.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/PacientesDbContext.cs) — esquema `pacientes` y la collation `es_ci_ai`.
+
+### [x] C2. El Paciente y sus objetos de valor — revisado (sin cambios)
+
+Tres objetos de valor que no existen inválidos (`Crear` devuelve nulo si el texto no sirve): `Telefono` (E.164 de
+México), `NombreCompleto` (original, normalizado y forma de búsqueda sin acentos, hasta 120) y `CorreoElectronico`
+(hasta 254). El agregado `Paciente` solo registra y actualiza el correo.
+
+- [Telefono.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Domain/Telefono.cs), [NombreCompleto.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Domain/NombreCompleto.cs), [CorreoElectronico.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Domain/CorreoElectronico.cs).
+### [x] C3. Reconocer o registrar: la identidad del Paciente — revisado (sin cambios)
+
+Un Paciente es el par (celular en E.164, nombre normalizado). La igualdad la decide la base: un índice único sobre ese
+par con la collation ICU `es_ci_ai`, que no distingue mayúsculas ni acentos. `BuscarOCrearAsync` valida los tres
+datos, busca en su propia transacción, registra si no existe (o actualiza el correo si llega uno), y si dos reservas
+del mismo Paciente nuevo chocan en el índice, deshace y vuelve a buscar una vez.
+
+- [PacientesApi.cs:21](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Features/PacientesApi.cs#L21) — `BuscarOCrearAsync` y su reintento.
+- [NombreCompleto.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Domain/NombreCompleto.cs) — original y normalizado (espacios de más fuera).
+- [Paciente.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Domain/Paciente.cs) — `Registrar` y `ActualizarCorreo`; no decide la igualdad.
+- Migración de Pacientes — `CREATE UNIQUE INDEX ux_paciente_identidad ON pacientes.paciente (telefono, nombre_normalizado)`.
+### [x] C4. Lo que expone: contactos, teléfono compartido y búsqueda — revisado (sin cambios)
+
+`IPacientesApi` da a los demás módulos lo mínimo: buscar o crear, los ids que comparten un celular (tope semanal),
+si tiene correo, nombre y contactos para los correos. La búsqueda del Administrador (`BuscarPacientes`, marcada
+`IRequiereAdministrador`) es "contiene" sobre el nombre sin acentos, alfabética, hasta 50 con aviso de que hay más.
+Los registros que cruzan el contrato ocultan sus datos en `ToString`.
+
+- [IPacientesApi.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Contracts/IPacientesApi.cs) — el contrato y `Contactos` con `ToString` oculto.
+- [BuscarPacientes.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Contracts/BuscarPacientes.cs) — la consulta del Administrador, con `PrintMembers` oculto.
+- [BusquedaDePacientes.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/BusquedaDePacientes.cs) — `LIKE` sobre `nombre_busqueda`, sin rastrear.
+### [x] C5. Periferia — revisado (sin cambios)
+
+- [Registro.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/Registro.cs), [TransaccionDePacientes.cs](../../../src/DraSelina.Consultorio.Web/Modules/Pacientes/Infrastructure/TransaccionDePacientes.cs), migraciones de Pacientes.
+
+---
+
+## Parte D — Notificaciones
+
+### [ ] D1. Notificaciones de punta a punta — en curso
+
+Sin dominio: casos de uso e infraestructura. Escucha los eventos de Agenda y manda confirmación, avisos de
+reprogramación y cancelación y alerta de cancelación tardía; programa el Recordatorio y la Agenda del día, que un
+servicio envía cada minuto. Cada correo sale una sola vez por evento: `EnvioUnico` registra el mensaje antes de enviar,
+bajo un índice único, en la transacción del módulo. Un solo canal, SMTP con MailKit (Mailpit en local), sin
+autenticación todavía.
+
+- [ConfirmacionAlAgendar.cs](../../../src/DraSelina.Consultorio.Web/Modules/Notificaciones/Features/ConfirmacionAlAgendar.cs) — un handler típico.
+- [EnvioUnico.cs](../../../src/DraSelina.Consultorio.Web/Modules/Notificaciones/Features/EnvioUnico.cs) — una vez por evento.
+- [EnviosProgramados.cs](../../../src/DraSelina.Consultorio.Web/Modules/Notificaciones/Features/EnviosProgramados.cs) — Recordatorios y Agenda del día.
+- [CanalDeCorreoSmtp.cs](../../../src/DraSelina.Consultorio.Web/Modules/Notificaciones/Infrastructure/CanalDeCorreoSmtp.cs) — el canal.
+- [PlantillaDeConfirmacion.cs](../../../src/DraSelina.Consultorio.Web/Modules/Notificaciones/Features/PlantillaDeConfirmacion.cs) — una plantilla (texto y HTML).
+
+## Parte E — Contenido
+
+### [ ] E1. Contenido — en curso
+
+Lo que dice el sitio y no cambia en tiempo de ejecución: datos del consultorio y de la doctora, padecimientos, aviso
+de privacidad con su versión y WhatsApp. Sin base ni dominio: una API de solo lectura.
+
+- [IContenidoApi.cs](../../../src/DraSelina.Consultorio.Web/Modules/Contenido/Contracts/IContenidoApi.cs) y [ContenidoApi.cs](../../../src/DraSelina.Consultorio.Web/Modules/Contenido/Contenido/ContenidoApi.cs).
+
+## Parte F — Interfaz e Identity
+
+### [ ] F1. Interfaz e Identity — en curso
+
+Blazor Web App. Lo del Paciente (sitio, reserva, `/c/…`) es SSR estático, sin circuito; la administración es
+Interactive Server. La interfaz solo ve Contracts y pinta textos a partir de códigos. Identity en el host: una sola
+cuenta sembrada, sin registro público, contraseña más TOTP obligatorio, bloqueo de Identity por omisión, cookie
+HttpOnly y SameSite Strict. `/c/…` y `/admin` salen con `no-store` y `noindex`; la reserva y `/c/…` con límite de
+frecuencia por IP.
+
+- [Program.cs:95](../../../src/DraSelina.Consultorio.Web/Program.cs#L95) — el pipeline: HTTPS, cabeceras, límite, autenticación, antiforgery.
+- [Identidad/Registro.cs:45](../../../src/DraSelina.Consultorio.Web/Identidad/Registro.cs#L45) — Identity y la cookie.
+- [Identidad/Paginas/](../../../src/DraSelina.Consultorio.Web/Identidad/Paginas) — entrar, segundo factor, activarlo, código de recuperación.
+- [UI/Pages/Administracion/Agenda.razor](../../../src/DraSelina.Consultorio.Web/UI/Pages/Administracion/Agenda.razor) — una pantalla interactiva.
+- [UI/Pages/Reserva/](../../../src/DraSelina.Consultorio.Web/UI/Pages/Reserva) — el flujo de reserva en SSR.
+
+## Parte G — Hosting
+
+### [ ] G1. AppHost, MigrationService y ServiceDefaults — en curso
+
+El AppHost levanta PostgreSQL (con pgAdmin), Mailpit, el MigrationService y la web, en ese orden de dependencias. El
+MigrationService migra los cuatro esquemas (agenda, pacientes, notificaciones, identidad), siembra al Administrador y
+termina; la web arranca solo si terminó bien. ServiceDefaults pone OpenTelemetry, resiliencia y los chequeos de salud,
+que hoy solo se publican en Development.
+
+- [AppHost.cs](../../../src/DraSelina.Consultorio.AppHost/AppHost.cs) — recursos y orden.
+- [MigrationService/Program.cs:69](../../../src/DraSelina.Consultorio.MigrationService/Program.cs#L69) — migrar y sembrar.
+- [ServiceDefaults/Extensions.cs:137](../../../src/DraSelina.Consultorio.ServiceDefaults/Extensions.cs#L137) — `/health` y `/alive` solo en Development.
+
+## Parte H — Pruebas
+
+### [ ] H1. Las pruebas de la solución — en curso
+
+1,176 pruebas en seis proyectos: arquitectura 28, dominio 257, Kernel 18, interfaz con bUnit 177, integración contra
+PostgreSQL real 693 y recorridos con Playwright 3 (solo local). GitHub Actions corre todas menos los recorridos.
+
+- [ArchitectureTests](../../../tests/DraSelina.Consultorio.ArchitectureTests) — las fronteras (A3).
+- [Domain.Tests](../../../tests/DraSelina.Consultorio.Domain.Tests) — reglas sin base.
+- [UI.Tests](../../../tests/DraSelina.Consultorio.UI.Tests) — componentes con bUnit.
+- [IntegrationTests/Arnes.cs](../../../tests/DraSelina.Consultorio.IntegrationTests/Arnes.cs) — el arnés con Testcontainers.
+- [E2ETests](../../../tests/DraSelina.Consultorio.E2ETests) — los recorridos.

@@ -58,3 +58,29 @@ Session: session_01JaGktu7pbV2KB1pfiosriH · Timestamp: 2026-11-21T01:35:00-06:0
 - Action: Gerardo pidió cerrar la Parte A y ver A10–A13 juntos, "más breve".
 - Result: Parte A cerrada. Restricción de forma para los bloques que siguen: más breves (mecanismo corto + 2-3 referencias + una observación de calidad). Observación A9 sin anotar: rotar la clave del Enlace de gestión invalida todos los enlaces (el hash guardado depende de la clave); para el piloto, fijar la clave de producción una vez, en un lugar seguro.
 - Evidence: Agenda/Domain/EnlaceDeGestion.cs (Derivar); Agenda/Features/CitaPorEnlaceHandler.cs:28-33
+
+## 8 — B3–B4 — IRequiereAdministrador
+
+Session: session_01JaGktu7pbV2KB1pfiosriH · Timestamp: 2026-11-21T01:50:00-06:00
+
+- Action: comparar alternativas a la marca IRequiereAdministrador (23 marcados, 10 abiertos).
+- Result: recomendación presentada: B (invertir: marcar los abiertos; falla cerrada) o C (prueba de arquitectura que exija la marca a lo inyectado en UI/Pages/Administracion); D (Authorize de ASP.NET en Contracts) descartada por la regla de capas. Gerardo cerró B4 sin decidir: sigue open en deferred-work.md. B3: códigos string, no enum (observación).
+- Evidence: src/.../Web/RechazoSinAdministrador.cs; DecoradoresDeHandlers.cs:17
+- Open: decisión B/C/dejar.
+
+## 9 — B5–B7 — cierre de la Parte B
+
+Session: session_01JaGktu7pbV2KB1pfiosriH · Timestamp: 2026-11-21T02:05:00-06:00
+
+- Action: actor actual, outbox y periferia; Gerardo cerró la Parte B.
+- Result: observaciones no anotadas en deferred-work (Gerardo no lo pidió): DeclararSistema/Actor.Sistema sin uso en producción (solo pruebas); "circuito = administración" depende de que lo público siga en SSR estático (AD-11); entrega al menos una vez, handlers deben ser idempotentes; eventos Fallidos solo dejan LogError, sin alerta (recomendado para el piloto, junto con la rotación de clave de A9).
+- Evidence: src/.../Web/ActorDelHost.cs:34; EntregaDeEventos.cs:63-128,159-200
+
+## 10 — D–H y cierre de la sesión
+
+Session: session_01JaGktu7pbV2KB1pfiosriH · Timestamp: 2026-11-21T02:40:00-06:00
+
+- Action: Partes D–H presentadas juntas a pedido de Gerardo; resumen completo publicado como doc de Claude Docs para discutirlo en otro chat.
+- Result: D–H presentadas, sin cierre explícito de Gerardo. Pendientes de piloto 1–5 (SMTP sin auth, alerta de Fallidos, rotación de clave, HSTS/CSP/frame-ancestors, sondas de salud) y decisiones 6–9 recogidas en el doc; solo IRequiereAdministrador está en deferred-work.md.
+- Evidence: https://claude.ai/artifact/EaFGspJkngP86GXjJyLUsR
+- Open: decisiones que traiga Gerardo del otro chat; anotar 1–5 en deferred-work o convertirlas en tickets.
