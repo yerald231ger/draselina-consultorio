@@ -8,7 +8,7 @@ namespace DraSelina.Consultorio.Notificaciones.Features;
 /// </summary>
 internal static class OmitidoDelRecordatorio
 {
-    public static async Task RegistrarAsync(
+    internal static async Task RegistrarAsync(
         IMensajes mensajes, IClock reloj, Guid eventoId, CitaId citaId, CancellationToken cancellationToken)
     {
         if (await mensajes.ExisteAsync(eventoId, TipoDeMensaje.Recordatorio, cancellationToken))

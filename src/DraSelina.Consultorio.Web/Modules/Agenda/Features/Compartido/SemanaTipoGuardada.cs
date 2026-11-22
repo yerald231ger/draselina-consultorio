@@ -9,7 +9,7 @@ namespace DraSelina.Consultorio.Agenda.Features;
 internal static class SemanaTipoGuardada
 {
     /// <summary>De lunes a domingo, como se muestra la semana.</summary>
-    internal static readonly IReadOnlyList<DayOfWeek> DeLunesADomingo =
+    private static readonly IReadOnlyList<DayOfWeek> DeLunesADomingo =
     [
         DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday,
         DayOfWeek.Saturday, DayOfWeek.Sunday,
