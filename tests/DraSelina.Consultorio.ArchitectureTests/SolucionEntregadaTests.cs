@@ -52,6 +52,16 @@ public class SolucionEntregadaTests
     }
 
     [Fact]
+    public void Ningun_caso_de_uso_usa_codigo_de_la_carpeta_de_otro()
+    {
+        var codigo = Lector.CodigoDeFeatures(Web);
+
+        // Si la regla no viera los slices de Agenda, no estaría verificando nada.
+        Assert.Contains(codigo, archivo => archivo.Ruta == "Modules/Agenda/Features/AgendaApi/AgendaApi.cs");
+        Assert.Empty(Verificador.VerificarCasosDeUso(codigo));
+    }
+
+    [Fact]
     public void Toda_pagina_de_administracion_salvo_entrar_lleva_Authorize()
     {
         var componentes = Lector.Componentes(Web);

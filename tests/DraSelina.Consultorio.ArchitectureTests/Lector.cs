@@ -81,6 +81,14 @@ public static partial class Lector
             .OrderBy(f => f.Relativa, StringComparer.Ordinal)
             .Select(f => (f.Relativa, File.ReadAllText(f.Ruta)))];
 
+    /// <summary>Los <c>.cs</c> de <c>Modules/*/Features/</c> de Web con su texto.</summary>
+    public static IReadOnlyList<(string Ruta, string Texto)> CodigoDeFeatures(string carpetaWeb) =>
+        [.. Directory.EnumerateFiles(Path.Combine(carpetaWeb, "Modules"), "*.cs", SearchOption.AllDirectories)
+            .Select(ruta => (Ruta: ruta, Relativa: Relativa(carpetaWeb, ruta)))
+            .Where(f => f.Relativa.Split('/') is ["Modules", _, "Features", ..])
+            .OrderBy(f => f.Relativa, StringComparer.Ordinal)
+            .Select(f => (f.Relativa, File.ReadAllText(f.Ruta)))];
+
     /// <summary>
     /// Los <c>GlobalUsings.g.cs</c> que la compilación de Web deja en <c>obj/</c>: ahí quedan escritos los
     /// <c>using</c> implícitos del SDK. Vacío si Web no se ha compilado.

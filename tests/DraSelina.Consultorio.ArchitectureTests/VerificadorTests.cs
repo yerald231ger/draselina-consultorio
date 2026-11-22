@@ -309,4 +309,56 @@ public class VerificadorTests
 
         Assert.Equal("/admin", violacion.Referencia);
     }
+
+    [Fact]
+    public void Un_caso_de_uso_que_nombra_un_tipo_de_otro_es_violacion()
+    {
+        var violacion = Assert.Single(Verificador.VerificarCasosDeUso(
+        [
+            ("Modules/Agenda/Features/SemanaTipo/SemanaTipoHandler.cs", "public sealed class SemanaTipoHandler { }"),
+            ("Modules/Agenda/Features/SemanaDeAtencion/SemanaDeAtencionHandler.cs", """
+                public sealed class SemanaDeAtencionHandler(SemanaTipoHandler otro) { }
+                """),
+        ]));
+
+        Assert.Equal(
+            new Violacion(
+                "Modules/Agenda/Features/SemanaDeAtencion/SemanaDeAtencionHandler.cs",
+                "SemanaTipo/SemanaTipoHandler",
+                Verificador.CasoDeUsoAjeno),
+            violacion);
+    }
+
+    [Fact]
+    public void Compartido_tampoco_puede_nombrar_el_tipo_de_un_caso_de_uso()
+    {
+        var violacion = Assert.Single(Verificador.VerificarCasosDeUso(
+        [
+            ("Modules/Agenda/Features/AgendaApi/AgendaApi.cs", "public sealed class AgendaApi { }"),
+            ("Modules/Agenda/Features/Compartido/Ayuda.cs", "internal static class Ayuda { static AgendaApi? api; }"),
+        ]));
+
+        Assert.Equal("Modules/Agenda/Features/Compartido/Ayuda.cs", violacion.Donde);
+    }
+
+    [Fact]
+    public void Usar_Compartido_comentarios_cadenas_lo_propio_otro_modulo_o_fuera_de_Features_no_es_violacion()
+    {
+        Assert.Empty(Verificador.VerificarCasosDeUso(
+        [
+            ("Modules/Agenda/Features/Compartido/ITramos.cs", "public interface ITramos { }"),
+            ("Modules/Agenda/Features/SemanaTipo/SemanaTipoHandler.cs", """
+                /// <see cref="SemanaDeAtencionHandler"/> lee lo mismo.
+                public sealed class SemanaTipoHandler(ITramos tramos) { string n = "SemanaDeAtencionHandler"; private sealed record Fila; }
+                """),
+            ("Modules/Agenda/Features/SemanaDeAtencion/SemanaDeAtencionHandler.cs", """
+                public sealed class SemanaDeAtencionHandler(ITramos tramos) { private sealed record Fila; } // SemanaTipoHandler
+                """),
+            ("Modules/Agenda/Features/Compartido/Plantilla.cs", "public static class Plantilla { public sealed record Datos; }"),
+            ("Modules/Agenda/Features/AvisoAlCancelar/PlantillaDeAviso.cs", "public static class PlantillaDeAviso { public sealed record Datos; }"),
+            ("Modules/Agenda/Features/Confirmacion/Confirmacion.cs", "class Confirmacion { object d = new Plantilla.Datos(); }"),
+            ("Modules/Notificaciones/Features/Aviso/Aviso.cs", "public sealed class Aviso(SemanaTipoHandler h) { }"),
+            ("Modules/Agenda/Infrastructure/Registro.cs", "class Registro { SemanaTipoHandler a; SemanaDeAtencionHandler b; }"),
+        ]));
+    }
 }

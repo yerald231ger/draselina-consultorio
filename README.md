@@ -148,7 +148,7 @@ ni se comunica con texto. El handler llega a la base solo por puertos (AD-4): no
 que solo ese caso de uso usa (su puerto de lectura, records, helpers). Lo que usan dos o más casos de uso, y los
 puertos de transacción, outbox, candados y bitácora, va en `Features/Compartido/`. Un caso de uso nunca llama código
 de la carpeta de otro: si dos lo necesitan, sale a `Compartido/`. En la raíz de `Features/` no hay
-archivos (lo verifica una prueba de arquitectura). El namespace es `DraSelina.Consultorio.<Módulo>.Features` en todas
+archivos. Las dos cosas las verifican pruebas de arquitectura. El namespace es `DraSelina.Consultorio.<Módulo>.Features` en todas
 las subcarpetas: uno por carpeta chocaría con el comando del mismo nombre (CS0118).
 
 ### Cómo se pide un handler

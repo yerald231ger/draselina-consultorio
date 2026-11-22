@@ -27,6 +27,58 @@ public static partial class Verificador
 
     public const string UsingImplicitoProhibido = "using implícito fuera de System.*: llegaría a todas las capas sin que esta prueba lo vea";
 
+    public const string CasoDeUsoAjeno =
+        "código de la carpeta de otro caso de uso: lo que usan varios va en Features/Compartido/ (arquitectura, AD-4)";
+
+    /// <summary>
+    /// Ningún archivo de <c>Modules/&lt;Módulo&gt;/Features/&lt;Carpeta&gt;/</c> nombra un tipo declarado en la carpeta de
+    /// otro caso de uso del mismo módulo (AD-4). <c>Compartido/</c> no es caso de uso: lo suyo lo usa cualquiera, pero
+    /// tampoco puede nombrar lo de un caso de uso. Fuera de Features (Infrastructure, UI) no se mira: ahí se implementan
+    /// los puertos y se llaman los handlers. Un nombre que la carpeta que lo usa también declara es suyo y no cuenta.
+    /// Los comentarios y las cadenas no cuentan. Recibe los <c>.cs</c> con su texto.
+    /// </summary>
+    public static IReadOnlyList<Violacion> VerificarCasosDeUso(IEnumerable<(string Ruta, string Texto)> archivos)
+    {
+        var enFeatures = archivos
+            .Select(a => (a.Ruta, Partes: a.Ruta.Split('/'), Codigo: SinComentariosNiCadenas(a.Texto)))
+            .Where(a => a.Partes is ["Modules", _, "Features", _, _])
+            .Select(a => (a.Ruta, Modulo: a.Partes[1], Carpeta: a.Partes[3], a.Codigo))
+            .ToList();
+
+        // Solo los de primer nivel (fuera de toda llave, con namespace de archivo): uno anidado se alcanza por el de afuera.
+        var declarados = enFeatures
+            .SelectMany(a => DeclaracionDeTipo().Matches(a.Codigo)
+                .Where(m => Profundidad(a.Codigo[..m.Index]) == 0)
+                .Select(m => (a.Modulo, a.Carpeta, Nombre: m.Groups["nombre"].Value)))
+            .Distinct()
+            .ToList();
+
+        return [.. from archivo in enFeatures
+            let propios = declarados.Where(d => d.Modulo == archivo.Modulo && d.Carpeta == archivo.Carpeta).Select(d => d.Nombre).ToHashSet()
+            from tipo in declarados
+            where tipo.Modulo == archivo.Modulo
+                && tipo.Carpeta != archivo.Carpeta
+                && tipo.Carpeta != Compartido
+                && !propios.Contains(tipo.Nombre)
+                && Regex.IsMatch(archivo.Codigo, $@"\b{Regex.Escape(tipo.Nombre)}\b")
+            select new Violacion(archivo.Ruta, $"{tipo.Carpeta}/{tipo.Nombre}", CasoDeUsoAjeno)];
+    }
+
+    private const string Compartido = "Compartido";
+
+    private static int Profundidad(string codigo) => codigo.Count(c => c == '{') - codigo.Count(c => c == '}');
+
+    private static string SinComentariosNiCadenas(string texto) =>
+        string.Join('\n', texto.Split('\n').Select(linea => Cadena().Replace(linea.Split("//")[0], "\"\"")));
+
+    // class X · record X · record struct X · interface X · struct X · enum X
+    [GeneratedRegex(@"\b(?:class|record|interface|struct|enum)\s+(?<nombre>[A-Z]\w*)")]
+    private static partial Regex DeclaracionDeTipo();
+
+    // "..." con escapes; las interpoladas y las verbatim de una línea también.
+    [GeneratedRegex(@"[$@]*""(?:[^""\\]|\\.)*""")]
+    private static partial Regex Cadena();
+
     /// <summary>
     /// Los <c>using</c> implícitos que el SDK genera para Web: solo se admiten los de <c>System.*</c>.
     /// Recibe los <c>GlobalUsings.g.cs</c> generados, ya leídos.
