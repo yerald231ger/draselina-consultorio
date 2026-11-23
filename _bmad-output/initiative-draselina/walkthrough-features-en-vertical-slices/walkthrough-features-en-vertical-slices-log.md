@@ -81,3 +81,12 @@ Session: session_01JaGktu7pbV2KB1pfiosriH · Timestamp: 2026-11-22T10:40:00-06:0
 - Result: aceptado sin cambios; recorrido completo.
 - Evidence: _bmad-output/initiative-draselina/walkthrough-features-en-vertical-slices/walkthrough-features-en-vertical-slices.md (bloques 1–7)
 - Open: comprobar en Rider que el .DotSettings apaga CheckNamespace (no verificado; src/DraSelina.Consultorio.Web/DraSelina.Consultorio.Web.csproj.DotSettings). Observación del revisor (Claude), no de Gerardo, para una próxima vez: nada vigila los árboles de carpetas del README (../../../README.md) y de docs/estructura-del-proyecto.md (../../../docs/estructura-del-proyecto.md), así que pueden quedar desactualizados. Gerardo no lo pidió; dio el bloque por bueno sin cambios.
+
+## 10 — Cierre de puntos abiertos — Rider y árboles de carpetas
+
+Session: session_01JaGktu7pbV2KB1pfiosriH · Timestamp: 2026-11-23T09:29:00-06:00
+
+- Action: cerrar los dos puntos abiertos de la entrada 2 (Rider) y la entrada 9 (árboles de carpetas).
+- Result: (1) Rider: Gerardo confirmó que el .DotSettings ya no marca el namespace como error en handlers dentro de carpetas de caso de uso; resuelto. (2) Árboles: la observación del revisor era incorrecta. README.md:728 y docs/estructura-del-proyecto.md:78 muestran el patrón `<CasoDeUso>/` y `Compartido/`, no cada caso de uso, así que agregar uno no los desactualiza. Solo nombran archivos concretos de Compartido/ (ITransaccionDe<Módulo>, IOutboxDeAgenda: docs/estructura-del-proyecto.md:94,99; README.md:362,404). Se cierra sin cambios.
+- Evidence: README.md:728; README.md:362; README.md:404; docs/estructura-del-proyecto.md:78; docs/estructura-del-proyecto.md:94; docs/estructura-del-proyecto.md:99
+- Open: ninguno.
