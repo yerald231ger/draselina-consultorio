@@ -44,9 +44,9 @@ public interface IContenidoApi
 /// <param name="CedulaDeEspecialidad">El número de la cédula de especialidad.</param>
 /// <param name="ConsejoQueCertifica">El consejo que la certifica: "Consejo de Ortopedia".</param>
 /// <param name="RegistroDeCertificacion">El registro de la certificación ante ese consejo.</param>
-/// <param name="Formacion">La universidad donde se formó; nula mientras no se decida.</param>
-/// <param name="Semblanza">Semblanza breve escrita con Selina; nula mientras no se tenga.</param>
-/// <param name="Afiliaciones">Afiliaciones hospitalarias; nulas mientras no se tengan.</param>
+/// <param name="Formacion">Dónde estudió la carrera y la especialidad; nula mientras no se tenga.</param>
+/// <param name="Semblanza">Semblanza breve escrita con Selina; los párrafos se separan con una línea en blanco. Nula mientras no se tenga.</param>
+/// <param name="Afiliaciones">Los colegios a los que pertenece; nulas mientras no se tengan.</param>
 /// <param name="Padecimientos">Los padecimientos que atiende, en el orden en que se muestran.</param>
 public sealed record DatosDeLaDoctora(
     string Nombre,
@@ -60,10 +60,13 @@ public sealed record DatosDeLaDoctora(
     string? Afiliaciones,
     IReadOnlyList<Padecimiento> Padecimientos);
 
-/// <summary>Un padecimiento que atiende la doctora: una tarjeta de "¿En qué te puedo ayudar?".</summary>
+/// <summary>
+/// Una categoría de "¿En qué te puedo ayudar?": una zona del cuerpo o un tipo de atención, que se despliega con la lista
+/// de lo que Selina atiende en ella (Gerardo, 2026-11-23).
+/// </summary>
 /// <param name="Nombre">"Rodilla", "Hombro"…</param>
-/// <param name="Descripcion">Descripción breve escrita con Selina; nula mientras no se tenga.</param>
-public sealed record Padecimiento(string Nombre, string? Descripcion = null);
+/// <param name="Atiende">Los padecimientos y tratamientos de la categoría, en el orden en que se muestran.</param>
+public sealed record Padecimiento(string Nombre, IReadOnlyList<string> Atiende);
 
 /// <summary>Los datos del consultorio.</summary>
 /// <param name="Lugar">Hospital y consultorio: "Hospital Star Médica, consultorio 101".</param>

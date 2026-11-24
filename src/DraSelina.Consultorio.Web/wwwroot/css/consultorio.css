@@ -529,34 +529,85 @@ a:hover {
   max-width: 640px;
 }
 
+/* En el teléfono, una sola lista: las columnas no cuentan y --orden pone cada categoría en su lugar. */
 .dsm-padecimientos__rejilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
-  gap: var(--dsm-spacing-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+}
+
+.dsm-padecimientos__columna {
+  display: contents;
+}
+
+/* En pantalla ancha, tres columnas independientes: abrir una categoría solo empuja a las de su columna. */
+@media (min-width: 768px) {
+  .dsm-padecimientos__rejilla {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .dsm-padecimientos__columna {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dsm-spacing-5);
+  }
 }
 
 .dsm-padecimiento {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dsm-spacing-3);
-  padding: 22px;
+  order: var(--orden, 0);
   border: 1px solid var(--dsm-border);
   border-radius: var(--dsm-rounded-2xl);
   background: var(--dsm-ground);
 }
 
 .dsm-padecimiento__nombre {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dsm-spacing-3);
+  min-height: var(--dsm-spacing-touch-min);
+  padding: 18px 22px;
   font-size: 18px;
   font-weight: 700;
   color: var(--dsm-ink);
+  cursor: pointer;
+  list-style: none;
 }
 
-.dsm-padecimiento__descripcion {
+.dsm-padecimiento__nombre::-webkit-details-marker {
+  display: none;
+}
+
+/* El signo de desplegar: + cerrado, − abierto. */
+.dsm-padecimiento__nombre::after {
+  content: "+";
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--dsm-primary);
+}
+
+.dsm-padecimiento[open] > .dsm-padecimiento__nombre::after {
+  content: "−";
+}
+
+.dsm-padecimiento__nombre:focus-visible {
+  outline: 2px solid var(--dsm-primary);
+  outline-offset: 2px;
+  border-radius: var(--dsm-rounded-2xl);
+}
+
+.dsm-padecimiento__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-2);
   margin: 0;
+  padding: 0 22px 20px 40px;
   font-size: var(--dsm-body-small-font-size);
   line-height: 1.55;
-  color: var(--dsm-muted);
+  color: var(--dsm-ink-soft);
 }
 
 /* Contenido pendiente de Selina (Pendiente.razor): se ve, pero se distingue del dato. */
@@ -623,6 +674,7 @@ a:hover {
 }
 
 .dsm-ubicacion__whatsapp,
+.dsm-ubicacion__llamar,
 .dsm-ubicacion__como-llegar {
   display: inline-flex;
   align-items: center;

@@ -101,27 +101,27 @@ public sealed partial class SitioInicioTests(Arnes arnes)
 
         var portada = Seccion(html, "inicio");
         Assert.Matches(AgendarCitaEnLineaAReservar(), portada);
-        foreach (var dato in new[] { "Traumatología y Ortopedia", "Dra. Selina Medina Castillo", "Céd. Prof. 12093135", "Céd. Especialidad 14899218", "Certificada por el Consejo de Ortopedia", ">SM<", "Escríbenos por WhatsApp" })
+        foreach (var dato in new[] { "Traumatología y Ortopedia", "Dra. Selina Medina Castillo", "Céd. Prof. 12093135", "Céd. Especialidad 14899218", "Certificada por el Consejo de Ortopedia", ">SM<", "href=\"https://wa.me/528126992831\"" })
         {
             Assert.Contains(dato, portada, StringComparison.Ordinal);
         }
 
         var sobreMi = Seccion(html, "sobre-mi");
         Assert.Contains("Consejo de Ortopedia, 24/8379/2", sobreMi, StringComparison.Ordinal);
-        foreach (var dato in new[] { "12093135", "14899218", "[Pendiente: universidad]", "[Pendiente: semblanza", "[Pendiente: afiliaciones" })
+        foreach (var dato in new[] { "12093135", "14899218", "Universidad Autónoma de Nuevo León", "Universidad Autónoma de San Luis Potosí", "FEMECOT" })
         {
             Assert.Contains(dato, sobreMi, StringComparison.Ordinal);
         }
 
-        // La universidad no está decidida (UANL o UASLP): ninguna se nombra.
-        Assert.DoesNotContain("UANL", html, StringComparison.Ordinal);
-        Assert.DoesNotContain("Universidad", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("dsm-pendiente", sobreMi, StringComparison.Ordinal);
 
         var padecimientos = Seccion(html, "padecimientos");
         Assert.Equal(
-            ["Rodilla", "Hombro", "Columna", "Cadera", "Fracturas", "Lesiones deportivas"],
-            NombreDePadecimiento().Matches(padecimientos).Select(m => m.Groups[1].Value));
-        Assert.Contains("class=\"dsm-pendiente\"", padecimientos, StringComparison.Ordinal);
+            ["Rodilla", "Hombro", "Cadera", "Columna", "Mano, muñeca y codo", "Pie y tobillo", "Fracturas y traumatismos", "Lesiones deportivas", "Otros"],
+            NombreDePadecimiento().Matches(padecimientos)
+                .OrderBy(m => int.Parse(m.Groups["orden"].Value, System.Globalization.CultureInfo.InvariantCulture))
+                .Select(m => WebUtility.HtmlDecode(m.Groups["nombre"].Value)));
+        Assert.Contains("<li>Lesión de menisco</li>", padecimientos, StringComparison.Ordinal);
 
         Assert.DoesNotContain("<img", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("testimonio", html, StringComparison.OrdinalIgnoreCase);
@@ -254,7 +254,7 @@ public sealed partial class SitioInicioTests(Arnes arnes)
     [GeneratedRegex("""<a(?=[^>]*href="/reservar")[^>]*class="[^"]*\bdsm-franja__agendar\b[^"]*"[^>]*>\s*Agendar cita\s*</a>""")]
     private static partial Regex FranjaAgendarAReservar();
 
-    [GeneratedRegex("""<h3 class="dsm-padecimiento__nombre">([^<]+)</h3>""")]
+    [GeneratedRegex("""style="--orden: (?<orden>\d+)"><summary class="dsm-padecimiento__nombre">(?<nombre>[^<]+)</summary>""")]
     private static partial Regex NombreDePadecimiento();
 
     [GeneratedRegex("""<header[^>]*>.*?</header>""", RegexOptions.Singleline)]

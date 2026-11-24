@@ -432,11 +432,12 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
         var (_, html) = await EnviarAsync(cliente, Ruta("17:00"), datos);
 
-        // El WhatsApp todavía no se conoce: el mensaje lo nombra sin número (Gerardo, 2026-11-02).
+        // El mensaje lleva el WhatsApp de Selina enlazado a la conversación (Gerardo, 2026-11-23).
         Assert.Contains(
-            "Este número ya tiene el máximo de citas de esta semana. Escríbenos por WhatsApp y te ayudamos.",
+            "Este número ya tiene el máximo de citas de esta semana. Escríbenos por WhatsApp al ",
             html,
             StringComparison.Ordinal);
+        Assert.Contains("href=\"https://wa.me/528126992831\"", html, StringComparison.Ordinal);
         Assert.Contains("value=\"Mariana López\"", html, StringComparison.Ordinal);
         Assert.Contains("value=\"444 123 4567\"", html, StringComparison.Ordinal);
         Assert.Contains("value=\"ana@correo.com\"", html, StringComparison.Ordinal);

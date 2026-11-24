@@ -23,10 +23,10 @@ public sealed class ContenidoApi : IContenidoApi
         MapaIncrustado: MapaIncrustadoDeGoogleMaps(Lugar, Direccion, Ciudad));
 
     /// <summary>
-    /// Los datos firmes del mockup: nombre, especialidad, cédulas, certificación y los seis padecimientos. Formación,
-    /// semblanza, afiliaciones y la descripción de cada padecimiento son pendientes de Selina; la universidad queda sin
-    /// decidir entre la UANL y la UASLP, así que ni Formación ni la cédula la nombran (Gerardo, 2026-11-17). Al tener
-    /// cada dato, basta con ponerlo aquí.
+    /// Nombre, especialidad, cédulas y certificación son los del mockup. Formación, afiliaciones y la semblanza los dio
+    /// Selina (Gerardo, 2026-11-23): medicina en la UANL, la especialidad en la UASLP, y los colegios de los sellos de
+    /// la sesión del Colegio de Ortopedia de San Luis Potosí. Los padecimientos son la lista completa por zona, sin
+    /// pediatría; Selina va diciendo cuáles se quitan (Gerardo, 2026-11-23).
     /// </summary>
     public static readonly DatosDeLaDoctora Doctora = new(
         Nombre: "Dra. Selina Medina Castillo",
@@ -35,17 +35,91 @@ public sealed class ContenidoApi : IContenidoApi
         CedulaDeEspecialidad: "14899218",
         ConsejoQueCertifica: "Consejo de Ortopedia",
         RegistroDeCertificacion: "24/8379/2",
-        Formacion: null,
-        Semblanza: null,
-        Afiliaciones: null,
+        Formacion: "Medicina, Universidad Autónoma de Nuevo León · Traumatología y Ortopedia, Universidad Autónoma de San Luis Potosí",
+        Semblanza:
+            "Soy médica cirujana egresada de la Universidad Autónoma de Nuevo León y especialista en Traumatología y "
+            + "Ortopedia por la Universidad Autónoma de San Luis Potosí. Estoy certificada por el Consejo de Ortopedia y "
+            + "soy miembro del Colegio de Ortopedia de San Luis Potosí y de la Federación Mexicana de Colegios de Ortopedia "
+            + "y Traumatología.\n\n"
+            + "Atiendo lesiones y padecimientos de huesos, articulaciones, músculos y tendones, desde una fractura o una "
+            + "lesión deportiva hasta el dolor que no se quita con los años. Mi objetivo es que entiendas qué tienes, qué "
+            + "opciones existen y que vuelvas a moverte con confianza.",
+        Afiliaciones:
+            "Miembro del Colegio de Ortopedia de San Luis Potosí, A.C. y de la Federación Mexicana de Colegios de "
+            + "Ortopedia y Traumatología (FEMECOT).",
         Padecimientos:
         [
-            new("Rodilla"),
-            new("Hombro"),
-            new("Columna"),
-            new("Cadera"),
-            new("Fracturas"),
-            new("Lesiones deportivas"),
+            new("Rodilla",
+            [
+                "Lesión de ligamento cruzado (anterior o posterior)",
+                "Lesión de menisco",
+                "Condromalacia o dolor de la rótula",
+                "Artrosis (desgaste) de rodilla",
+                "Reemplazo de rodilla (prótesis)",
+                "Tendinitis rotuliana",
+                "Artroscopia de rodilla",
+            ]),
+            new("Hombro",
+            [
+                "Lesión del manguito rotador",
+                "Hombro congelado (capsulitis adhesiva)",
+                "Luxación o inestabilidad de hombro",
+                "Pinzamiento o bursitis de hombro",
+                "Artrosis de hombro y prótesis de hombro",
+                "Artroscopia de hombro",
+            ]),
+            new("Cadera",
+            [
+                "Artrosis de cadera",
+                "Reemplazo de cadera (prótesis)",
+                "Pinzamiento de cadera (choque femoroacetabular)",
+                "Lesión del labrum de cadera",
+                "Bursitis trocantérica (dolor al costado de la cadera)",
+                "Artroscopia de cadera",
+            ]),
+            new("Columna",
+            [
+                "Dolor de espalda baja (lumbalgia)",
+                "Dolor de cuello (cervicalgia)",
+                "Hernia de disco",
+                "Ciática",
+            ]),
+            new("Mano, muñeca y codo",
+            [
+                "Síndrome del túnel carpiano",
+                "Dedo en gatillo",
+                "Tendinitis de De Quervain (dolor en la muñeca, del lado del pulgar)",
+                "Codo de tenista o de golfista (epicondilitis)",
+                "Quiste en la muñeca (ganglión)",
+            ]),
+            new("Pie y tobillo",
+            [
+                "Esguince de tobillo",
+                "Inestabilidad de tobillo",
+                "Fascitis plantar (dolor en el talón)",
+                "Juanete (hallux valgus)",
+                "Tendinitis o ruptura del tendón de Aquiles",
+            ]),
+            new("Fracturas y traumatismos",
+            [
+                "Fracturas en general (yeso o cirugía)",
+                "Fractura de cadera en adultos mayores",
+                "Luxaciones",
+                "Seguimiento posquirúrgico de fracturas",
+            ]),
+            new("Lesiones deportivas",
+            [
+                "Esguinces y desgarros musculares",
+                "Tendinitis por deporte",
+                "Regreso al deporte después de una lesión",
+            ]),
+            new("Otros",
+            [
+                "Osteoporosis",
+                "Artritis",
+                "Infiltraciones (por ejemplo con esteroide o ácido hialurónico)",
+                "Plasma rico en plaquetas",
+            ]),
         ]);
 
     /// <summary>
@@ -67,8 +141,10 @@ public sealed class ContenidoApi : IContenidoApi
         $"Dónde nos encuentras: {Consultorio.Lugar}, {Consultorio.Direccion}, {Consultorio.Ciudad}.",
     ];
 
-    /// <summary>Todavía no se conoce (Gerardo, 2026-11-02). Al tenerlo, basta con poner aquí sus 10 dígitos.</summary>
-    public const string? WhatsAppDelConsultorio = null;
+    /// <summary>
+    /// El de Selina, personal y de trabajo: el sitio lo muestra para WhatsApp y para llamar (Gerardo, 2026-11-23).
+    /// </summary>
+    public const string? WhatsAppDelConsultorio = "8126992831";
 
     public DatosDelConsultorio DatosDelConsultorio => Consultorio;
 

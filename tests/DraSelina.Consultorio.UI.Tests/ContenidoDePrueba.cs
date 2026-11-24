@@ -15,6 +15,9 @@ internal sealed class ContenidoDePrueba : IContenidoApi
     /// <summary>El WhatsApp que ve la página; nulo, el de Contenido.</summary>
     public string? WhatsAppDePrueba { get; set; }
 
+    /// <summary>La página no ve ningún WhatsApp, aunque Contenido tenga uno.</summary>
+    public bool SinWhatsApp { get; set; }
+
     /// <summary>Los datos de la doctora que ve la página; nulos, los de Contenido.</summary>
     public DatosDeLaDoctora? DoctoraDePrueba { get; set; }
 
@@ -27,7 +30,7 @@ internal sealed class ContenidoDePrueba : IContenidoApi
 
     public IReadOnlyList<string> TextoDelAvisoDePrivacidad => _real.TextoDelAvisoDePrivacidad;
 
-    public string? WhatsApp => WhatsAppDePrueba ?? _real.WhatsApp;
+    public string? WhatsApp => SinWhatsApp ? null : WhatsAppDePrueba ?? _real.WhatsApp;
 
     public DatosDeLaDoctora DatosDeLaDoctora => DoctoraDePrueba ?? _real.DatosDeLaDoctora;
 }

@@ -59,7 +59,7 @@ public sealed class FichaDelConsultorioTests
         Assert.Equal("Hospital Star Médica, consultorio 101, Mariano Arista No. 735, Col. Barrio de Tequisquiapan", direccion.GetProperty("streetAddress").GetString());
         Assert.Equal("San Luis Potosí", direccion.GetProperty("addressLocality").GetString());
         Assert.Equal("MX", direccion.GetProperty("addressCountry").GetString());
-        Assert.Equal(6, raiz.GetProperty("knowsAbout").GetArrayLength());
+        Assert.Equal(ContenidoApi.Doctora.Padecimientos.Count, raiz.GetProperty("knowsAbout").GetArrayLength());
     }
 
     [Fact]

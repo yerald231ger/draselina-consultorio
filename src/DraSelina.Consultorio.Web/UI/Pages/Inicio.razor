@@ -72,7 +72,10 @@
     <div class="dsm-sobre-mi__cuerpo">
         @if (Doctora.Semblanza is { } semblanza)
         {
-            <p class="dsm-cuerpo dsm-sobre-mi__semblanza">@semblanza</p>
+            @foreach (var parrafo in semblanza.Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                <p class="dsm-cuerpo dsm-sobre-mi__semblanza">@parrafo</p>
+            }
         }
         else
         {
@@ -123,19 +126,27 @@
             <h2 id="titulo-padecimientos" class="dsm-seccion-del-sitio__titulo">¿En qué te puedo ayudar?</h2>
         </div>
         <div class="dsm-padecimientos__rejilla">
-            @foreach (var padecimiento in Doctora.Padecimientos)
+            @* Cada categoría se despliega con <details>: sin script, también en SSR estático. En pantalla ancha van en
+               tres columnas independientes, repartidas por fila (la 1.ª, 4.ª y 7.ª en la primera columna): abrir una solo
+               empuja a las de su columna (Gerardo, 2026-11-23). En el teléfono las columnas se deshacen y --orden
+               devuelve el orden de la lista. *@
+            @for (var columna = 0; columna < ColumnasDePadecimientos; columna++)
             {
-                <article class="dsm-padecimiento">
-                    <h3 class="dsm-padecimiento__nombre">@padecimiento.Nombre</h3>
-                    @if (padecimiento.Descripcion is { } descripcion)
+                <div class="dsm-padecimientos__columna">
+                    @for (var i = columna; i < Doctora.Padecimientos.Count; i += ColumnasDePadecimientos)
                     {
-                        <p class="dsm-padecimiento__descripcion">@descripcion</p>
+                        var padecimiento = Doctora.Padecimientos[i];
+                        <details class="dsm-padecimiento" style="--orden: @i">
+                            <summary class="dsm-padecimiento__nombre">@padecimiento.Nombre</summary>
+                            <ul class="dsm-padecimiento__lista">
+                                @foreach (var atiende in padecimiento.Atiende)
+                                {
+                                    <li>@atiende</li>
+                                }
+                            </ul>
+                        </details>
                     }
-                    else
-                    {
-                        <p class="dsm-padecimiento__descripcion"><Pendiente Que="descripción breve escrita con Selina" /></p>
-                    }
-                </article>
+                </div>
             }
         </div>
     </div>
@@ -175,13 +186,15 @@
         <div class="dsm-ubicacion__dato">
             <svg class="dsm-ubicacion__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.2A8.5 8.5 0 1 1 20 11.5z" /></svg>
             <div class="dsm-ubicacion__texto">
-                <span class="dsm-ubicacion__etiqueta">WhatsApp</span>
                 @if (EnlaceDeWhatsApp.HayNumero(Contenido.WhatsApp))
                 {
+                    <span class="dsm-ubicacion__etiqueta">WhatsApp o llamada</span>
                     <EnlaceDeWhatsApp WhatsApp="@Contenido.WhatsApp" Clase="dsm-ubicacion__whatsapp" />
+                    <a href="tel:+52@(new string(Contenido.WhatsApp!.Where(char.IsAsciiDigit).ToArray()))" class="dsm-ubicacion__llamar">Llamar</a>
                 }
                 else
                 {
+                    <span class="dsm-ubicacion__etiqueta">WhatsApp</span>
                     <span><MensajeDeWhatsApp WhatsApp="@Contenido.WhatsApp" /></span>
                 }
             </div>
@@ -213,6 +226,9 @@
 </section>
 
 @code {
+    /// <summary>Las columnas de Padecimientos en pantalla ancha; el CSS las espera.</summary>
+    private const int ColumnasDePadecimientos = 3;
+
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 

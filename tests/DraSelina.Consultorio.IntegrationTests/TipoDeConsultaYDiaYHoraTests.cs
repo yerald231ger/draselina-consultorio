@@ -222,8 +222,9 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
 
         Assert.Contains("Por ahora no hay horarios libres para agendar en línea.", html, StringComparison.Ordinal);
 
-        // El WhatsApp todavía no se conoce: el mensaje lo nombra sin número (Gerardo, 2026-11-02).
-        Assert.Contains("Escríbenos por WhatsApp y te ayudamos.", html, StringComparison.Ordinal);
+        // El mensaje lleva el WhatsApp de Selina enlazado a la conversación (Gerardo, 2026-11-23).
+        Assert.Contains("Escríbenos por WhatsApp al ", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"https://wa.me/528126992831\"", html, StringComparison.Ordinal);
         Assert.Empty(Dias(html));
         Assert.Empty(Horas(html));
         Assert.DoesNotContain("Continuar", html, StringComparison.Ordinal);
