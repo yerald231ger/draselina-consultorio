@@ -28,7 +28,9 @@ internal sealed class ContenidoDePrueba : IContenidoApi
 
     public string VersionDelAvisoDePrivacidad => _real.VersionDelAvisoDePrivacidad;
 
-    public IReadOnlyList<string> TextoDelAvisoDePrivacidad => _real.TextoDelAvisoDePrivacidad;
+    public IReadOnlyList<SeccionDelAviso> TextoDelAvisoDePrivacidad => _real.TextoDelAvisoDePrivacidad;
+
+    public IReadOnlyList<FragmentoDelAviso> AvisoDePrivacidadSimplificado => _real.AvisoDePrivacidadSimplificado;
 
     public string? WhatsApp => SinWhatsApp ? null : WhatsAppDePrueba ?? _real.WhatsApp;
 

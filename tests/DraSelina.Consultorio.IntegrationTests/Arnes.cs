@@ -230,10 +230,10 @@ public sealed class Arnes : IAsyncLifetime
             """
             insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, motivo_de_cancelacion,
                 cancelada_en, origen, nota, motivo_de_consulta, consentimiento_en, consentimiento_version_aviso,
-                consentimiento_canal, creada_en, token_hash)
+                consentimiento_canal, consentimiento_incluye_motivo, creada_en, token_hash)
             values (gen_random_uuid(), coalesce(@paciente, gen_random_uuid()), @tipo, @inicio, @fin, @estado,
                 @motivoDeCancelacion, case when @estado = 'Cancelada' then now() end, @origen, @nota, @motivo, now(),
-                '2026-11-borrador', @canal, now(), sha256(uuid_send(gen_random_uuid())))
+                '2026-11-borrador', @canal, true, now(), sha256(uuid_send(gen_random_uuid())))
             """, conexion);
         comando.Parameters.Add(new NpgsqlParameter<Guid?>("paciente", pacienteId) { NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Uuid });
         comando.Parameters.AddWithValue("tipo", TiposDeVisitaSembrados.PrimeraConsulta.Valor);

@@ -8,6 +8,9 @@ using DraSelina.Consultorio.Notificaciones.Infrastructure;
 using DraSelina.Consultorio.Pacientes.Infrastructure;
 using DraSelina.Consultorio.Web.Identidad;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -164,6 +167,81 @@ public sealed class BaseMigradaTests(Arnes arnes)
         // Ciudad de México, UTC-6: de 15:00 a 16:00 local.
         Assert.Equal(new DateTimeOffset(2026, 11, 3, 15, 0, 0, TimeSpan.FromHours(-6)), rango.Inicio);
         Assert.Equal(new DateTimeOffset(2026, 11, 3, 16, 0, 0, TimeSpan.FromHours(-6)), rango.Fin);
+    }
+
+    // Las Citas guardadas antes de la casilla del motivo (Gerardo, 2026-11-24): su casilla única ya nombraba los datos de
+    // salud, así que la migración las deja con el motivo incluido.
+    private const string MigracionAnteriorALaCasillaDelMotivo = "20261124235901_SembrarAgendaDeSelina";
+
+    [Fact]
+    public async Task Las_Citas_anteriores_a_la_casilla_del_motivo_se_siguen_leyendo_y_su_Consentimiento_incluye_el_motivo()
+    {
+        var cadena = await arnes.CrearBaseVaciaAsync(Cancelacion);
+        var opciones = new DbContextOptionsBuilder<AgendaDbContext>();
+        AgendaDbContext.Configurar(opciones, cadena);
+        await using (var contexto = new AgendaDbContext(opciones.Options))
+        {
+            await contexto.GetService<IMigrator>().MigrateAsync(MigracionAnteriorALaCasillaDelMotivo, cancellationToken: Cancelacion);
+        }
+
+        var inicio = new DateTimeOffset(2026, 11, 3, 21, 0, 0, TimeSpan.Zero); // martes 3 a las 3:00 pm local
+        await SembrarCitaSinLaColumnaDelMotivoAsync(cadena, inicio, "en_linea");
+        await SembrarCitaSinLaColumnaDelMotivoAsync(cadena, inicio.AddHours(1), "externo");
+
+        await MigrationService.EjecutarAsync(cadena, Cancelacion);
+
+        var filas = await FilasAsync(cadena, "select id, consentimiento_incluye_motivo from agenda.cita", l => (Id: l.GetGuid(0), Incluye: l.GetBoolean(1)));
+        Assert.Equal(2, filas.Count);
+        Assert.All(filas, f => Assert.True(f.Incluye));
+
+        await using var web = arnes.ArrancarWebSinEntregaAutomatica(cadena, new RelojDePrueba(Ahora));
+        foreach (var fila in filas)
+        {
+            await using var ambito = web.Services.CreateAsyncScope();
+            Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim(ClaimTypes.NameIdentifier, "cuenta-del-administrador"), new Claim(ClaimTypes.Name, "administradora")],
+                authenticationType: "Prueba")));
+            var detalle = await ambito.ServiceProvider
+                .GetRequiredService<IQueryHandler<DetalleDeCita, CitaEnDetalle>>()
+                .HandleAsync(new DetalleDeCita(new CitaId(fila.Id)), Cancelacion);
+
+            Assert.True(detalle.EsExito, $"{detalle.Forma} {detalle.Codigo}");
+            Assert.True(detalle.Valor.Consentimiento.IncluyeMotivoDeConsulta);
+            Assert.Equal("2026-11-borrador", detalle.Valor.Consentimiento.VersionDelAviso);
+        }
+    }
+
+    // Una Cita de una hora como la guardaba la base antes de consentimiento_incluye_motivo; origen y canal coinciden.
+    private static async Task SembrarCitaSinLaColumnaDelMotivoAsync(string cadena, DateTimeOffset inicio, string canal)
+    {
+        await using var conexion = new NpgsqlConnection(cadena);
+        await conexion.OpenAsync(Cancelacion);
+        await using var comando = new NpgsqlCommand(
+            """
+            insert into agenda.cita (id, paciente_id, tipo_de_visita_id, inicio, fin, estado, origen, motivo_de_consulta,
+                consentimiento_en, consentimiento_version_aviso, consentimiento_canal, creada_en, token_hash)
+            values (gen_random_uuid(), gen_random_uuid(), @tipo, @inicio, @fin, 'Agendada', @origen, 'Dolor', now(),
+                '2026-11-borrador', @canal, now(), sha256(uuid_send(gen_random_uuid())))
+            """, conexion);
+        comando.Parameters.AddWithValue("tipo", TiposDeVisitaSembrados.PrimeraConsulta.Valor);
+        comando.Parameters.AddWithValue("inicio", inicio);
+        comando.Parameters.AddWithValue("fin", inicio.AddHours(1));
+        comando.Parameters.AddWithValue("origen", canal == "en_linea" ? "en_linea" : "consultorio");
+        comando.Parameters.AddWithValue("canal", canal);
+        await comando.ExecuteNonQueryAsync(Cancelacion);
+    }
+
+    [Fact]
+    public async Task La_columna_del_motivo_no_tiene_valor_por_omision()
+    {
+        var cadena = await BaseConLaSemillaRealAsync();
+
+        var porOmision = Assert.Single(await FilasAsync(
+            cadena,
+            "select column_default from information_schema.columns "
+            + "where table_schema = 'agenda' and table_name = 'cita' and column_name = 'consentimiento_incluye_motivo'",
+            l => l.IsDBNull(0) ? null : l.GetString(0)));
+        Assert.Null(porOmision);
     }
 
     // Una base nueva migrada por el MigrationService, sin la agenda de prueba que el arnés pone en las suyas.

@@ -130,20 +130,40 @@ else
                         }
                     </div>
 
-                    @* La casilla del Consentimiento (AD-24). El Aviso se abre en otra pestaña para no perder lo escrito. *@
+                    @*
+                        El aviso simplificado y las dos casillas del Consentimiento (AD-24), obligatorias y registradas por
+                        separado: la del aviso y la del Motivo de consulta, que es un dato de salud (art. 8 LFPDPPP; Gerardo,
+                        2026-11-24). Los enlaces al Aviso se abren en otra pestaña para no perder lo escrito.
+                    *@
+                    <p class="dsm-aviso-simplificado"><FragmentosDelAviso Fragmentos="Contenido.AvisoDePrivacidadSimplificado" EnOtraPestana="true" /></p>
+
                     <div class="dsm-campo">
                         <label class="dsm-casilla" for="Consentimiento">
                             <InputCheckbox id="Consentimiento" @bind-Value="Comando!.Consentimiento" class="dsm-casilla__control"
                                            aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.Consentimiento), conAyuda: false)"
                                            autofocus="@LlevaElFoco(nameof(AgendarCitaEnLinea.Consentimiento))" />
                             <span class="dsm-casilla__texto">
-                                Acepto el <a href="/aviso-de-privacidad" target="_blank" class="dsm-enlace-en-texto">Aviso de privacidad</a> y doy mi consentimiento expreso para el uso de mis
-                                datos de salud con el fin de agendar mi cita.
+                                Acepto el <a href="/aviso-de-privacidad" target="_blank" class="dsm-enlace-en-texto">Aviso de privacidad</a>.
                             </span>
                         </label>
                         @foreach (var (mensaje, i) in Mensajes(nameof(AgendarCitaEnLinea.Consentimiento)).Select((m, i) => (m, i)))
                         {
                             <div id="Consentimiento-error-@(i + 1)" class="dsm-campo__error">@mensaje</div>
+                        }
+                    </div>
+
+                    <div class="dsm-campo">
+                        <label class="dsm-casilla" for="ConsentimientoDelMotivo">
+                            <InputCheckbox id="ConsentimientoDelMotivo" @bind-Value="Comando!.ConsentimientoDelMotivo" class="dsm-casilla__control"
+                                           aria-describedby="@DescritoPor(nameof(AgendarCitaEnLinea.ConsentimientoDelMotivo), conAyuda: false)"
+                                           autofocus="@LlevaElFoco(nameof(AgendarCitaEnLinea.ConsentimientoDelMotivo))" />
+                            <span class="dsm-casilla__texto">
+                                Doy mi consentimiento expreso para que se use el motivo de mi consulta con el fin de agendar y preparar mi cita.
+                            </span>
+                        </label>
+                        @foreach (var (mensaje, i) in Mensajes(nameof(AgendarCitaEnLinea.ConsentimientoDelMotivo)).Select((m, i) => (m, i)))
+                        {
+                            <div id="ConsentimientoDelMotivo-error-@(i + 1)" class="dsm-campo__error">@mensaje</div>
                         }
                     </div>
                 </ErroresDelResultado>
@@ -359,8 +379,16 @@ else
             ? mensajes
             : SinMensajes;
 
-    // En SSR estático el primer error lleva autofocus. Los Campo lo reclaman primero; el motivo y la casilla, solo si
-    // ningún Campo tiene error.
+    // Las que pintan sus errores aquí y no con Campo, en orden de lectura: el motivo y las dos casillas.
+    private static readonly string[] SinCampo =
+    [
+        nameof(AgendarCitaEnLinea.Motivo),
+        nameof(AgendarCitaEnLinea.Consentimiento),
+        nameof(AgendarCitaEnLinea.ConsentimientoDelMotivo),
+    ];
+
+    // En SSR estático el primer error lleva autofocus. Los Campo lo reclaman primero; después, el primero de SinCampo
+    // con error.
     private bool LlevaElFoco(string propiedad)
     {
         if (Mensajes(propiedad).Count == 0 || ConCampo.Any(p => Mensajes(p).Count > 0))
@@ -368,8 +396,7 @@ else
             return false;
         }
 
-        return propiedad == nameof(AgendarCitaEnLinea.Motivo)
-               || Mensajes(nameof(AgendarCitaEnLinea.Motivo)).Count == 0;
+        return SinCampo.First(p => Mensajes(p).Count > 0) == propiedad;
     }
 
     private string? DescritoPor(string propiedad, bool conAyuda)

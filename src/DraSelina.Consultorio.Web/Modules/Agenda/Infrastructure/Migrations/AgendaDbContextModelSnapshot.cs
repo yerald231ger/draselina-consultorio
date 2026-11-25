@@ -17,7 +17,7 @@ partial class AgendaDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261124235901_SembrarAgendaDeSelina";
+    public override string LastMigrationId => "20261125013626_AgregarConsentimientoDelMotivoACita";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -94,6 +94,10 @@ partial class AgendaDbContextModelSnapshot : ModelSnapshot
                         b1.Property<DateTimeOffset>("En")
                             .HasColumnType("timestamp with time zone")
                             .HasColumnName("consentimiento_en");
+
+                        b1.Property<bool>("IncluyeMotivoDeConsulta")
+                            .HasColumnType("boolean")
+                            .HasColumnName("consentimiento_incluye_motivo");
 
                         b1.Property<string>("VersionDelAviso")
                             .IsRequired()

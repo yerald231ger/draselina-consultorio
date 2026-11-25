@@ -54,6 +54,7 @@ public class CitaTests
         Assert.Equal(CanalDeConsentimiento.EnLinea, cita.Consentimiento.Canal);
         Assert.Equal("2026-11-borrador", cita.Consentimiento.VersionDelAviso);
         Assert.Equal(Ahora, cita.Consentimiento.En);
+        Assert.True(cita.Consentimiento.IncluyeMotivoDeConsulta);
     }
 
     [Fact]
@@ -131,17 +132,28 @@ public class CitaTests
     [Fact]
     public void Una_Cita_en_linea_no_lleva_un_Consentimiento_externo()
     {
-        var externo = Agenda.Domain.Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.Externo);
+        var externo = Agenda.Domain.Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.Externo, incluyeMotivoDeConsulta: true);
 
         Assert.Throws<ArgumentException>(
             () => Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Manana16, "Dolor", externo, Reglas(Manana16), 0, Ahora, Clave, out _));
     }
 
     [Fact]
+    public void Una_Cita_en_linea_lleva_el_consentimiento_del_Motivo_de_consulta()
+    {
+        var sinMotivo = Agenda.Domain.Consentimiento.Crear(
+            Ahora, "2026-11-borrador", CanalDeConsentimiento.EnLinea, incluyeMotivoDeConsulta: false);
+
+        var error = Assert.Throws<ArgumentException>(
+            () => Cita.Agendar(Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Manana16, "Dolor", sinMotivo, Reglas(Manana16), 0, Ahora, Clave, out _));
+        Assert.Equal("consentimiento", error.ParamName);
+    }
+
+    [Fact]
     public void El_Consentimiento_lleva_version_del_aviso()
     {
         Assert.ThrowsAny<ArgumentException>(
-            () => Agenda.Domain.Consentimiento.Crear(Ahora, " ", CanalDeConsentimiento.EnLinea));
+            () => Agenda.Domain.Consentimiento.Crear(Ahora, " ", CanalDeConsentimiento.EnLinea, incluyeMotivoDeConsulta: true));
     }
 
     // INV-C5: tramos vigentes, rejilla y ventana.
@@ -656,5 +668,5 @@ public class CitaTests
     private static TipoDeVisita Tipo() => TipoDeVisita.Crear("Primera consulta", 30, reservableEnLinea: true, orden: 1);
 
     private static Consentimiento Consentimiento() =>
-        Agenda.Domain.Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.EnLinea);
+        Agenda.Domain.Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.EnLinea, incluyeMotivoDeConsulta: true);
 }

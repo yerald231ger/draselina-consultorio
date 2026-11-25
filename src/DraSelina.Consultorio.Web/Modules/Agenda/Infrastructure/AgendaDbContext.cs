@@ -231,6 +231,11 @@ public sealed class AgendaDbContext(DbContextOptions<AgendaDbContext> options) :
                 consentimiento.Property(c => c.Canal)
                     .HasColumnName("consentimiento_canal")
                     .HasConversion(c => TextoDeEnumeraciones.Canal(c), texto => TextoDeEnumeraciones.Canal(texto));
+
+                // Las Citas anteriores a esta columna quedan en true: su casilla única ya nombraba los datos de salud
+                // (Gerardo, 2026-11-24). La migración que la agrega las llena así y no deja valor por omisión: toda
+                // inserción escribe el valor.
+                consentimiento.Property(c => c.IncluyeMotivoDeConsulta).HasColumnName("consentimiento_incluye_motivo");
             });
 
             cita.Property(c => c.CreadaEn).HasColumnName("creada_en");

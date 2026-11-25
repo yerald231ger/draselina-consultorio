@@ -10,7 +10,7 @@
     con horarios del tipo y todos ocupados se ve "Lleno"). Nunca una pantalla de error.
 
     Sin scripts (AD-11): cada hora es un botón de este formulario, que se envía por POST a Tus datos con
-    ?tipo=&fecha=&hora= de la hora elegida (formaction). Nombre, celular, correo, motivo, la casilla y el SolicitudId
+    ?tipo=&fecha=&hora= de la hora elegida (formaction). Nombre, celular, correo, motivo, las dos casillas y el SolicitudId
     viajan en campos ocultos del cuerpo, nunca en la dirección, con el instante protegido de la verificación
     anti-bots. Tus datos los pinta llenos y no reserva: el Paciente confirma de nuevo con la misma solicitud. Los
     días van como <details> para no pintar todas las horas abiertas.
@@ -51,6 +51,10 @@
             @if (Datos.Consentimiento)
             {
                 <input type="hidden" name="Comando.Consentimiento" value="true" />
+            }
+            @if (Datos.ConsentimientoDelMotivo)
+            {
+                <input type="hidden" name="Comando.ConsentimientoDelMotivo" value="true" />
             }
 
             @if (!Dias.Any(d => d.Horas.Count > 0))

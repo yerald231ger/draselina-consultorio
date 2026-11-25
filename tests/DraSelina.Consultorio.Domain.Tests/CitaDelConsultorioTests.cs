@@ -160,7 +160,7 @@ public class CitaDelConsultorioTests
     [Fact]
     public void Una_Cita_del_consultorio_no_lleva_un_Consentimiento_en_linea()
     {
-        var enLinea = Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.EnLinea);
+        var enLinea = Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.EnLinea, incluyeMotivoDeConsulta: true);
 
         Assert.Throws<ArgumentException>(() => Cita.AgendarPorConsultorio(
             PatientId.Nuevo(), Tipo(), Local(Martes, 16, 0), null, null, enLinea, Tramos(Martes), Ahora, Clave, out _));
@@ -219,5 +219,5 @@ public class CitaDelConsultorioTests
 
     private static TipoDeVisita Tipo() => TipoDeVisita.Crear("Primera consulta", 30, reservableEnLinea: true, orden: 1);
 
-    private static Consentimiento Externo() => Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.Externo);
+    private static Consentimiento Externo() => Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.Externo, incluyeMotivoDeConsulta: true);
 }

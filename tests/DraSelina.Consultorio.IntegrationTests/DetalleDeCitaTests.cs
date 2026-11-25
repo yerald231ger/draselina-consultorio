@@ -51,7 +51,9 @@ public sealed class DetalleDeCitaTests(Arnes arnes)
         Assert.Equal("Dolor de rodilla derecha", detalle.MotivoDeConsulta);
         var (fechaDelConsentimiento, horaDelConsentimiento) = HoraLocal.DesdeUtc(guardada.ConsentimientoEn);
         Assert.Equal(
-            new ConsentimientoEnDetalle(CanalEnDetalle.EnLinea, fechaDelConsentimiento, horaDelConsentimiento, guardada.ConsentimientoVersion),
+            new ConsentimientoEnDetalle(
+                CanalEnDetalle.EnLinea, fechaDelConsentimiento, horaDelConsentimiento, guardada.ConsentimientoVersion,
+                IncluyeMotivoDeConsulta: true),
             detalle.Consentimiento);
         Assert.Equal(EstadoEnLaAgenda.Agendada, detalle.Estado);
         Assert.Null(detalle.Cancelacion);

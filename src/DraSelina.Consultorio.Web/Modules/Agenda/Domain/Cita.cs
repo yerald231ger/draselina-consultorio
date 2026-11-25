@@ -69,7 +69,7 @@ public sealed class Cita
     /// <param name="tipo">El tipo de visita: fija la duración, y por lo tanto el fin (INV-C3).</param>
     /// <param name="inicio">El instante de inicio.</param>
     /// <param name="motivoDeConsulta">Obligatorio (INV-C11).</param>
-    /// <param name="consentimiento">El Consentimiento dado en línea (INV-C9).</param>
+    /// <param name="consentimiento">El Consentimiento dado en línea, con el del Motivo de consulta (INV-C9).</param>
     /// <param name="reglas">Los tramos vigentes de la fecha local de <paramref name="inicio"/> y los valores de las
     /// reglas de reserva (T-1).</param>
     /// <param name="citasDeLaSemana">Las Citas Agendadas, de cualquier origen, de los Pacientes que comparten el
@@ -114,6 +114,13 @@ public sealed class Cita
         if (consentimiento.Canal != CanalDeConsentimiento.EnLinea)
         {
             throw new ArgumentException("Una Cita en línea lleva un Consentimiento dado en línea.", nameof(consentimiento));
+        }
+
+        // INV-C9: el Motivo de consulta es obligatorio en línea, así que su consentimiento expreso también.
+        if (!consentimiento.IncluyeMotivoDeConsulta)
+        {
+            throw new ArgumentException(
+                "Una Cita en línea lleva el consentimiento expreso para el Motivo de consulta.", nameof(consentimiento));
         }
 
         // Los tramos vigentes son los de la fecha local de la Cita (AD-17); otros serían un error del llamador.

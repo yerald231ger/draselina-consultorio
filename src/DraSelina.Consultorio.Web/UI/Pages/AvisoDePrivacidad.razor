@@ -5,8 +5,10 @@
 @inject IContenidoApi Contenido
 
 @*
-    Aviso de privacidad: una página aparte (EXPERIENCE.md) con el texto y la versión vigentes de Contenido, la misma
-    versión que queda en el Consentimiento de cada Cita (AD-24). Se llega desde la casilla de Tus datos y desde el pie.
+    Aviso de privacidad: una página aparte (EXPERIENCE.md) con el aviso integral y la versión vigentes de Contenido, la
+    misma versión que queda en el Consentimiento de cada Cita (AD-24). El texto va en secciones, con párrafos y listas;
+    el correo para las solicitudes y el código postal se ven como Pendiente mientras Contenido no los tenga (Gerardo,
+    2026-11-24). Se llega desde la casilla de Tus datos y desde el pie.
     Va bajo el encabezado del sitio, con "Agendar cita" a la mano (FR-28; entrada 7.3), con título y description para
     buscadores y sin JSON-LD (entrada 7.4): no toca la base.
 *@
@@ -19,10 +21,37 @@
 
 <article class="dsm-contenedor dsm-aviso-de-privacidad">
     <h1 class="dsm-titulo-de-paso">Aviso de privacidad</h1>
-    @foreach (var parrafo in Contenido.TextoDelAvisoDePrivacidad)
+    @foreach (var seccion in Contenido.TextoDelAvisoDePrivacidad)
     {
-        <p class="dsm-cuerpo">@parrafo</p>
+        <section class="dsm-aviso-de-privacidad__seccion">
+            <h2 class="dsm-seccion">@seccion.Titulo</h2>
+            @foreach (var bloque in seccion.Bloques)
+            {
+                switch (bloque)
+                {
+                    case ParrafoDelAviso parrafo:
+                        <p class="dsm-cuerpo"><FragmentosDelAviso Fragmentos="parrafo.Fragmentos" /></p>
+                        break;
+                    case ListaDelAviso { Numerada: true } lista:
+                        <ol class="dsm-cuerpo dsm-aviso-de-privacidad__lista">
+                            @foreach (var elemento in lista.Elementos)
+                            {
+                                <li><FragmentosDelAviso Fragmentos="elemento" /></li>
+                            }
+                        </ol>
+                        break;
+                    case ListaDelAviso lista:
+                        <ul class="dsm-cuerpo dsm-aviso-de-privacidad__lista">
+                            @foreach (var elemento in lista.Elementos)
+                            {
+                                <li><FragmentosDelAviso Fragmentos="elemento" /></li>
+                            }
+                        </ul>
+                        break;
+                }
+            }
+        </section>
     }
-    <p class="dsm-aviso-de-privacidad__version">Versión @Contenido.VersionDelAvisoDePrivacidad</p>
+    <p class="dsm-aviso-de-privacidad__version">Versión @(Contenido.VersionDelAvisoDePrivacidad).</p>
     <a href="/" class="dsm-enlace-fuerte">Volver al inicio</a>
 </article>

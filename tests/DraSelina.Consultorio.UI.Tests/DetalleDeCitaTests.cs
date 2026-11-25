@@ -67,7 +67,7 @@ public sealed class DetalleDeCitaTests : BunitContext
                 ("Tipo de consulta", "Primera consulta"),
                 ("Origen", "En línea"),
                 ("Motivo de la consulta", "Dolor de rodilla"),
-                ("Consentimiento", "En línea · 2 de noviembre de 2026, 12:00 pm · aviso 2026-11"),
+                ("Consentimiento", "En línea · 2 de noviembre de 2026, 12:00 pm · aviso 2026-11 · incluye el motivo de consulta"),
             ],
             pagina.FindAll(".dsm-detalle__dato").Select(d => (d.QuerySelector("dt")!.TextContent, d.QuerySelector("dd")!.TextContent)));
         // La fecha y la hora van solo en el encabezado (entrada 5.10).
@@ -120,7 +120,7 @@ public sealed class DetalleDeCitaTests : BunitContext
             Origen = OrigenEnLaAgenda.DelConsultorio,
             Nota = "lo pidió Selina",
             MotivoDeConsulta = null,
-            Consentimiento = new ConsentimientoEnDetalle(CanalEnDetalle.Externo, new DateOnly(2026, 11, 9), new TimeOnly(10, 5), "2026-11"),
+            Consentimiento = new ConsentimientoEnDetalle(CanalEnDetalle.Externo, new DateOnly(2026, 11, 9), new TimeOnly(10, 5), "2026-11", IncluyeMotivoDeConsulta: true),
         };
 
         var pagina = Abrir();
@@ -129,6 +129,7 @@ public sealed class DetalleDeCitaTests : BunitContext
         Assert.Equal("lo pidió Selina", pagina.Find("[data-dato=nota] dd").TextContent);
         Assert.Empty(pagina.FindAll("[data-dato=motivo]"));
         Assert.StartsWith("Por fuera del sitio · ", pagina.Find("[data-dato=consentimiento] dd").TextContent, StringComparison.Ordinal);
+        Assert.EndsWith(" · incluye el motivo de consulta", pagina.Find("[data-dato=consentimiento] dd").TextContent, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -443,7 +444,7 @@ public sealed class DetalleDeCitaTests : BunitContext
         OrigenEnLaAgenda.EnLinea,
         null,
         "Dolor de rodilla",
-        new ConsentimientoEnDetalle(CanalEnDetalle.EnLinea, new DateOnly(2026, 11, 2), new TimeOnly(12, 0), "2026-11"),
+        new ConsentimientoEnDetalle(CanalEnDetalle.EnLinea, new DateOnly(2026, 11, 2), new TimeOnly(12, 0), "2026-11", IncluyeMotivoDeConsulta: true),
         EstadoEnLaAgenda.Agendada,
         null,
         SinCorreo: false,

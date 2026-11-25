@@ -229,7 +229,7 @@ public class CitaNoSePresentoYCancelarPorConsultorioTests
     {
         Assert.Null(Cita.AgendarPorConsultorio(
             PatientId.Nuevo(), Tipo(), Inicio, null, null,
-            Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.Externo),
+            Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.Externo, incluyeMotivoDeConsulta: true),
             Reglas().TramosVigentes, Ahora, Clave, out var cita));
         return cita!;
     }
@@ -238,7 +238,7 @@ public class CitaNoSePresentoYCancelarPorConsultorioTests
     {
         Assert.Null(Cita.Agendar(
             Guid.CreateVersion7(), PatientId.Nuevo(), Tipo(), Inicio, "Dolor",
-            Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.EnLinea),
+            Consentimiento.Crear(Ahora, "2026-11-borrador", CanalDeConsentimiento.EnLinea, incluyeMotivoDeConsulta: true),
             Reglas(), 0, Ahora, Clave, out var cita));
         return cita!;
     }

@@ -16,10 +16,16 @@ public interface IContenidoApi
     string VersionDelAvisoDePrivacidad { get; }
 
     /// <summary>
-    /// El texto del aviso de privacidad vigente, en párrafos, de la versión <see cref="VersionDelAvisoDePrivacidad"/>.
+    /// El aviso de privacidad integral vigente, en secciones, de la versión <see cref="VersionDelAvisoDePrivacidad"/>.
     /// Lo muestra la página del Aviso de privacidad.
     /// </summary>
-    IReadOnlyList<string> TextoDelAvisoDePrivacidad { get; }
+    IReadOnlyList<SeccionDelAviso> TextoDelAvisoDePrivacidad { get; }
+
+    /// <summary>
+    /// El aviso de privacidad simplificado, de la misma versión: un párrafo que Tus datos muestra arriba de las casillas,
+    /// con el enlace al aviso completo.
+    /// </summary>
+    IReadOnlyList<FragmentoDelAviso> AvisoDePrivacidadSimplificado { get; }
 
     /// <summary>
     /// El WhatsApp del consultorio, a 10 dígitos; nulo mientras no se conozca. Sin él, las pantallas dicen
@@ -80,9 +86,53 @@ public sealed record Padecimiento(string Nombre, IReadOnlyList<string> Atiende);
 /// El mapa de Google Maps para un iframe, de la misma búsqueda que <paramref name="EnlaceDelMapa"/>. Nulo si no hay
 /// mapa; el sitio lo omite entonces.
 /// </param>
+/// <param name="CodigoPostal">
+/// El código postal del domicilio; nulo mientras no se tenga. El aviso de privacidad lo marca entonces como pendiente
+/// (Gerardo, 2026-11-24).
+/// </param>
 public sealed record DatosDelConsultorio(
     string Lugar,
     string Direccion,
     string Ciudad,
     string? EnlaceDelMapa = null,
-    string? MapaIncrustado = null);
+    string? MapaIncrustado = null,
+    string? CodigoPostal = null);
+
+/// <summary>Una sección del aviso de privacidad: su título y sus bloques, en orden.</summary>
+/// <param name="Titulo">"Quién es responsable de tus datos".</param>
+/// <param name="Bloques">Párrafos y listas.</param>
+public sealed record SeccionDelAviso(string Titulo, IReadOnlyList<BloqueDelAviso> Bloques);
+
+/// <summary>Un bloque de una sección del aviso: un <see cref="ParrafoDelAviso"/> o una <see cref="ListaDelAviso"/>.</summary>
+public abstract record BloqueDelAviso;
+
+/// <summary>Un párrafo del aviso.</summary>
+/// <param name="Fragmentos">Su texto, en fragmentos.</param>
+public sealed record ParrafoDelAviso(IReadOnlyList<FragmentoDelAviso> Fragmentos) : BloqueDelAviso;
+
+/// <summary>Una lista del aviso, con viñetas o numerada.</summary>
+/// <param name="Numerada">Numerada (1., 2., …); si no, con viñetas.</param>
+/// <param name="Elementos">Cada elemento, en fragmentos.</param>
+public sealed record ListaDelAviso(bool Numerada, IReadOnlyList<IReadOnlyList<FragmentoDelAviso>> Elementos) : BloqueDelAviso;
+
+/// <summary>
+/// Un tramo del texto del aviso: <see cref="TextoDelAviso"/>, <see cref="DatoDelAviso"/> o <see cref="EnlaceDelAviso"/>.
+/// Los espacios entre tramos van dentro del texto.
+/// </summary>
+public abstract record FragmentoDelAviso;
+
+/// <summary>Texto literal.</summary>
+/// <param name="Texto">El texto, con sus espacios.</param>
+/// <param name="EnNegritas">Se pinta en negritas.</param>
+public sealed record TextoDelAviso(string Texto, bool EnNegritas = false) : FragmentoDelAviso;
+
+/// <summary>Un dato de Contenido que puede faltar: quien lo pinta lo marca como pendiente si es nulo.</summary>
+/// <param name="Valor">El dato; nulo mientras no exista.</param>
+/// <param name="Pendiente">Qué falta, para la marca de pendiente: "correo para las solicitudes".</param>
+/// <param name="EnNegritas">Se pinta en negritas.</param>
+public sealed record DatoDelAviso(string? Valor, string Pendiente, bool EnNegritas = false) : FragmentoDelAviso;
+
+/// <summary>Un enlace dentro del texto.</summary>
+/// <param name="Texto">"Aviso de privacidad completo".</param>
+/// <param name="Destino">"/aviso-de-privacidad".</param>
+public sealed record EnlaceDelAviso(string Texto, string Destino) : FragmentoDelAviso;

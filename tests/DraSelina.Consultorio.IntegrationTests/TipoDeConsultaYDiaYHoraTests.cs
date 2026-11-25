@@ -295,8 +295,11 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
         using var cliente = escenario.Web.CreateClient();
 
         var datos = await PedirAsync(cliente, $"/reservar/datos?tipo={Primera}&fecha=2026-11-05&hora=16:30");
-        var casilla = Assert.Single(Casilla().Matches(datos)).Value;
-        Assert.Equal("/aviso-de-privacidad", Assert.Single(EnlaceAlAviso().Matches(casilla)).Groups["href"].Value);
+        // La primera de las dos casillas es la del aviso; la segunda, la del motivo, no enlaza.
+        var casillas = Casilla().Matches(datos);
+        Assert.Equal(2, casillas.Count);
+        Assert.Equal("/aviso-de-privacidad", Assert.Single(EnlaceAlAviso().Matches(casillas[0].Value)).Groups["href"].Value);
+        Assert.Empty(EnlaceAlAviso().Matches(casillas[1].Value));
 
         var inicio = await PedirAsync(cliente, "/");
         var pie = Assert.Single(Pie().Matches(inicio)).Value;
@@ -304,11 +307,28 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
 
         var aviso = await PedirAsync(cliente, "/aviso-de-privacidad");
         Assert.Matches(H1Aviso(), aviso);
-        Assert.Contains("está en revisión", aviso, StringComparison.Ordinal);
-        Assert.Contains("Dra. Selina Medina Castillo", aviso, StringComparison.Ordinal);
-        Assert.Contains("agendar y gestionar tu cita", aviso, StringComparison.Ordinal);
-        Assert.Contains("Mariano Arista No. 735, Col. Barrio de Tequisquiapan", aviso, StringComparison.Ordinal);
-        Assert.Contains("Versión 2026-11-borrador", aviso, StringComparison.Ordinal);
+        Assert.Equal(
+            [
+                "Quién es responsable de tus datos", "Qué datos recabamos", "Para qué los usamos", "Cómo das tu consentimiento",
+                "Con quién compartimos tus datos", "Cuánto tiempo los guardamos", "Tus derechos", "Cookies",
+                "Cambios a este aviso",
+            ],
+            TituloDeSeccion().Matches(aviso).Select(m => m.Groups["titulo"].Value));
+
+        // El correo y el código postal aún no existen: se ven como Pendiente (Gerardo, 2026-11-24).
+        Assert.Contains(
+            "Col. Barrio de Tequisquiapan, <span class=\"dsm-pendiente\">[Pendiente: código postal]</span>, San Luis Potosí, S.L.P.",
+            aviso,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Escríbenos a <strong><span class=\"dsm-pendiente\">[Pendiente: correo para las solicitudes]</span></strong> o entrega",
+            aviso,
+            StringComparison.Ordinal);
+        Assert.Contains("<li><strong>Sensibles:</strong> el motivo de tu consulta, porque revela tu estado de salud.", aviso, StringComparison.Ordinal);
+        Assert.Contains("<li>Agendar, confirmar, reprogramar o cancelar tu cita.</li>", aviso, StringComparison.Ordinal);
+        Assert.Contains("Hasta 5 años después de tu última cita.", aviso, StringComparison.Ordinal);
+        Assert.Contains("Versión 2026-11-24-borrador.", aviso, StringComparison.Ordinal);
+        Assert.DoesNotContain("está en revisión", aviso, StringComparison.Ordinal);
         SinScripts(aviso);
     }
 
@@ -616,6 +636,9 @@ public sealed partial class TipoDeConsultaYDiaYHoraTests(Arnes arnes)
 
     [GeneratedRegex("""<a[^>]*href="(?<href>[^"]+)"[^>]*>\s*Aviso de privacidad\s*</a>""")]
     private static partial Regex EnlaceAlAviso();
+
+    [GeneratedRegex("""<h2 class="dsm-seccion">(?<titulo>[^<]+)</h2>""")]
+    private static partial Regex TituloDeSeccion();
 
     [GeneratedRegex("""<h1[^>]*>\s*Aviso de privacidad\s*</h1>""")]
     private static partial Regex H1Aviso();

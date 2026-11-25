@@ -78,7 +78,9 @@ public sealed class AgendarCitaEnLineaHandler(
         // confirmó al Paciente de esta reserva, así que viene en la lista.
         var mismoTelefono = await pacientes.ConTelefonoAsync(comando.Telefono!, cancellationToken);
 
-        var consentimiento = Consentimiento.Crear(ahora, contenido.VersionDelAvisoDePrivacidad, CanalDeConsentimiento.EnLinea);
+        // Las dos casillas, registradas por separado; la validación de forma ya exigió que las dos vengan marcadas.
+        var consentimiento = Consentimiento.Crear(
+            ahora, contenido.VersionDelAvisoDePrivacidad, CanalDeConsentimiento.EnLinea, comando.ConsentimientoDelMotivo);
 
         await using var tx = await transaccion.AbrirAsync(cancellationToken);
 

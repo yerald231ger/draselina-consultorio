@@ -3,6 +3,7 @@ using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Contenido;
 using DraSelina.Consultorio.IntegrationTests.Pruebas;
 using DraSelina.Consultorio.Kernel;
 using DraSelina.Consultorio.Pacientes.Contracts;
@@ -56,8 +57,9 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         Assert.Equal(TiposDeVisitaSembrados.PrimeraConsulta.Valor, cita.TipoDeVisitaId);
         Assert.Equal("Dolor de rodilla derecha", cita.MotivoDeConsulta);
         Assert.Equal(Ahora, cita.ConsentimientoEn);
-        Assert.Equal("2026-11-borrador", cita.ConsentimientoVersion);
+        Assert.Equal(ContenidoApi.AvisoDePrivacidad, cita.ConsentimientoVersion);
         Assert.Equal("en_linea", cita.ConsentimientoCanal);
+        Assert.True(cita.ConsentimientoIncluyeMotivo);
 
         var paciente = Assert.Single(await escenario.PacientesAsync());
         Assert.Equal(cita.PacienteId, paciente.Id);
@@ -361,6 +363,24 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
 
         Assert.Equal(FormaDeResultado.Invalido, resultado.Forma);
         Assert.Equal([mensaje], resultado.Errores[nameof(AgendarCitaEnLinea.Telefono)]);
+        Assert.Empty(await escenario.PacientesAsync());
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Sin_el_consentimiento_del_motivo_no_se_reserva_y_el_error_es_el_suyo()
+    {
+        await using var escenario = await Escenario.CrearAsync(arnes);
+        var comando = Comando();
+        comando.ConsentimientoDelMotivo = false;
+
+        var resultado = await escenario.AgendarAsync(comando);
+
+        Assert.Equal(FormaDeResultado.Invalido, resultado.Forma);
+        Assert.Equal(
+            [AgendarCitaEnLinea.MensajeDeConsentimientoDelMotivo],
+            resultado.Errores[nameof(AgendarCitaEnLinea.ConsentimientoDelMotivo)]);
+        Assert.DoesNotContain(nameof(AgendarCitaEnLinea.Consentimiento), resultado.Errores.Keys);
         Assert.Empty(await escenario.PacientesAsync());
         Assert.Empty(await escenario.CitasAsync());
     }
@@ -822,7 +842,7 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
     internal static void SinSesion(AsyncServiceScope ambito) => Arnes.FijarUsuario(ambito, new ClaimsPrincipal(new ClaimsIdentity()));
 
     /// <summary>
-    /// Un comando válido: Primera consulta, mañana a las 16:00 (o lo que se pida), con Consentimiento y una solicitud
+    /// Un comando válido: Primera consulta, mañana a las 16:00 (o lo que se pida), con las dos casillas y una solicitud
     /// nueva (o la que se pida).
     /// </summary>
     public static AgendarCitaEnLinea Comando(DateOnly? fecha = null, TimeOnly? hora = null, Guid? solicitud = null) => new()
@@ -836,6 +856,7 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         Correo = "ana@correo.com",
         Motivo = "Dolor de rodilla derecha",
         Consentimiento = true,
+        ConsentimientoDelMotivo = true,
     };
 
     /// <summary>Una base migrada propia y la web en memoria sobre ella, con el reloj en <see cref="Ahora"/>.</summary>
@@ -921,12 +942,13 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
 
         public Task<List<CitaLeida>> CitasAsync() => FilasAsync(
             "select id, paciente_id, tipo_de_visita_id, inicio, fin, estado, origen, motivo_de_consulta, "
-            + "consentimiento_en, consentimiento_version_aviso, consentimiento_canal from agenda.cita order by inicio, creada_en",
+            + "consentimiento_en, consentimiento_version_aviso, consentimiento_canal, consentimiento_incluye_motivo "
+            + "from agenda.cita order by inicio, creada_en",
             l => new CitaLeida(
                 l.GetGuid(0), l.GetGuid(1), l.GetGuid(2),
                 l.GetFieldValue<DateTimeOffset>(3), l.GetFieldValue<DateTimeOffset>(4),
                 l.GetString(5), l.GetString(6), l.IsDBNull(7) ? null : l.GetString(7),
-                l.GetFieldValue<DateTimeOffset>(8), l.GetString(9), l.GetString(10)));
+                l.GetFieldValue<DateTimeOffset>(8), l.GetString(9), l.GetString(10), l.GetBoolean(11)));
 
         public Task<List<PacienteLeido>> PacientesAsync() => FilasAsync(
             "select id, nombre_completo, telefono, correo from pacientes.paciente order by creado_en",
@@ -999,7 +1021,8 @@ public sealed class ReservaEnLineaTests(Arnes arnes)
         string? MotivoDeConsulta,
         DateTimeOffset ConsentimientoEn,
         string ConsentimientoVersion,
-        string ConsentimientoCanal);
+        string ConsentimientoCanal,
+        bool ConsentimientoIncluyeMotivo);
 
     internal sealed record PacienteLeido(Guid Id, string Nombre, string Telefono, string? Correo);
 }

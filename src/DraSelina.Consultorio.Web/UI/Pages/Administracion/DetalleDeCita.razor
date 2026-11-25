@@ -414,7 +414,9 @@
         _ => origen.ToString(),
     };
 
-    /// <summary>"En línea · 2 de noviembre de 2026, 12:00 pm · aviso 2026-11".</summary>
+    /// <summary>
+    /// "En línea · 2 de noviembre de 2026, 12:00 pm · aviso 2026-11-24-borrador · incluye el motivo de consulta".
+    /// </summary>
     public static string Consentimiento(ConsentimientoEnDetalle consentimiento)
     {
         var canal = consentimiento.Canal switch
@@ -424,7 +426,8 @@
             _ => consentimiento.Canal.ToString(),
         };
         var cuando = $"{FormatoDeCita.DiaYMes(consentimiento.Fecha)} de {consentimiento.Fecha.Year}, {FormatoDeCita.Hora(consentimiento.Hora)}";
-        return $"{canal} · {cuando} · aviso {consentimiento.VersionDelAviso}";
+        var motivo = consentimiento.IncluyeMotivoDeConsulta ? "incluye el motivo de consulta" : "sin el motivo de consulta";
+        return $"{canal} · {cuando} · aviso {consentimiento.VersionDelAviso} · {motivo}";
     }
 
     /// <summary>

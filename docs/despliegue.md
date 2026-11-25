@@ -43,7 +43,10 @@ Cada una se pregunta a Gerardo cuando haya fecha de piloto; ninguna está decidi
 
 - El contenido de Selina ya está en `ContenidoApi.cs`. Se lanza sin fotos: el retrato queda con las iniciales y no
   hace falta esperar la foto (Gerardo, 2026-11-24).
-- El aviso de privacidad revisado por el abogado, con su versión (PRD §6); hoy es `2026-11-borrador`.
+- El aviso de privacidad revisado por el abogado, con su versión (PRD §6). Selina aprobó el texto integral y el
+  simplificado; hoy es `2026-11-24-borrador` (Gerardo, 2026-11-24). Antes de lanzar faltan el correo para las
+  solicitudes y el código postal del consultorio, que el aviso muestra como Pendiente
+  (`CorreoDePrivacidadDelConsultorio` y `Consultorio.CodigoPostal` en `ContenidoApi.cs`).
 - La revisión de COFEPRIS sobre publicidad médica antes de publicar el sitio (PRD §6).
 - El aviso de publicidad ante COFEPRIS, presentado antes de publicar el sitio, porque el sitio anuncia los servicios
   de la doctora (Gerardo, 2026-11-24).

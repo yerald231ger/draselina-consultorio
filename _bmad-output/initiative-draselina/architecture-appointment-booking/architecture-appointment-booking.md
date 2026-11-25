@@ -255,7 +255,7 @@ Las dos tablas son la regla; lo que no aparece está prohibido y lo verifican la
 
 - **Binds:** FR-3, FR-15
 - **Prevents:** dos módulos guardando el consentimiento, o ninguno.
-- **Rule:** el consentimiento se registra por Cita, en Agenda, al crearla: fecha y hora, versión del aviso de privacidad y canal (en línea, externo). Por Cita y no por Paciente; queda por validar con el abogado que revisa el aviso.
+- **Rule:** el consentimiento se registra por Cita, en Agenda, al crearla: fecha y hora, versión del aviso de privacidad, canal (en línea, externo) y, por separado, si incluye el consentimiento expreso para el Motivo de consulta (Gerardo, 2026-11-24). En línea son dos casillas obligatorias; la Cita en línea no se crea sin la del motivo. Por fuera del sitio, la casilla única de Agendar cita ya nombra los datos de salud y se guarda con el motivo incluido. Por Cita y no por Paciente; queda por validar con el abogado que revisa el aviso. El texto del aviso vive solo en Contenido (AD-15); Agenda guarda la versión vigente. Selina aprobó el texto integral y el simplificado, versión `2026-11-24-borrador` (Gerardo, 2026-11-24).
 
 ### AD-25 — Migraciones, datos iniciales e identidad
 

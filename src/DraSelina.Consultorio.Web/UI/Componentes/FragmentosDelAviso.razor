@@ -1,0 +1,48 @@
+@using DraSelina.Consultorio.Contenido.Contracts
+
+@*
+    Los tramos de un párrafo o de un elemento de lista del aviso de privacidad (IContenidoApi): texto, en negritas o
+    no; un dato que puede faltar, que se marca con Pendiente mientras sea nulo (el correo para las solicitudes, el
+    código postal); y un enlace. Los espacios van dentro del texto de cada tramo.
+*@
+
+@foreach (var fragmento in Fragmentos)
+{
+    switch (fragmento)
+    {
+        case TextoDelAviso { EnNegritas: true } texto:
+            <strong>@texto.Texto</strong>
+            break;
+        case TextoDelAviso texto:
+            @texto.Texto
+            break;
+        case DatoDelAviso { Valor: null, EnNegritas: true } dato:
+            <strong><Pendiente Que="@dato.Pendiente" /></strong>
+            break;
+        case DatoDelAviso { Valor: null } dato:
+            <Pendiente Que="@dato.Pendiente" />
+            break;
+        case DatoDelAviso { EnNegritas: true } dato:
+            <strong>@dato.Valor</strong>
+            break;
+        case DatoDelAviso dato:
+            @dato.Valor
+            break;
+        case EnlaceDelAviso enlace when EnOtraPestana:
+            <a href="@enlace.Destino" target="_blank" class="dsm-enlace-en-texto">@enlace.Texto</a>
+            break;
+        case EnlaceDelAviso enlace:
+            <a href="@enlace.Destino" class="dsm-enlace-en-texto">@enlace.Texto</a>
+            break;
+    }
+}
+
+@code {
+    /// <summary>Los tramos, en orden.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<FragmentoDelAviso> Fragmentos { get; set; } = [];
+
+    /// <summary>Los enlaces se abren en otra pestaña: en Tus datos, para no perder lo escrito.</summary>
+    [Parameter]
+    public bool EnOtraPestana { get; set; }
+}

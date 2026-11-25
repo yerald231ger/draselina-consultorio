@@ -271,7 +271,7 @@ Lo que ocurre en el negocio, en orden. Es el resultado del event storming.
 - **INV-C6.** Una cita del consultorio lleva nota cuando cae fuera de los tramos vigentes.
 - **INV-C7.** Solo guarda tres estados: `Agendada`, `NoSePresento`, `Cancelada`. Los dos últimos son finales.
 - **INV-C8.** Tiene motivo de cancelación si y solo si está `Cancelada`.
-- **INV-C9.** Lleva su consentimiento desde que se crea.
+- **INV-C9.** Lleva su consentimiento desde que se crea. La Cita en línea lo lleva con el consentimiento expreso para el Motivo de consulta (Gerardo, 2026-11-24).
 - **INV-C10.** El origen no cambia después de creada.
 - **INV-C11.** Una cita en línea lleva motivo de consulta.
 
@@ -357,7 +357,7 @@ INV-B5 e INV-A6 se comprueban al cambiar la base o una custom, con la duración 
 | `EstadoCita` | `Agendada`, `NoSePresento`, `Cancelada` | — |
 | `MotivoDeCancelacion` | `Paciente`, `Tarde`, `Consultorio` | — |
 | `OrigenDeCita` | `EnLinea`, `Consultorio` | — |
-| `Consentimiento` | Fecha y hora, versión del aviso, canal (en línea, externo) | Los tres son obligatorios |
+| `Consentimiento` | Fecha y hora, versión del aviso, canal (en línea, externo) y si incluye el Motivo de consulta | Los tres primeros son obligatorios; en línea incluye el motivo (Gerardo, 2026-11-24) |
 | `EnlaceDeGestion` | Token derivado de la cita | Se deriva, no se genera al azar; se guarda solo su hash |
 | `HorarioLibre` | Fecha y hora de inicio ofrecidas | Resultado del cálculo; nunca se persiste |
 | `CitaId`, `TipoDeVisitaId` | Guid v7 | T-10. Viven en el Kernel, como todos los ids tipados, porque los contratos los usan |
@@ -443,7 +443,7 @@ Las reacciones que ocurren fuera de Agenda (enviar la disculpa, mover el recorda
 - **RN-20. Concurrencia sobre una fecha.** Crear o mover una cita en línea, y guardar o borrar una custom, hacen fila sobre la fecha local y leen los tramos vigentes después.
 - **RN-21. Confirmar dos veces no crea dos citas.** Un segundo comando con el mismo identificador de solicitud devuelve la cita ya creada.
 - **RN-22. El enlace de gestión se deriva de la cita** con una clave del servidor que vive fuera de la base; Agenda es la única que lo arma. Deja de valer cuando el inicio actual de la cita ya pasó.
-- **RN-23. El consentimiento se registra por cita,** al crearla, no por paciente: se acepta en cada reserva. Queda por validar con el abogado que revisa el aviso de privacidad.
+- **RN-23. El consentimiento se registra por cita,** al crearla, no por paciente: se acepta en cada reserva. Queda por validar con el abogado que revisa el aviso de privacidad. En línea son dos casillas obligatorias, registradas por separado: aceptar el aviso de privacidad y el consentimiento expreso para el Motivo de consulta, que es un dato de salud. La Cita del consultorio guarda el motivo incluido, porque su casilla única ya nombra los datos de salud (Gerardo, 2026-11-24).
 - **RN-24. Todo cambio deja bitácora** en la misma transacción, con su actor.
 
 ### 2.3 Contexto Pacientes
@@ -726,6 +726,7 @@ erDiagram
         timestamptz consentimiento_en
         text consentimiento_version_aviso
         text consentimiento_canal "en_linea, externo"
+        boolean consentimiento_incluye_motivo
         uuid solicitud_id UK "nulo"
         bytea token_hash UK "SHA-256, 32 bytes"
         timestamptz creada_en
@@ -855,6 +856,7 @@ flowchart LR
 | `consentimiento_en` | `timestamptz` | no | AD-24 |
 | `consentimiento_version_aviso` | `text` | no | Versión del aviso de privacidad aceptado |
 | `consentimiento_canal` | `text` | no | `en_linea`, `externo` |
+| `consentimiento_incluye_motivo` | `boolean` | no | Se dio el consentimiento expreso para el Motivo de consulta (RN-23). Las Citas anteriores a la columna quedan en `true`: su casilla única ya nombraba los datos de salud (Gerardo, 2026-11-24) |
 | `solicitud_id` | `uuid` | sí | Del formulario de confirmación; nulo en citas del consultorio (AD-27) |
 | `token_hash` | `bytea` | no | SHA-256 del token derivado, 32 bytes (AD-19) |
 | `creada_en` | `timestamptz` | no | |
@@ -1087,3 +1089,4 @@ El recordatorio pendiente de una cita (AD-20). El servicio en segundo plano de N
 | 2026-10-05 | Las capas de cada contexto (`Contracts`, `Domain`, `Features`, `Infrastructure`), el Kernel y la interfaz dejan de ser proyectos: son namespaces y carpetas dentro de `DraSelina.Consultorio.Web` (2.6, T-28, 2.7). Las reglas de dependencia no cambian; ahora las verifican las pruebas, no el compilador. Separarlas en proyectos queda diferido | Gerardo |
 | 2026-10-06 | Se quita Wolverine de la solución. T-24: "mensajes programados" pasa a "envíos programados (Recordatorio y Agenda del día)", que Notificaciones envía cuando les llega su hora. T-28: sale la palabra "Wolverine" de lo que el dominio no conoce. Ninguna de las dos reglas cambia de fondo. En la Parte II: sale el esquema `wolverine`, `recordatorio_programado` pierde `version` y se agrega `agenda.outbox` | Gerardo |
 | 2026-11-21 | `Features` se ordena en vertical slices: una carpeta por caso de uso con lo que solo él usa, y `Features/Compartido/` para lo que usan dos o más y los puertos transversales. El namespace sigue plano (`<Contexto>.Features`), porque uno por carpeta choca con el comando del mismo nombre (2.6). Las reglas de dependencia no cambian | Gerardo |
+| 2026-11-24 | El Consentimiento registra aparte el consentimiento expreso para el Motivo de consulta: dos casillas obligatorias en línea; la Cita en línea no se crea sin él (INV-C9, RN-23). Columna `consentimiento_incluye_motivo` | Gerardo |

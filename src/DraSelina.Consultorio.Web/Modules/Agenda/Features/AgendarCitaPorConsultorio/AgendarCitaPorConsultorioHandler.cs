@@ -61,7 +61,9 @@ public sealed class AgendarCitaPorConsultorioHandler(
             return DatoDelPacienteInvalido(paciente);
         }
 
-        var consentimiento = Consentimiento.Crear(ahora, contenido.VersionDelAvisoDePrivacidad, CanalDeConsentimiento.Externo);
+        // La casilla única de Agendar cita ya nombra los datos de salud: incluye el Motivo de consulta (Gerardo, 2026-11-24).
+        var consentimiento = Consentimiento.Crear(
+            ahora, contenido.VersionDelAvisoDePrivacidad, CanalDeConsentimiento.Externo, incluyeMotivoDeConsulta: true);
 
         await using var tx = await transaccion.AbrirAsync(cancellationToken);
 

@@ -109,12 +109,13 @@ El Paciente puede ver únicamente los Horarios libres dentro de la Ventana de re
 
 #### FR-3: Reservar con datos de contacto y Consentimiento
 
-El Paciente puede reservar un Horario libre dando nombre, teléfono, correo (opcional) y Motivo de consulta, y aceptando el aviso de privacidad.
+El Paciente puede reservar un Horario libre dando nombre, teléfono, correo (opcional) y Motivo de consulta, aceptando el aviso de privacidad y dando aparte su consentimiento expreso para el uso del Motivo de consulta, que es un dato de salud (art. 8 LFPDPPP; Gerardo, 2026-11-24).
 
 **Consecuencias (verificables):**
 - Nombre, teléfono, Motivo de consulta y Consentimiento son obligatorios; el correo no.
 - Un teléfono imposible para México se rechaza antes de reservar.
-- Sin Consentimiento no hay reserva; se guarda la fecha y hora del Consentimiento.
+- Tus datos muestra el aviso simplificado, con el enlace al aviso completo, antes de dos casillas obligatorias: "Acepto el Aviso de privacidad." y "Doy mi consentimiento expreso para que se use el motivo de mi consulta con el fin de agendar y preparar mi cita." (Gerardo, 2026-11-24).
+- Sin cualquiera de las dos no hay reserva, y cada una tiene su propio mensaje; se guardan la fecha y hora del Consentimiento y, por separado, que incluye el Motivo de consulta.
 - La reserva completa toma menos de 1 minuto a un Paciente en su teléfono.
 
 #### FR-4: Cita firme, sin doble reserva

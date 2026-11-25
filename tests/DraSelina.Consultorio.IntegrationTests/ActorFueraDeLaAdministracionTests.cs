@@ -83,6 +83,7 @@ public sealed partial class ActorFueraDeLaAdministracionTests(Arnes arnes)
         campos["Comando.Correo"] = "ana@correo.com";
         campos["Comando.Motivo"] = "Dolor de rodilla derecha";
         campos["Comando.Consentimiento"] = "true";
+        campos["Comando.ConsentimientoDelMotivo"] = "true";
 
         escenario.Reloj.Avanzar(Escenario.LoQueTardaUnaPersona);
         return await EnviarAsync(cliente, accion, campos);

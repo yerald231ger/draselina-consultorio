@@ -16,6 +16,9 @@ public sealed class AgendarCitaEnLinea : ICommand<CitaAgendadaEnLinea>
     public const string MensajeDeTelefonoDeMexico = "Revisa tu número: no corresponde a un celular de México.";
     public const string MensajeDeNombre = "Escribe tu nombre completo.";
     public const string MensajeDeCorreo = "Revisa tu correo: debe ser como nombre@correo.com.";
+    public const string MensajeDeConsentimiento = "Para agendar tu cita necesitas aceptar el Aviso de privacidad.";
+    public const string MensajeDeConsentimientoDelMotivo =
+        "Para agendar tu cita necesitas dar tu consentimiento para el uso del motivo de tu consulta.";
 
     /// <summary>
     /// Se genera al pintar Tus datos (Guid v7) y se conserva mientras el Paciente reintenta tras un horario ocupado:
@@ -59,9 +62,16 @@ public sealed class AgendarCitaEnLinea : ICommand<CitaAgendadaEnLinea>
     [StringLength(500, ErrorMessage = "El motivo tiene a lo más 500 caracteres.")]
     public string? Motivo { get; set; }
 
-    /// <summary>Aceptó el aviso de privacidad (AD-24).</summary>
-    [AllowedValues(true, ErrorMessage = "Para agendar tu cita necesitas aceptar el Aviso de privacidad.")]
+    /// <summary>Aceptó el aviso de privacidad (AD-24): la primera casilla de Tus datos.</summary>
+    [AllowedValues(true, ErrorMessage = MensajeDeConsentimiento)]
     public bool Consentimiento { get; set; }
+
+    /// <summary>
+    /// Dio su consentimiento expreso para el uso del Motivo de consulta, que es un dato de salud: la segunda casilla,
+    /// aparte de la del aviso (art. 8 LFPDPPP; Gerardo, 2026-11-24).
+    /// </summary>
+    [AllowedValues(true, ErrorMessage = MensajeDeConsentimientoDelMotivo)]
+    public bool ConsentimientoDelMotivo { get; set; }
 }
 
 /// <summary>La Cita recién agendada, con lo que muestra Cita confirmada.</summary>

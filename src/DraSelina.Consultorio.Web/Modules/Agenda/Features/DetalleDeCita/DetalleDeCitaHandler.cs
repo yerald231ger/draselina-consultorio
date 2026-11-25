@@ -47,7 +47,11 @@ public sealed class DetalleDeCitaHandler(
             cita.Nota,
             cita.MotivoDeConsulta,
             new ConsentimientoEnDetalle(
-                Canal(cita.Consentimiento.Canal), fechaDelConsentimiento, horaDelConsentimiento, cita.Consentimiento.VersionDelAviso),
+                Canal(cita.Consentimiento.Canal),
+                fechaDelConsentimiento,
+                horaDelConsentimiento,
+                cita.Consentimiento.VersionDelAviso,
+                cita.Consentimiento.IncluyeMotivoDeConsulta),
             EstadoMostrado.Estado(cita.Estado, cita.Rango.Inicio, ahora),
             EstadoMostrado.Cancelacion(cita.MotivoDeCancelacion),
             SinCorreo: contacto?.Correo is null,

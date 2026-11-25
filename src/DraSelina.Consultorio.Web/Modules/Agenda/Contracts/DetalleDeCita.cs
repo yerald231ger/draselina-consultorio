@@ -92,7 +92,9 @@ public enum OrigenEnLaAgenda
 /// <param name="Fecha">Fecha local en que se dio.</param>
 /// <param name="Hora">Hora local en que se dio.</param>
 /// <param name="VersionDelAviso">La versión del aviso de privacidad aceptada.</param>
-public sealed record ConsentimientoEnDetalle(CanalEnDetalle Canal, DateOnly Fecha, TimeOnly Hora, string VersionDelAviso);
+/// <param name="IncluyeMotivoDeConsulta">Incluye el consentimiento expreso para el Motivo de consulta.</param>
+public sealed record ConsentimientoEnDetalle(
+    CanalEnDetalle Canal, DateOnly Fecha, TimeOnly Hora, string VersionDelAviso, bool IncluyeMotivoDeConsulta);
 
 /// <summary>Por dónde llegó el Consentimiento.</summary>
 public enum CanalEnDetalle

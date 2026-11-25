@@ -36,6 +36,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
         Assert.Matches(Control("Comando.Correo"), html);
         Assert.Matches(Control("Comando.Motivo"), html);
         Assert.Matches(Control("Comando.Consentimiento"), html);
+        Assert.Matches(Control("Comando.ConsentimientoDelMotivo"), html);
         Assert.Contains("Confirmar cita", html, StringComparison.Ordinal);
         Assert.Equal(7, SolicitudDe(html).Version);
 
@@ -247,6 +248,39 @@ public sealed partial class TusDatosTests(Arnes arnes)
     }
 
     [Fact]
+    public async Task El_aviso_simplificado_va_antes_de_las_dos_casillas_con_el_enlace_al_aviso_completo()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.ClienteDeUnaPersona();
+
+        var html = WebUtility.HtmlDecode(await cliente.GetStringAsync(Ruta(), Cancelacion));
+
+        var simplificado = AvisoSimplificado().Match(html);
+        Assert.True(simplificado.Success, "Tus datos no pinta el aviso simplificado.");
+        var texto = simplificado.Groups["texto"].Value;
+        Assert.Contains(
+            "La Dra. Selina Medina Castillo (Hospital Star Médica, consultorio 101, San Luis Potosí) usa tu nombre, teléfono, "
+            + "correo y el motivo de tu consulta, que es un dato de salud,",
+            texto,
+            StringComparison.Ordinal);
+        Assert.Contains("escribe a <span class=\"dsm-pendiente\">[Pendiente: correo para las solicitudes]</span>.", texto, StringComparison.Ordinal);
+        Assert.Contains(
+            "Lee el <a href=\"/aviso-de-privacidad\" target=\"_blank\" class=\"dsm-enlace-en-texto\">Aviso de privacidad completo</a>.",
+            texto,
+            StringComparison.Ordinal);
+
+        // Antes de las dos casillas, en este orden.
+        var aviso = html.IndexOf("name=\"Comando.Consentimiento\"", StringComparison.Ordinal);
+        var motivo = html.IndexOf("name=\"Comando.ConsentimientoDelMotivo\"", StringComparison.Ordinal);
+        Assert.True(simplificado.Index < aviso && aviso < motivo, "El aviso simplificado va antes de las dos casillas.");
+        Assert.Contains("Acepto el <a href=\"/aviso-de-privacidad\" target=\"_blank\" class=\"dsm-enlace-en-texto\">Aviso de privacidad</a>.", html, StringComparison.Ordinal);
+        Assert.Contains(
+            "Doy mi consentimiento expreso para que se use el motivo de mi consulta con el fin de agendar y preparar mi cita.",
+            html,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Sin_Consentimiento_el_aviso_aparece_junto_a_la_casilla()
     {
         await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
@@ -258,6 +292,49 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
         Assert.Contains("Para agendar tu cita necesitas aceptar el Aviso de privacidad.", html, StringComparison.Ordinal);
         Assert.Matches(ControlInvalido("Comando.Consentimiento"), html);
+        Assert.DoesNotMatch(ControlInvalido("Comando.ConsentimientoDelMotivo"), html);
+        Assert.Equal(["Consentimiento"], ConFoco(html));
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Sin_el_consentimiento_del_motivo_su_propio_aviso_aparece_junto_a_su_casilla_con_el_foco()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.ClienteDeUnaPersona();
+        var datos = Datos();
+        datos.Remove("Comando.ConsentimientoDelMotivo");
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
+
+        Assert.Contains(
+            $"<div id=\"ConsentimientoDelMotivo-error-1\" class=\"dsm-campo__error\">{AgendarCitaEnLinea.MensajeDeConsentimientoDelMotivo}</div>",
+            html,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(AgendarCitaEnLinea.MensajeDeConsentimiento, html, StringComparison.Ordinal);
+        Assert.Matches(ControlInvalido("Comando.ConsentimientoDelMotivo"), html);
+        Assert.Matches(
+            """<input(?=[^>]*name="Comando.ConsentimientoDelMotivo")(?=[^>]*aria-describedby="ConsentimientoDelMotivo-error-1")[^>]*>""",
+            html);
+        Assert.DoesNotMatch(ControlInvalido("Comando.Consentimiento"), html);
+        Assert.Equal(["ConsentimientoDelMotivo"], ConFoco(html));
+        Assert.Empty(await escenario.CitasAsync());
+    }
+
+    [Fact]
+    public async Task Sin_las_dos_casillas_el_foco_va_a_la_del_aviso()
+    {
+        await using var escenario = await ReservaEnLineaTests.Escenario.CrearAsync(arnes);
+        using var cliente = escenario.ClienteDeUnaPersona();
+        var datos = Datos();
+        datos.Remove("Comando.Consentimiento");
+        datos.Remove("Comando.ConsentimientoDelMotivo");
+
+        var (_, html) = await EnviarAsync(cliente, Ruta(), datos);
+
+        Assert.Matches(ControlInvalido("Comando.Consentimiento"), html);
+        Assert.Matches(ControlInvalido("Comando.ConsentimientoDelMotivo"), html);
+        Assert.Equal(["Consentimiento"], ConFoco(html));
         Assert.Empty(await escenario.CitasAsync());
     }
 
@@ -354,6 +431,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
         Assert.Equal("ana@correo.com", ocultos["Comando.Correo"]);
         Assert.Equal("Dolor de rodilla derecha", ocultos["Comando.Motivo"]);
         Assert.Equal("true", ocultos["Comando.Consentimiento"]);
+        Assert.Equal("true", ocultos["Comando.ConsentimientoDelMotivo"]);
     }
 
     [Fact]
@@ -403,6 +481,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
         Assert.Contains("value=\"ana@correo.com\"", datosConHora, StringComparison.Ordinal);
         Assert.Contains("Dolor de rodilla derecha</textarea>", datosConHora, StringComparison.Ordinal);
         Assert.Matches(Marcada(), datosConHora);
+        Assert.Matches(MarcadaLaDelMotivo(), datosConHora);
         Assert.DoesNotContain("Ese horario se acaba de ocupar", datosConHora, StringComparison.Ordinal);
         Assert.DoesNotContain("Tu cita está confirmada", datosConHora, StringComparison.Ordinal);
         Assert.Single(await escenario.CitasAsync());
@@ -576,6 +655,7 @@ public sealed partial class TusDatosTests(Arnes arnes)
         ["Comando.Correo"] = "ana@correo.com",
         ["Comando.Motivo"] = "Dolor de rodilla derecha",
         ["Comando.Consentimiento"] = "true",
+        ["Comando.ConsentimientoDelMotivo"] = "true",
     };
 
     /// <summary>
@@ -637,6 +717,11 @@ public sealed partial class TusDatosTests(Arnes arnes)
             campos["Comando.Consentimiento"] = "true";
         }
 
+        if (MarcadaLaDelMotivo().IsMatch(formulario))
+        {
+            campos["Comando.ConsentimientoDelMotivo"] = "true";
+        }
+
         return campos;
     }
 
@@ -695,6 +780,18 @@ public sealed partial class TusDatosTests(Arnes arnes)
 
     [GeneratedRegex("""<input(?=[^>]*name="Comando.Consentimiento")(?=[^>]*checked)[^>]*>""")]
     private static partial Regex Marcada();
+
+    [GeneratedRegex("""<input(?=[^>]*name="Comando.ConsentimientoDelMotivo")(?=[^>]*checked)[^>]*>""")]
+    private static partial Regex MarcadaLaDelMotivo();
+
+    [GeneratedRegex("""<p class="dsm-aviso-simplificado">(?<texto>.*?)</p>""", RegexOptions.Singleline)]
+    private static partial Regex AvisoSimplificado();
+
+    [GeneratedRegex("""<(?:input|textarea)(?=[^>]*\bautofocus)[^>]*\bid="(?<id>[^"]+)"[^>]*>""")]
+    private static partial Regex ConElFoco();
+
+    // Los ids de los controles con autofocus: en SSR estático, quien lleva el foco al cargar.
+    private static List<string> ConFoco(string html) => [.. ConElFoco().Matches(html).Select(m => m.Groups["id"].Value)];
 
     [GeneratedRegex("""<input(?=[^>]*type="hidden")(?=[^>]*name="(?<nombre>[^"]+)")(?=[^>]*value="(?<valor>[^"]*)")[^>]*>""")]
     private static partial Regex Ocultos();

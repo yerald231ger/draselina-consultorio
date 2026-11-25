@@ -4,6 +4,7 @@ using DraSelina.Consultorio.Agenda.Contracts;
 using DraSelina.Consultorio.Agenda.Domain;
 using DraSelina.Consultorio.Agenda.Infrastructure;
 using DraSelina.Consultorio.BuildingBlocks.Contracts;
+using DraSelina.Consultorio.Contenido;
 using DraSelina.Consultorio.Kernel;
 using Microsoft.Extensions.DependencyInjection;
 using static DraSelina.Consultorio.IntegrationTests.ReservaEnLineaTests;
@@ -49,8 +50,9 @@ public sealed class AgendarCitaPorConsultorioTests(Arnes arnes)
         Assert.Equal(HoraLocal.AUtc(Manana, new TimeOnly(16, 30)), cita.Fin);
         Assert.Null(cita.MotivoDeConsulta);
         Assert.Equal(Ahora, cita.ConsentimientoEn);
-        Assert.Equal("2026-11-borrador", cita.ConsentimientoVersion);
+        Assert.Equal(ContenidoApi.AvisoDePrivacidad, cita.ConsentimientoVersion);
         Assert.Equal("externo", cita.ConsentimientoCanal);
+        Assert.True(cita.ConsentimientoIncluyeMotivo, "La casilla de Agendar cita ya nombra los datos de salud.");
         Assert.Equal(0L, await escenario.EscalarAsync<long>("select count(*) from agenda.cita where solicitud_id is not null or nota is not null"));
         Assert.Equal(32, await escenario.EscalarAsync<int>("select octet_length(token_hash) from agenda.cita"));
     }

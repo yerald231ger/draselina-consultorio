@@ -107,6 +107,7 @@ public sealed class RecorridosDelPacienteTests(Consultorio consultorio)
 
         await pagina.GetByLabel("Motivo de la consulta").FillAsync("Dolor de rodilla derecha desde hace dos semanas");
         await pagina.Locator("#Consentimiento").CheckAsync();
+        await pagina.Locator("#ConsentimientoDelMotivo").CheckAsync();
 
         var falta = TiempoMinimoAntiBots - (DateTimeOffset.UtcNow - pintado);
         if (falta > TimeSpan.Zero)

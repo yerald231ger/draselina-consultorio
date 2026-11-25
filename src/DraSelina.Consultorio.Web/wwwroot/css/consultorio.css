@@ -901,7 +901,14 @@ main:has(> .dsm-franja:last-child) + .dsm-pie {
   resize: none;
 }
 
-/* La casilla del Consentimiento: una tarjeta que se toca completa. */
+/* El aviso de privacidad simplificado, arriba de las casillas del Consentimiento. */
+.dsm-aviso-simplificado {
+  margin: 0;
+  font-size: var(--dsm-body-small-font-size);
+  line-height: var(--dsm-body-line-height);
+}
+
+/* Las casillas del Consentimiento: tarjetas que se tocan completas. */
 .dsm-casilla {
   display: flex;
   gap: var(--dsm-spacing-5);
@@ -1606,6 +1613,23 @@ button.dsm-hora {
   gap: var(--dsm-spacing-7);
   max-width: 720px;
   padding-block: var(--dsm-spacing-9);
+}
+
+.dsm-aviso-de-privacidad__seccion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-5);
+}
+
+.dsm-aviso-de-privacidad__seccion > * {
+  margin: 0;
+}
+
+.dsm-aviso-de-privacidad__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dsm-spacing-3);
+  padding-left: var(--dsm-spacing-7);
 }
 
 .dsm-aviso-de-privacidad__version {

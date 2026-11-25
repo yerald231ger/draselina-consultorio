@@ -102,7 +102,7 @@ Reglas:
 | Hora | Día y hora | Selección única. Solo se listan Horarios libres; los ocupados no aparecen. |
 | Resumen de selección | Barra inferior (móvil), panel "Tu cita" (escritorio) | Siempre refleja lo elegido. Sin hora elegida dice "Elige una hora" y "Continuar" queda deshabilitado `[ASSUMPTION]`. |
 | Barra de progreso | Los tres pasos | Informativa; no es navegación. Se regresa con la flecha o con "Cambiar". |
-| Formulario de datos | Tus datos | Nombre ("Si agendas para otra persona, escribe el nombre del paciente"), celular (+52 fijo, 10 dígitos), correo opcional, motivo (una o dos líneas), Consentimiento, verificación anti-bots. Valida al salir del campo y al enviar `[ASSUMPTION]`. |
+| Formulario de datos | Tus datos | Nombre ("Si agendas para otra persona, escribe el nombre del paciente"), celular (+52 fijo, 10 dígitos), correo opcional, motivo (una o dos líneas), el aviso de privacidad simplificado con el enlace "Aviso de privacidad completo" (otra pestaña) y dos casillas obligatorias, cada una tocable completa: "Acepto el Aviso de privacidad." y "Doy mi consentimiento expreso para que se use el motivo de mi consulta con el fin de agendar y preparar mi cita." (Gerardo, 2026-11-24), verificación anti-bots. Valida al salir del campo y al enviar `[ASSUMPTION]`. |
 | Enlace de gestión | Cita confirmada | El enlace completo se muestra como texto seleccionable en el panel "Guarda este enlace", con el plazo para reprogramar tomado de las reglas. Sin scripts no hay botón "Copiar": el Paciente lo selecciona y copia con el gesto de su teléfono. |
 | Agregar a mi calendario | Cita confirmada | Entrega un evento con fecha, lugar y el Enlace de gestión. |
 | Acciones de la Cita | Tu cita | "Reprogramar" visible solo hasta 2 horas antes; "Cancelar cita" siempre. |
@@ -118,7 +118,7 @@ Reglas:
 | Sin horarios en toda la ventana | Día y hora | Mensaje único con el contacto de WhatsApp `[ASSUMPTION]`. |
 | Horario tomado al confirmar | Tus datos | La misma respuesta de Tus datos muestra el aviso "Ese horario se acaba de ocupar. Elige otro; tus datos se conservan." y los Horarios libres restantes del tipo para el día del horario perdido y los 6 siguientes, con la misma regla de "Lleno" que Día y hora; "Ver otros días" lleva a Día y hora, donde los datos se escriben de nuevo. Elegir otra hora vuelve a Tus datos con los datos llenos y el nuevo horario; no se reserva hasta confirmar. Los datos viajan solo en el cuerpo del formulario (AD-11). Nunca una pantalla de error (FR-4). |
 | Campo inválido | Tus datos | Mensaje bajo el campo, en lenguaje llano; el foco va al primer error. Celular imposible: "Revisa tu número: deben ser 10 dígitos." `[ASSUMPTION: texto]` |
-| Sin Consentimiento | Tus datos | No se puede confirmar; el aviso aparece junto a la casilla. |
+| Sin Consentimiento | Tus datos | No se puede confirmar. Falte la casilla del aviso o la del motivo, cada una muestra su propio mensaje junto a ella y el foco va a la primera que falte. Horario tomado conserva las dos al volver. |
 | Tope semanal alcanzado | Tus datos | Explica que ese número ya tiene el máximo de Citas esta semana y ofrece WhatsApp `[ASSUMPTION]`. |
 | Confirmada, con correo | Cita confirmada | "Te enviamos los detalles a tu correo. Un día antes, a las 9:00 am, te llegará un recordatorio." |
 | Confirmada, sin correo | Cita confirmada | Sin la frase del correo. En su lugar: no recibirás recordatorio; guarda el enlace o agrégala a tu calendario. El panel "Guarda este enlace" sube de posición `[ASSUMPTION]`. |
@@ -204,7 +204,7 @@ Los nombres siguen los recorridos del PRD (UJ-1 a UJ-7).
 2. Tipo de consulta: "Primera consulta" ya está elegida; toca "Ver horarios disponibles".
 3. Día y hora: ve los días desde mañana con sus horarios libres; toca jueves y luego 4:30 pm. El resumen al pie se actualiza.
 4. Toca "Continuar".
-5. Tus datos: escribe nombre, celular, correo y motivo; marca el Consentimiento.
+5. Tus datos: escribe nombre, celular, correo y motivo; lee el aviso simplificado y marca las dos casillas del Consentimiento.
 6. Toca "Confirmar cita".
 7. **Clímax:** "Tu cita está confirmada", con la fecha y hora en grande, el lugar, "Agregar a mi calendario" y "Guarda este enlace". Todo en menos de un minuto.
 
