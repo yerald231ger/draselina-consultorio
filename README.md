@@ -34,8 +34,12 @@ ese (por ejemplo, cuando el PATH trae un dotnetup sin el SDK de .NET 11).
 1. Levanta PostgreSQL (`postgres:18.3`, la misma versión mayor que el AppHost) en un contenedor de Testcontainers.
 2. Migra la base ejecutando el `MigrationService` real como proceso, igual que el AppHost. Si sale con un código
    distinto de 0, la corrida falla y muestra el código y la salida del proceso.
-3. Crea el esquema `pruebas` con las tablas de los tipos de prueba.
-4. Al terminar, borra el contenedor de PostgreSQL. El contenedor de limpieza de Testcontainers
+3. Cambia lo sembrado por la agenda de prueba, que no es la de Selina: tramos de 15:30 a 18:00 de lunes a viernes,
+   tipos de visita de 30 min y la Agenda del día a las 14:00 (constantes en `Arnes.cs`). Así las pruebas de
+   comportamiento no dependen de la configuración de la doctora. `CrearBaseMigradaAsync` hace lo mismo; la semilla
+   real la comprueba `BaseMigradaTests` sobre una base migrada sin este paso.
+4. Crea el esquema `pruebas` con las tablas de los tipos de prueba.
+5. Al terminar, borra el contenedor de PostgreSQL. El contenedor de limpieza de Testcontainers
    (`testcontainers-ryuk-*`) sigue listado unos segundos más y desaparece solo.
 
 La base es una sola para toda la corrida y la comparten todas las pruebas, que corren en paralelo: cada prueba
@@ -67,7 +71,7 @@ Lo que da el arnés:
 | `ArrancarWeb()` / `ArrancarWeb(cadena)` | La web con su `Program` real, en memoria, contra la base migrada o contra la que se indique. Lleva además los tipos de prueba, dados de alta con `AddPruebas`. |
 | `CrearBaseVaciaAsync()` | Una base nueva sin migrar en el mismo servidor; devuelve su cadena de conexión. |
 | `CrearContextoDePruebas()` / `CrearContextoDePruebas(cadena)` | Un `PruebasDbContext` sobre el esquema `pruebas` de la base de la corrida, o de otra. |
-| `CrearBaseMigradaAsync()` | Una base nueva, propia de la prueba, igual a la de la corrida: migrada y con el esquema `pruebas`. |
+| `CrearBaseMigradaAsync()` | Una base nueva, propia de la prueba, igual a la de la corrida: migrada, con la agenda de prueba y con el esquema `pruebas`. |
 | `ArrancarWebSinEntregaAutomatica(cadena, reloj)` | La web sin el servicio que entrega eventos y con un `RelojDePrueba`: la prueba da cada vuelta y mueve el tiempo. |
 | `Arnes.DarUnaVueltaDeEntregaAsync(web)` | Da una vuelta de entrega de eventos en esa web; devuelve cuántos eventos intentó. |
 | `Arnes.Registros(web)` | Lo que esa web ha registrado (avisos, errores), para afirmar que algo se registró. |

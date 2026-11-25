@@ -47,11 +47,11 @@ Los nombres de Pacientes son ilustrativos `[ASSUMPTION: los recorridos se redact
 
 - **UJ-1. Mariana reserva su primera Cita desde el teléfono.** Mariana, con dolor de rodilla desde hace semanas, llega al sitio del Consultorio desde Google. Sin cuenta, toca "Agendar cita", elige el Tipo de visita, ve los Horarios libres desde mañana, elige jueves 4:30 pm, escribe nombre, teléfono, correo y Motivo de consulta, y acepta el aviso de privacidad. En menos de un minuto ve su Cita confirmada en pantalla con el Enlace de gestión y la opción de agregarla a su calendario; después le llega el correo de confirmación. **Caso límite:** otra persona toma el mismo horario un instante antes; Mariana ve los Horarios libres restantes, no un error.
 - **UJ-2. Mariana reprograma, y otro día cancela tarde.** Desde el Enlace de gestión de su correo, Mariana mueve su Cita al viernes, tres días antes. Semanas después, a una hora de otra Cita, ya no puede reprogramar: el enlace le ofrece cancelar y volver a agendar. Cancela; la confirmación reconoce con amabilidad que fue con menos de 2 horas de anticipación y Gerardo recibe la alerta de inmediato.
-- **UJ-3. Gerardo registra un día de cirugía.** Selina avisa que el martes opera a las 5:00. Gerardo, con sesión iniciada, toca ese martes en el calendario de atención y le da Agenda custom: 3:30 a 5:00, motivo "cirugía". El sistema le muestra que una Cita de las 5:30 queda fuera y le pregunta qué hacer con ella; Gerardo elige cancelarla, y el Paciente recibe una disculpa con un enlace para elegir otro horario. Si esa Cita no tuviera correo aparecería marcada "sin correo" y Gerardo avisaría a mano. El miércoles vuelve solo a la Agenda base.
+- **UJ-3. Gerardo registra un día de cirugía.** Selina avisa que el martes opera a las 5:00. Gerardo, con sesión iniciada, toca ese martes en el calendario de atención y le da Agenda custom: 3:00 a 5:00, motivo "cirugía". El sistema le muestra que una Cita de las 5:00 queda fuera y le pregunta qué hacer con ella; Gerardo elige cancelarla, y el Paciente recibe una disculpa con un enlace para elegir otro horario. Si esa Cita no tuviera correo aparecería marcada "sin correo" y Gerardo avisaría a mano. El miércoles vuelve solo a la Agenda base.
 - **UJ-4. Gerardo captura una Cita pactada por WhatsApp.** Un Paciente de siempre escribe a Selina por WhatsApp. Gerardo abre "Agendar cita" en administración, captura nombre, teléfono y horario, y el sistema reconoce al Paciente existente. La Cita queda en la agenda como cualquier otra.
 - **UJ-6. Selina atiende un sábado.** Dos casos. Selina le dice a un Paciente "te puedo atender el sábado": Gerardo registra la Cita a mano para ese sábado a las 10:15, con la nota "lo pidió Selina, no puede entre semana"; nadie más ve ese sábado como disponible. Otra semana Selina dice "abramos este sábado, a ver si cae algún paciente": Gerardo le da Agenda custom a ese sábado, 10:00 a 1:00, y ese día aparece con Horarios libres para el público; el sábado siguiente sigue cerrado.
 - **UJ-7. Selina cierra un sábado pero conserva una cita.** Selina tiene un asunto personal: "ciérrame el sábado y cancela todas las consultas, excepto la de las 12:30, que es importante". Gerardo le da a ese sábado una Agenda custom sin tramos. El sistema lista las cuatro Citas que quedan fuera; Gerardo marca tres para cancelar y conserva la de las 12:30. Los tres Pacientes reciben la disculpa con el enlace para reagendar; el de las 12:30 no recibe nada y su Cita sigue en pie. El sábado ya no ofrece Horarios libres al público.
-- **UJ-5. Selina lee su correo de las 2:00 pm.** Sin abrir nada más, Selina ve "Tus citas de hoy": hora, Paciente y Motivo de consulta de cada Cita de la tarde.
+- **UJ-5. Selina lee su correo de las 8:00 am.** Sin abrir nada más, Selina ve "Tus citas de hoy": hora, Paciente y Motivo de consulta de cada Cita del día (Gerardo, 2026-11-24, por decisión de Selina).
 
 ## 3. Glosario
 
@@ -62,9 +62,9 @@ Los términos se usan exactamente así en todo el documento y en los flujos post
 - **Administrador** — Único usuario con sesión; en el piloto, Gerardo.
 - **Cita** — Espacio reservado en la agenda para un Paciente. Estados: Agendada, No se presentó, Cancelada. Atendida se deriva (ver abajo).
 - **Consulta** — El acto médico que ocurre cuando el Paciente llega a su Cita. El sistema no registra su contenido.
-- **Tipo de visita** — Clase de Cita que el Paciente elige al reservar; define la duración (30 min en el piloto).
+- **Tipo de visita** — Clase de Cita que el Paciente elige al reservar; define la duración (60 min en el piloto; Gerardo, 2026-11-24).
 - **Motivo de consulta** — Texto breve que el Paciente escribe al reservar. Es un dato de salud.
-- **Agenda base** — La semana tipo de Selina, sin fechas: por cada día de la semana, cero o más tramos de atención. Un día sin tramos no se atiende. Se repite sola (hoy: lunes a viernes, 3:30–6:00 pm).
+- **Agenda base** — La semana tipo de Selina, sin fechas: por cada día de la semana, cero o más tramos de atención. Un día sin tramos no se atiende. Se repite sola (hoy: lunes a viernes, 3:00–7:00 pm; Gerardo, 2026-11-24).
 - **Agenda custom** — El horario propio de una fecha concreta, que reemplaza por completo a la Agenda base ese día: cero o más tramos que no se enciman, más un motivo. Cero tramos significa que ese día no se atiende. A lo más una por fecha.
 - **Tramo** — Periodo continuo de atención dentro de un día, con hora de inicio y de fin.
 - **Horario libre** — Hora de inicio en la que hoy se puede reservar: dentro de un Tramo vigente para esa fecha (el de la Agenda custom si existe; si no, el de la Agenda base), sin Cita Agendada y dentro de la Ventana de reserva. Se calcula al momento; nunca se guarda.
@@ -74,7 +74,7 @@ Los términos se usan exactamente así en todo el documento y en los flujos post
 - **Cancelación tardía** — Cancelación hecha por el Paciente con menos de 2 horas de anticipación.
 - **Cancelada por el Consultorio** — Cancelación originada por el Administrador, sea directa o porque eligió cancelarla al guardar o borrar una Agenda custom que la dejó fuera.
 - **Enlace de gestión** — Enlace único y privado de una Cita, con el que el Paciente la ve, la reprograma o la cancela sin cuenta.
-- **Rejilla** — Horas de inicio que se ofrecen al Paciente dentro de cada Tramo, en pasos iguales a la duración del Tipo de visita (30 min en el piloto).
+- **Rejilla** — Horas de inicio que se ofrecen al Paciente dentro de cada Tramo, en pasos iguales a la duración del Tipo de visita (60 min en el piloto; Gerardo, 2026-11-24).
 - **Recordatorio** — Mensaje informativo al Paciente el día anterior a su Cita. No pide confirmación.
 - **Agenda del día** — Correo "Tus citas de hoy" que recibe Selina.
 - **Consentimiento** — Aceptación expresa del aviso de privacidad, con fecha y hora.
@@ -90,7 +90,8 @@ Los términos se usan exactamente así en todo el documento y en los flujos post
 El Paciente puede elegir un Tipo de visita entre los marcados como reservables en línea.
 
 **Consecuencias (verificables):**
-- Todos los Tipos de visita duran 30 min en el piloto; la duración es configurable por tipo.
+- En el piloto hay dos Tipos de visita, Primera consulta y Consulta de seguimiento; los dos duran 60 min y se reservan en línea (Gerardo, 2026-11-24, por decisión de Selina). La duración es configurable por tipo.
+- No hay tipo posquirúrgico (es igual a la Consulta de seguimiento) ni de urgencia: las urgencias quedan fuera del sitio y, si hace falta, el Administrador las registra a mano (FR-15) (Gerardo, 2026-11-24, por decisión de Selina).
 - No se muestran precios.
 - Los tipos no reservables en línea no aparecen.
 - El piloto arranca con dos Tipos de visita públicos, según el diseño de Gerardo: "Primera consulta" y "Consulta de seguimiento".
@@ -100,7 +101,7 @@ El Paciente puede elegir un Tipo de visita entre los marcados como reservables e
 El Paciente puede ver únicamente los Horarios libres dentro de la Ventana de reserva.
 
 **Consecuencias (verificables):**
-- Los horarios ofrecidos se calculan al momento: los Tramos de la Agenda custom de la fecha si existe (FR-13); si no, los de la Agenda base (FR-12). Nunca salen de valores fijos ni de registros creados por adelantado. Con la Agenda base actual, cada día de atención ofrece como máximo 3:30, 4:00, 4:30, 5:00 y 5:30 pm.
+- Los horarios ofrecidos se calculan al momento: los Tramos de la Agenda custom de la fecha si existe (FR-13); si no, los de la Agenda base (FR-12). Nunca salen de valores fijos ni de registros creados por adelantado. Con la Agenda base actual, cada día de atención ofrece como máximo 3:00, 4:00, 5:00 y 6:00 pm (Gerardo, 2026-11-24).
 - Toda Cita reservada en línea cabe completa dentro de un Tramo.
 - No aparecen horarios de hoy, de fechas sin Tramos, ni posteriores a 2 meses.
 - No aparecen horarios que traslapen una Cita Agendada, incluidas las Citas manuales fuera de horario (FR-15).
@@ -123,7 +124,7 @@ El sistema garantiza que dos Citas Agendadas nunca se traslapen.
 **Consecuencias (verificables):**
 - Si dos personas intentan el mismo horario a la vez, exactamente una obtiene la Cita.
 - A la otra se le muestran los Horarios libres restantes, no un mensaje de error.
-- La garantía cubre también las Citas creadas por el Administrador fuera de la rejilla de 30 min.
+- La garantía cubre también las Citas creadas por el Administrador fuera de la rejilla.
 
 #### FR-5: Confirmación en pantalla
 
@@ -208,7 +209,8 @@ El Administrador puede configurar, desde administración y sin intervención de 
 - El cambio aplica de inmediato a todas las fechas futuras sin Agenda custom; no existe fecha de inicio futura.
 - Las Citas Agendadas que queden fuera de la nueva Agenda base se respetan: el Administrador ve cuáles son antes de guardar y decide qué hacer con cada una.
 - Las fechas futuras con Agenda custom no heredan el cambio; el Administrador ve cuáles son al guardar.
-- Valor inicial: lunes a viernes, 3:30–6:00 pm.
+- Valor inicial: lunes a viernes, 3:00–7:00 pm; la última Cita empieza a las 6:00 pm, así que hay 4 al día: 3, 4, 5 y 6 pm (Gerardo, 2026-11-24, por decisión de Selina).
+- El sábado no es fijo: un sábado de atención se abre con la Agenda custom de esa fecha (FR-13) (Gerardo, 2026-11-24, por decisión de Selina).
 
 #### FR-13: Dar Agenda custom a una fecha
 
@@ -330,7 +332,7 @@ El Administrador recibe una alerta inmediata ante una Cancelación tardía.
 
 #### FR-25: Agenda del día
 
-Selina recibe la Agenda del día a las 2:00 pm de cada fecha que tenga Tramos o al menos una Cita Agendada. `[ASSUMPTION: incluye sábados abiertos por Agenda custom y días con solo una Cita manual; si la primera Cita del día es antes de las 2:00 pm, el correo llega tarde para ella]`
+Selina recibe la Agenda del día a las 8:00 am de cada fecha que tenga Tramos o al menos una Cita Agendada (Gerardo, 2026-11-24, por decisión de Selina). `[ASSUMPTION: incluye sábados abiertos por Agenda custom y días con solo una Cita manual; una Cita manual antes de las 8:00 am (FR-15) recibe el correo tarde]`
 
 **Consecuencias (verificables):**
 - Lista hora, Paciente y Motivo de consulta de cada Cita Agendada de ese día.
@@ -346,7 +348,7 @@ El sistema entrega las notificaciones sin afectar la reserva.
 
 ### 4.5 Sitio del Consultorio
 
-**Descripción:** La página de inicio del sistema es el sitio del Consultorio: mismo dominio, con "Agendar cita" siempre a la mano. `[ASSUMPTION: el sitio entra en el piloto porque es la puerta de entrada a la reserva; añade alrededor de una semana]`
+**Descripción:** La página de inicio del sistema es el sitio del Consultorio: mismo dominio, con "Agendar cita" siempre a la mano. El sitio entra en el piloto porque es la puerta de entrada a la reserva; ya no es supuesto: lo decidió Selina (Gerardo, 2026-11-23/24; §10 pregunta 4).
 
 #### FR-27: Páginas del Consultorio
 
@@ -451,17 +453,22 @@ Ninguna impide pasar a UX o arquitectura; el PRD avanza con los supuestos de §1
 **Resolver antes de recibir al primer Paciente**
 
 1. ¿Qué Tipos de visita existen además de la Consulta general, y cuáles son reservables en línea? El plan sugiere dejar posquirúrgicos y trauma urgente como "llámanos".
+   **Resuelta (Gerardo, 2026-11-24, por decisión de Selina):** Primera consulta y Consulta de seguimiento, de 60 min, las dos reservables en línea. No hay tipo posquirúrgico, que es igual al seguimiento, ni de urgencia: las urgencias quedan fuera del sitio y, si hace falta, se registran a mano en Administración (FR-1, FR-15).
 2. ¿Cuánto dura el piloto, con qué Pacientes y qué resultado decide continuar?
 3. ¿Cómo se avisa a los Pacientes sin correo cuando el Consultorio cancela, más allá de la marca "sin correo"?
+   **Resuelta (Gerardo, 2026-11-24, por decisión de Selina):** se les avisa a mano, al teléfono que muestra el sistema. No cambia el sistema.
 4. ¿El sitio del Consultorio entra completo en el piloto, o basta Inicio, Ubicación y Aviso de privacidad mientras Selina entrega el contenido pendiente?
+   **Resuelta (Gerardo, 2026-11-23/24, por decisión de Selina):** entra completo. Selina entregó el contenido (formación, semblanza, afiliaciones, padecimientos y WhatsApp) y se lanza sin fotos: el retrato queda con las iniciales.
 5. ¿Quién es el abogado que revisa el aviso de privacidad y para cuándo? Es condición de lanzamiento (§6).
 6. ¿El Motivo de consulta debe viajar por correo en la Agenda del día, o basta hora y Paciente?
+   **Resuelta (Gerardo, 2026-11-24, por decisión de Selina):** la Agenda del día conserva el Motivo de consulta (FR-25).
 7. ¿Qué límite de frecuencia y qué tope semanal por teléfono se usan en FR-7?
 
 **Resolver al cerrar el piloto**
 
 8. ¿Hay línea base de la época de WhatsApp (Citas por semana, ausencias) para comparar SM-C2?
 9. ¿A qué hora debe salir la Agenda del día cuando hay Citas por la mañana (FR-25)?
+   **Resuelta (Gerardo, 2026-11-24, por decisión de Selina):** sale a las 8:00 am en cada fecha con Tramos o Citas (FR-25), sábados abiertos incluidos.
 
 ## 11. Índice de supuestos
 
@@ -470,8 +477,8 @@ Ninguna impide pasar a UX o arquitectura; el PRD avanza con los supuestos de §1
 - FR-15 — El Administrador registra el Consentimiento dado por canal externo.
 - FR-21 — Las Citas del Administrador envían confirmación.
 - FR-24 — La alerta de Cancelación tardía llega por correo.
-- FR-25 — La Agenda del día se envía aunque no haya Citas; se envía en toda fecha con Tramos o Citas, a las 2:00 pm.
-- §4.5 — El sitio del Consultorio entra en el piloto.
+- FR-25 — La Agenda del día se envía aunque no haya Citas; se envía en toda fecha con Tramos o Citas. La hora, 8:00 am, ya no es supuesto: la decidió Selina (Gerardo, 2026-11-24).
+- §4.5 — El sitio del Consultorio entra en el piloto. Ya no es supuesto: lo decidió Selina (Gerardo, 2026-11-23/24).
 - FR-30 — El contenido se actualiza por despliegue.
 - §5 — Sin compromiso formal de disponibilidad.
 - §9 — Duración del piloto y todas las metas.

@@ -223,8 +223,8 @@ Falla: alguien tomó el horario un instante antes → en la misma pantalla ve el
 ### UJ-3 — Gerardo registra un día de cirugía
 
 1. En administración abre el Calendario de atención y toca el martes.
-2. Ve los Tramos de la Agenda base (3:30–6:00) y los cambia a 3:30–5:00, con motivo "cirugía".
-3. El sistema lista la Cita de las 5:30 que queda fuera y pregunta qué hacer con ella; si no tuviera correo, lo señala.
+2. Ve los Tramos de la Agenda base (3:00–7:00) y los cambia a 3:00–5:00, con motivo "cirugía".
+3. El sistema lista la Cita de las 5:00 que queda fuera y pregunta qué hacer con ella; si no tuviera correo, lo señala.
 4. Elige cancelarla y guarda.
 5. **Clímax:** el martes aparece marcado con su motivo, en unos instantes la Cita queda Cancelada por el Consultorio y el Paciente recibe la disculpa con el enlace para elegir otro horario. El miércoles sigue normal sin que nadie haga nada.
 
@@ -259,10 +259,10 @@ Abierto al público:
 4. Guarda.
 5. **Clímax:** el sábado aparece como "no se atiende"; tres Citas pasan a Canceladas por el Consultorio y sus Pacientes reciben la disculpa; la de las 12:30 sigue en la Agenda y su Paciente no recibe nada.
 
-### UJ-5 — Selina lee su correo de las 2:00 pm
+### UJ-5 — Selina lee su correo de las 8:00 am
 
 1. Recibe "Tus citas de hoy".
-2. **Clímax:** ve hora, Paciente y motivo de cada Cita de la tarde sin abrir nada más.
+2. **Clímax:** ve hora, Paciente y motivo de cada Cita del día sin abrir nada más (Gerardo, 2026-11-24, por decisión de Selina).
 
 ## Cobertura de mockups
 

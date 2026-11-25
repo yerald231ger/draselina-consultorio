@@ -13,6 +13,8 @@ Oct 3, 2026 · updated Oct 4, 2026 · @Gerardo Sanchez Hernandez
 > - Domain design (DDD, invariant) and data model: `_bmad-output/initiative-draselina/architecture-appointment-booking/ddd-and-data-model-appointment-booking.md`
 >
 > **What changed:** availability is now *Agenda base* plus *Agenda custom* (replacing working hours and blocks); manual appointments may fall outside hours; two visit types; one-page site; .NET 11, Aspire, DataAnnotations and OpenTelemetry replace .NET 10, hand-configured Docker, FluentValidation and Serilog; Wolverine 6; a derived manage link; no shared Settings or Location table; production deployment deferred.
+>
+> **Agenda values changed on Nov 24, 2026:** visits last 60 min, the Agenda base is Monday to Friday 3:00–7:00 pm, and the Agenda del día goes out at 8:00 am. The PRD has the current values; the 30 min, 3:30–6:00 pm and 2:00 pm figures below are superseded.
 
 ## Overview
 

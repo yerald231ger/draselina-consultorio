@@ -40,18 +40,16 @@ Contenido que pertenece a arquitectura, diseño de solución o planeación, no a
 - InsurerId opcional en la Cita; Price opcional en el Tipo de visita.
 - Expediente clínico como módulo nuevo; implica NOM-004-SSA3-2012 y NOM-024-SSA3-2012.
 
-## Contenido pendiente de Selina para el sitio
+## Contenido de Selina para el sitio
 
-- Foto profesional y fotos del Consultorio.
-- Biografía breve, formación y afiliaciones hospitalarias.
-- Cédula profesional y número de certificación de especialidad.
-- Lista de padecimientos y tratamientos.
-- Dirección y número de WhatsApp a mostrar.
+Entregado y publicado en el sitio (Gerardo, 2026-11-23/24): formación, semblanza, afiliaciones, padecimientos y
+WhatsApp. Se lanza sin fotos: el retrato queda con las iniciales, y la foto profesional y las del Consultorio quedan
+para después del lanzamiento.
 
 ## Diferencias entre el PRD y el plan (para arquitectura)
 
 - **Agenda base y Agenda custom (FR-12, FR-13).** El plan fija "solo lunes a viernes" y "termina a más tardar a las 6:00 pm" en el algoritmo de disponibilidad y en las invariantes de la Cita, y modela `WorkingHours` + `ScheduleBlock`. El PRD pide una semana tipo con varios tramos por día y un horario propio por fecha que la reemplaza; la disponibilidad se calcula al vuelo. Decisión completa en `../brainstorm-agenda-horario-configuracion/brainstorm-agenda-horario-configuracion.md`.
 - **Cita manual fuera de horario (FR-15).** El plan prohíbe a `AgendarPorConsultorio` salir de 3:30–6:00, de lunes a viernes y agendar sobre un bloqueo. El PRD lo permite con nota obligatoria; solo quedan dos reglas duras: sin traslape y no en el pasado.
-- **Margen entre Citas.** El plan prevé `BufferMin` por Tipo de visita; el PRD no lo pide porque las cinco Citas de 30 min llenan exactamente la franja actual. Queda como punto de extensión.
+- **Margen entre Citas.** El plan prevé `BufferMin` por Tipo de visita; el PRD no lo pide porque las cuatro Citas de 60 min llenan exactamente la franja actual, de 3:00 a 7:00 pm (Gerardo, 2026-11-24). Queda como punto de extensión.
 - **Mecanismos de búsqueda.** Marcado schema.org Physician y Perfil de Negocio de Google son el cómo de FR-29.
 - **Protección contra abuso.** El limitador de frecuencia de ASP.NET Core por IP y una verificación anti-bots sin scripts de terceros (campo trampa y tiempo mínimo entre pintar y enviar Tus datos) son el cómo de FR-7; Turnstile se reconsidera si aparece abuso real.

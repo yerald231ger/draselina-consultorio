@@ -29,7 +29,7 @@ Cada capacidad cita sus requisitos. Las consecuencias verificables de cada `FR-n
 
 - **CAP-1** (FR-1, FR-2)
   - **intent:** El Paciente elige un Tipo de visita reservable en línea y ve únicamente los Horarios libres de la Ventana de reserva.
-  - **success:** Con la Agenda base inicial, un día de atención ofrece como máximo 3:30, 4:00, 4:30, 5:00 y 5:30 pm; no aparecen horarios de hoy, de fechas sin Tramos, posteriores a la ventana ni traslapados con una Cita, incluida una manual fuera de horario.
+  - **success:** Con la Agenda base inicial, un día de atención ofrece como máximo 3:00, 4:00, 5:00 y 6:00 pm (citas de 60 min de 3:00 a 7:00 pm; Gerardo, 2026-11-24); no aparecen horarios de hoy, de fechas sin Tramos, posteriores a la ventana ni traslapados con una Cita, incluida una manual fuera de horario.
 - **CAP-2** (FR-3, FR-5)
   - **intent:** El Paciente reserva un Horario libre con nombre, teléfono, correo opcional, Motivo de consulta y Consentimiento, y la Cita queda firme al instante.
   - **success:** Sin Consentimiento o con un teléfono imposible para México no hay reserva; al confirmar, la pantalla muestra fecha, hora, dirección, Enlace de gestión y "agregar a mi calendario", aunque no haya correo; todo en menos de 1 minuto desde un teléfono.

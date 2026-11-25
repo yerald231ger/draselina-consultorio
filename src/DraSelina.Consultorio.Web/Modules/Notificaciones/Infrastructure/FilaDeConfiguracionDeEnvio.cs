@@ -23,14 +23,15 @@ public sealed class FilaDeConfiguracionDeEnvio
     public string CorreoAdministrador { get; set; } = "";
 
     /// <summary>
-    /// La semilla (AD-25): 09:00, 14:00 y dos direcciones que Mailpit atrapa en local; las reales se ponen con el
+    /// La semilla (AD-25): el Recordatorio a las 09:00, la Agenda del día a las 08:00 (Gerardo, 2026-11-24, por
+    /// decisión de Selina; antes 14:00) y dos direcciones que Mailpit atrapa en local; las reales se ponen con el
     /// comando de configuración, sin dejar direcciones personales en el repositorio (Gerardo, 2026-11-08).
     /// </summary>
     public static FilaDeConfiguracionDeEnvio Semilla { get; } = new()
     {
         Id = 1,
         HoraRecordatorio = new TimeOnly(9, 0),
-        HoraAgendaDelDia = new TimeOnly(14, 0),
+        HoraAgendaDelDia = new TimeOnly(8, 0),
         CorreoDoctora = "doctora@consultorio.local",
         CorreoAdministrador = "administrador@consultorio.local",
     };

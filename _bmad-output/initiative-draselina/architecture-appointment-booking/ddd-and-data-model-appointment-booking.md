@@ -1003,7 +1003,7 @@ Una sola fila (AD-14).
 | --- | --- | --- |
 | `id` | `smallint` | 1, con `CHECK (id = 1)` |
 | `hora_recordatorio` | `time` | 09:00 |
-| `hora_agenda_del_dia` | `time` | 14:00 |
+| `hora_agenda_del_dia` | `time` | 08:00 (Gerardo, 2026-11-24, por decisión de Selina) |
 | `correo_doctora` | `text` | Destino de "Tus citas de hoy" `[ASSUMPTION]` |
 | `correo_administrador` | `text` | Destino de la alerta de cancelación tardía `[ASSUMPTION]` |
 
@@ -1045,10 +1045,10 @@ El recordatorio pendiente de una cita (AD-20). El servicio en segundo plano de N
 
 | Módulo | Dato |
 | --- | --- |
-| Agenda | `agenda_base_tramo`: lunes a viernes, 15:30–18:00 |
-| Agenda | `tipo_de_visita`: "Primera consulta" y "Consulta de seguimiento", 30 min, reservables en línea |
+| Agenda | `agenda_base_tramo`: lunes a viernes, 15:00–19:00; el sábado se abre con la Agenda custom de la fecha (Gerardo, 2026-11-24) |
+| Agenda | `tipo_de_visita`: "Primera consulta" y "Consulta de seguimiento", 60 min, reservables en línea (Gerardo, 2026-11-24) |
 | Agenda | `reglas_de_reserva`: los valores de la tabla |
-| Notificaciones | `configuracion_de_envio`: 09:00 y 14:00, más los dos correos |
+| Notificaciones | `configuracion_de_envio`: Recordatorio 09:00 y Agenda del día 08:00 (Gerardo, 2026-11-24), más los dos correos |
 | Host | Cuenta del administrador |
 
 ## Observaciones

@@ -41,10 +41,12 @@ Cada una se pregunta a Gerardo cuando haya fecha de piloto; ninguna está decidi
 
 ## Condiciones de lanzamiento que no son de código
 
-- El contenido de Selina en `ContenidoApi.cs`: formación (y la universidad, UANL o UASLP), semblanza, afiliaciones,
-  descripción de cada padecimiento y WhatsApp; la foto en lugar del recuadro con iniciales.
+- El contenido de Selina ya está en `ContenidoApi.cs`. Se lanza sin fotos: el retrato queda con las iniciales y no
+  hace falta esperar la foto (Gerardo, 2026-11-24).
 - El aviso de privacidad revisado por el abogado, con su versión (PRD §6); hoy es `2026-11-borrador`.
 - La revisión de COFEPRIS sobre publicidad médica antes de publicar el sitio (PRD §6).
+- El aviso de publicidad ante COFEPRIS, presentado antes de publicar el sitio, porque el sitio anuncia los servicios
+  de la doctora (Gerardo, 2026-11-24).
 
 ## Cómo se publica, cuando toque
 

@@ -2,14 +2,16 @@ namespace DraSelina.Consultorio.Agenda.Infrastructure;
 
 /// <summary>
 /// La agenda base y las reglas de reserva iniciales (modelo de datos, Datos iniciales; AD-25): lunes a viernes de
-/// 15:30 a 18:00; anticipación mínima 1 día, ventana 2 meses, umbral de cancelación tardía 120 min y tope semanal 3.
-/// Los ids son fijos para que la migración los siembre una sola vez.
+/// 15:00 a 19:00, la última cita a las 18:00 (Gerardo, 2026-11-24, por decisión de Selina; antes 15:30 a 18:00). El
+/// sábado no es fijo: se abre con la Agenda custom de esa fecha. Anticipación mínima 1 día, ventana 2 meses, umbral
+/// de cancelación tardía 120 min y tope semanal 3. Los ids son fijos para que la migración los siembre una sola vez
+/// y las migraciones posteriores actualicen las mismas filas.
 /// </summary>
 public static class AgendaDeAtencionSembrada
 {
-    public static readonly TimeOnly Inicio = new(15, 30);
+    public static readonly TimeOnly Inicio = new(15, 0);
 
-    public static readonly TimeOnly Fin = new(18, 0);
+    public static readonly TimeOnly Fin = new(19, 0);
 
     public const int AnticipacionMinimaDias = 1;
     public const int VentanaMeses = 2;

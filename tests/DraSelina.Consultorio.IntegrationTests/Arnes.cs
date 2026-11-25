@@ -51,6 +51,22 @@ public sealed class Arnes : IAsyncLifetime
     /// </summary>
     public const string ContrasenaDelAdministrador = "Contraseña-de-las-pruebas-1";
 
+    /// <summary>
+    /// Inicio de los tramos de lunes a viernes de la agenda de prueba, no la de Selina. Después de migrar, el arnés
+    /// pone esta agenda en las filas sembradas para que las pruebas de comportamiento no dependan de la configuración
+    /// de la doctora (Gerardo, 2026-11-24). La semilla real la comprueba <c>BaseMigradaTests</c>.
+    /// </summary>
+    public static readonly TimeOnly InicioDeLaAgendaDePrueba = new(15, 30);
+
+    /// <summary>Fin de los tramos de lunes a viernes de la agenda de prueba, no la de Selina.</summary>
+    public static readonly TimeOnly FinDeLaAgendaDePrueba = new(18, 0);
+
+    /// <summary>Duración de los dos tipos de visita sembrados en la agenda de prueba, no la de Selina.</summary>
+    public const int DuracionDePruebaMin = 30;
+
+    /// <summary>Hora de la Agenda del día en la agenda de prueba, no la de Selina.</summary>
+    public static readonly TimeOnly HoraDeLaAgendaDelDiaDePrueba = new(14, 0);
+
     private PostgreSqlContainer? _contenedor;
     private string? _cadenaDeConexion;
 
@@ -80,6 +96,7 @@ public sealed class Arnes : IAsyncLifetime
         var cadena = _contenedor.GetConnectionString();
 
         await MigrationService.EjecutarAsync(cadena);
+        await PonerLaAgendaDePruebaAsync(cadena);
         await CrearEsquemaDePruebasAsync(cadena);
 
         _cadenaDeConexion = cadena;
@@ -125,6 +142,7 @@ public sealed class Arnes : IAsyncLifetime
         var cadena = await CrearBaseVaciaAsync(cancelacion);
 
         await MigrationService.EjecutarAsync(cadena, cancelacion);
+        await PonerLaAgendaDePruebaAsync(cadena, cancelacion);
         await CrearEsquemaDePruebasAsync(cadena);
 
         return cadena;
@@ -307,6 +325,28 @@ public sealed class Arnes : IAsyncLifetime
                 }
             });
         }
+    }
+
+    /// <summary>
+    /// Cambia lo sembrado por la agenda de prueba: los tramos base, la duración de los dos tipos de visita sembrados
+    /// y la hora de la Agenda del día. Recién migrada, la base solo tiene los cinco tramos sembrados, así que se
+    /// cambian todos; los tipos y la configuración, por su id.
+    /// </summary>
+    private static async Task PonerLaAgendaDePruebaAsync(string cadena, CancellationToken cancelacion = default)
+    {
+        await using var conexion = new NpgsqlConnection(cadena);
+        await conexion.OpenAsync(cancelacion);
+        await using var comando = new NpgsqlCommand(
+            "update agenda.agenda_base_tramo set inicio = @inicio, fin = @fin;"
+            + "update agenda.tipo_de_visita set duracion_min = @duracion where id in (@primera, @seguimiento);"
+            + "update notificaciones.configuracion_de_envio set hora_agenda_del_dia = @hora where id = 1;", conexion);
+        comando.Parameters.AddWithValue("inicio", InicioDeLaAgendaDePrueba);
+        comando.Parameters.AddWithValue("fin", FinDeLaAgendaDePrueba);
+        comando.Parameters.AddWithValue("duracion", DuracionDePruebaMin);
+        comando.Parameters.AddWithValue("primera", TiposDeVisitaSembrados.PrimeraConsulta.Valor);
+        comando.Parameters.AddWithValue("seguimiento", TiposDeVisitaSembrados.ConsultaDeSeguimiento.Valor);
+        comando.Parameters.AddWithValue("hora", HoraDeLaAgendaDelDiaDePrueba);
+        await comando.ExecuteNonQueryAsync(cancelacion);
     }
 
     // Después de migrar: el esquema de los tipos de prueba y sus tablas. No pasa por migraciones ni toca
