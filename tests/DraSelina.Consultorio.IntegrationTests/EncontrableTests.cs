@@ -18,7 +18,7 @@ public sealed partial class EncontrableTests(Arnes arnes)
 
     [Theory]
     [InlineData("/", "Traumatóloga en San Luis Potosí · Dra. Selina Medina Castillo",
-        "Dra. Selina Medina Castillo, traumatóloga y ortopedista en San Luis Potosí. Rodilla, hombro, cadera, columna, mano, muñeca y codo, pie y tobillo, fracturas y traumatismos, lesiones deportivas y otros. Agenda tu cita en línea.")]
+        "Traumatóloga y ortopedista en San Luis Potosí. Atiende rodilla, hombro, cadera, columna, fracturas y lesiones deportivas en Star Médica. Agenda tu cita en línea.")]
     [InlineData("/aviso-de-privacidad", "Aviso de privacidad · Traumatóloga en San Luis Potosí · Dra. Selina Medina Castillo",
         "Aviso de privacidad del consultorio de la Dra. Selina Medina Castillo, traumatóloga en San Luis Potosí.")]
     public async Task Cada_pagina_trae_su_titulo_y_su_description(string ruta, string titulo, string description)
